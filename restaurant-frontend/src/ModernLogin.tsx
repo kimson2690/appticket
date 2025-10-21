@@ -18,10 +18,16 @@ const ModernLogin: React.FC<ModernLoginProps> = ({ onShowRegister }) => {
     
     setTimeout(() => {
       if (email === 'admin@appticket.com' && password === 'admin123') {
-        alert('Connexion réussie ! Redirection en cours...');
-        setTimeout(() => {
-          console.log('Redirection vers le dashboard administrateur');
-        }, 1500);
+        // Stocker les informations de connexion
+        localStorage.setItem('isLoggedIn', 'true');
+        localStorage.setItem('userRole', 'admin');
+        localStorage.setItem('userEmail', email);
+        if (rememberMe) {
+          localStorage.setItem('rememberMe', 'true');
+        }
+        
+        // Recharger la page pour déclencher la redirection
+        window.location.reload();
       } else {
         alert('Identifiants incorrects. Veuillez réessayer.');
       }
