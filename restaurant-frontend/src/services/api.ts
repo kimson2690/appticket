@@ -42,6 +42,31 @@ interface Company {
   updated_at: string;
 }
 
+interface Restaurant {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  address: string;
+  city: string;
+  postal_code?: string;
+  country: string;
+  cuisine_type: string;
+  description?: string;
+  logo?: string;
+  website?: string;
+  opening_hours?: string;
+  delivery_fee: number;
+  minimum_order: number;
+  average_rating: number;
+  total_reviews: number;
+  status: 'active' | 'inactive' | 'suspended';
+  is_partner: boolean;
+  commission_rate: number;
+  created_at: string;
+  updated_at: string;
+}
+
 class ApiService {
   private async request<T>(endpoint: string, options: RequestInit = {}): Promise<ApiResponse<T>> {
     const url = `${API_BASE_URL}${endpoint}`;
@@ -129,6 +154,34 @@ class ApiService {
     });
   }
 
+  // Restaurants API
+  async getRestaurants(): Promise<Restaurant[]> {
+    const response = await this.request<Restaurant[]>('/admin/restaurants');
+    return response.data;
+  }
+
+  async createRestaurant(restaurantData: Omit<Restaurant, 'id' | 'average_rating' | 'total_reviews' | 'created_at' | 'updated_at'>): Promise<Restaurant> {
+    const response = await this.request<Restaurant>('/admin/restaurants', {
+      method: 'POST',
+      body: JSON.stringify(restaurantData),
+    });
+    return response.data;
+  }
+
+  async updateRestaurant(id: string, restaurantData: Partial<Omit<Restaurant, 'id' | 'created_at' | 'updated_at'>>): Promise<Restaurant> {
+    const response = await this.request<Restaurant>(`/admin/restaurants/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(restaurantData),
+    });
+    return response.data;
+  }
+
+  async deleteRestaurant(id: string): Promise<void> {
+    await this.request(`/admin/restaurants/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
   // Auth API
   async login(email: string, password: string): Promise<{ user: any; token: string }> {
     const response = await this.request<{ user: any; token: string }>('/login', {
@@ -140,4 +193,4 @@ class ApiService {
 }
 
 export const apiService = new ApiService();
-export type { Role, Permission, Company };
+export type { Role, Permission, Company, Restaurant };

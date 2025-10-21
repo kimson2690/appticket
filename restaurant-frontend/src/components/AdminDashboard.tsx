@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import RoleManagement from './RoleManagement';
 import CompanyManagement from './CompanyManagement';
+import RestaurantManagement from './RestaurantManagement';
 import { 
   LayoutDashboard, 
   Users, 
@@ -442,8 +443,11 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
           {/* Company Management */}
           {activeMenu === 'companies' && <CompanyManagement />}
 
+          {/* Restaurant Management */}
+          {activeMenu === 'restaurants' && <RestaurantManagement />}
+
           {/* Placeholder for other menu items */}
-          {activeMenu !== 'dashboard' && activeMenu !== 'roles' && activeMenu !== 'companies' && (
+          {activeMenu !== 'dashboard' && activeMenu !== 'roles' && activeMenu !== 'companies' && activeMenu !== 'restaurants' && (
             <div className="bg-white rounded-2xl shadow-sm border border-gray-200/50 p-8 text-center">
               <div className="max-w-md mx-auto">
                 {(() => {

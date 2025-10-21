@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\PermissionController;
 use App\Http\Controllers\Admin\CompanyController;
+use App\Http\Controllers\Admin\RestaurantController;
 
 Route::get('/user', function (Request $request) {
     return $request->user();
@@ -25,6 +26,13 @@ Route::prefix('admin')->group(function () {
     Route::get('/companies/{id}', [CompanyController::class, 'show']);
     Route::put('/companies/{id}', [CompanyController::class, 'update']);
     Route::delete('/companies/{id}', [CompanyController::class, 'destroy']);
+    
+    // Gestion des restaurants
+    Route::get('/restaurants', [RestaurantController::class, 'index']);
+    Route::post('/restaurants', [RestaurantController::class, 'store']);
+    Route::get('/restaurants/{id}', [RestaurantController::class, 'show']);
+    Route::put('/restaurants/{id}', [RestaurantController::class, 'update']);
+    Route::delete('/restaurants/{id}', [RestaurantController::class, 'destroy']);
 });
 
 // Routes publiques pour l'authentification
