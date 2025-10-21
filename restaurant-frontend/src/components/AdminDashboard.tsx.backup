@@ -1,6 +1,4 @@
 import React, { useState } from 'react';
-import RoleManagement from './RoleManagement';
-import CompanyManagement from './CompanyManagement';
 import { 
   LayoutDashboard, 
   Users, 
@@ -15,8 +13,11 @@ import {
   Menu,
   X,
   ChevronDown,
-  User
+  User,
+  Shield
 } from 'lucide-react';
+import RoleManagement from './RoleManagement';
+import CompanyManagement from './CompanyManagement';
 
 interface AdminDashboardProps {
   onLogout: () => void;
@@ -29,6 +30,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
 
   const menuItems = [
     { id: 'dashboard', label: 'Tableau de bord', icon: LayoutDashboard },
+    { id: 'roles', label: 'Gestion des Rôles', icon: Shield },
     { id: 'users', label: 'Utilisateurs', icon: Users },
     { id: 'companies', label: 'Entreprises', icon: Building2 },
     { id: 'restaurants', label: 'Restaurants', icon: Utensils },
@@ -429,27 +431,12 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
                           ⏹️
                         </button>
                       </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
           )}
+        </div>
+      );
+    };
 
-          {/* Role Management */}
-          {activeMenu === 'roles' && <RoleManagement />}
-
-          {/* Company Management */}
-          {activeMenu === 'companies' && <CompanyManagement />}
-
-          {/* Placeholder for other menu items */}
-          {activeMenu !== 'dashboard' && activeMenu !== 'roles' && activeMenu !== 'companies' && (
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-200/50 p-8 text-center">
-              <div className="max-w-md mx-auto">
-                {(() => {
-                  const item = menuItems.find(item => item.id === activeMenu);
-                  const Icon = item?.icon || LayoutDashboard;
-                  return (
+    export default AdminDashboard;
                     <>
                       <Icon className="w-16 h-16 text-gray-400 mx-auto mb-4" />
                       <h3 className="text-xl font-semibold text-gray-900 mb-2">
