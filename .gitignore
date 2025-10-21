@@ -1,0 +1,41 @@
+# AppTicket - Fichiers à ignorer
+
+# Fichiers sensibles
+restaurant-backend/.env
+restaurant-backend/IDENTIFIANTS_ADMIN.md
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Dependencies
+node_modules/
+vendor/
+
+# Build outputs
+restaurant-frontend/dist/
+restaurant-frontend/build/
+restaurant-backend/public/build/
+
+# Cache
+restaurant-backend/bootstrap/cache/
+restaurant-backend/storage/app/
+restaurant-backend/storage/framework/
+restaurant-backend/storage/logs/
+.vite/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.temp
