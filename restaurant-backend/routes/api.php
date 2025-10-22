@@ -15,6 +15,7 @@ use App\Http\Controllers\Admin\TicketBatchController;
 use App\Http\Controllers\Admin\UserTicketController;
 use App\Http\Controllers\Admin\MigrateBatchNumbersController;
 use App\Http\Controllers\Admin\CompanyRestaurantController;
+use App\Http\Controllers\Admin\MenuItemController;
 use App\Http\Controllers\AuthController;
 
 Route::get('/user', function (Request $request) {
@@ -43,6 +44,14 @@ Route::prefix('admin')->group(function () {
     Route::get('/restaurants/{id}', [RestaurantController::class, 'show']);
     Route::put('/restaurants/{id}', [RestaurantController::class, 'update']);
     Route::delete('/restaurants/{id}', [RestaurantController::class, 'destroy']);
+    
+    // Gestion des plats (menu)
+    Route::get('/menu-items', [MenuItemController::class, 'index']);
+    Route::post('/menu-items', [MenuItemController::class, 'store']);
+    Route::get('/menu-items/{id}', [MenuItemController::class, 'show']);
+    Route::put('/menu-items/{id}', [MenuItemController::class, 'update']);
+    Route::delete('/menu-items/{id}', [MenuItemController::class, 'destroy']);
+    Route::post('/menu-items/{id}/toggle-availability', [MenuItemController::class, 'toggleAvailability']);
     
     // Gestion des utilisateurs
     Route::get('/users', [UserController::class, 'index']);

@@ -464,6 +464,47 @@ class ApiService {
     });
     return response.data;
   }
+
+  // Menu Items API
+  async getMenuItems(): Promise<MenuItem[]> {
+    const response = await this.request<MenuItem[]>('/admin/menu-items');
+    return response.data;
+  }
+
+  async createMenuItem(data: Omit<MenuItem, 'id' | 'created_by' | 'created_at' | 'updated_at'>): Promise<MenuItem> {
+    const response = await this.request<MenuItem>('/admin/menu-items', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+    return response.data;
+  }
+
+  async getMenuItem(id: string): Promise<MenuItem> {
+    const response = await this.request<MenuItem>(`/admin/menu-items/${id}`);
+    return response.data;
+  }
+
+  async updateMenuItem(id: string, data: Partial<Omit<MenuItem, 'id' | 'created_by' | 'created_at' | 'updated_at'>>): Promise<MenuItem> {
+    const response = await this.request<MenuItem>(`/admin/menu-items/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+    return response.data;
+  }
+
+  async deleteMenuItem(id: string): Promise<{ message: string }> {
+    const response = await this.request<{ message: string }>(`/admin/menu-items/${id}`, {
+      method: 'DELETE',
+    });
+    return response.data;
+  }
+
+  async toggleMenuItemAvailability(id: string): Promise<MenuItem> {
+    const response = await this.request<MenuItem>(`/admin/menu-items/${id}/toggle-availability`, {
+      method: 'POST',
+    });
+    return response.data;
+  }
 }
 
 export const apiService = new ApiService();
@@ -573,6 +614,23 @@ export interface TicketAssignment {
   assigned_by: string;
   notes?: string;
   created_at: string;
+}
+
+export interface MenuItem {
+  id: string;
+  restaurant_id: string;
+  name: string;
+  description: string;
+  price: number;
+  category: string;
+  image_url?: string;
+  is_available: boolean;
+  preparation_time?: number;
+  allergens?: string[];
+  ingredients?: string[];
+  created_by: string;
+  created_at: string;
+  updated_at: string;
 }
 
 export type { Role, Permission, Company, Restaurant, User, Employee, Statistics, CompanyStats, DepartmentStats, MonthlyStats, TicketDistribution };

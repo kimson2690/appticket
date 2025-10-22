@@ -8,6 +8,7 @@ import TicketConfiguration from './TicketConfiguration';
 import TicketBatchManagement from './TicketBatchManagement';
 import UserTicketManagement from './UserTicketManagement';
 import PartnerRestaurants from './PartnerRestaurants';
+import MenuManagement from './MenuManagement';
 import { apiService, type Statistics } from '../services/api';
 import { 
   LayoutDashboard, 
@@ -24,7 +25,8 @@ import {
   X,
   Package,
   Wallet,
-  Store
+  Store,
+  ChefHat
 } from 'lucide-react';
 
 interface AdminDashboardProps {
@@ -70,6 +72,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
     { id: 'employees', label: 'Employés', icon: Users, roles: ['Administrateur', 'Gestionnaire Entreprise'] },
     { id: 'companies', label: 'Entreprises', icon: Building2, roles: ['Administrateur'] },
     { id: 'restaurants', label: 'Restaurants', icon: Utensils, roles: ['Administrateur', 'Gestionnaire Restaurant'] },
+    { id: 'menu', label: 'Gestion du Menu', icon: ChefHat, roles: ['Gestionnaire Restaurant'] },
     { id: 'partner-restaurants', label: 'Restaurants Partenaires', icon: Store, roles: ['Gestionnaire Entreprise'] },
     { id: 'tickets', label: 'Configuration', icon: Settings, roles: ['Gestionnaire Entreprise'] },
     { id: 'batches', label: 'Souches', icon: Package, roles: ['Gestionnaire Entreprise'] },
@@ -427,6 +430,10 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
 
           {activeMenu === 'restaurants' && (
             <RestaurantManagement />
+          )}
+
+          {activeMenu === 'menu' && (
+            <MenuManagement />
           )}
 
           {activeMenu === 'users' && (
