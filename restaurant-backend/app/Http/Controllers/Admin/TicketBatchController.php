@@ -108,9 +108,25 @@ class TicketBatchController extends Controller
                 $batches = json_decode(file_get_contents($filePath), true) ?? [];
             }
 
+            // Générer un code entreprise unique à partir du company_id
+            // Extraire les chiffres du company_id pour créer un code court
+            preg_match_all('/\d+/', $companyId, $matches);
+            $companyCode = !empty($matches[0]) ? 'E' . implode('', $matches[0]) : 'E000';
+            
+            // Compter les souches de cette entreprise seulement
+            $companyBatches = array_filter($batches, function($b) use ($companyId) {
+                return isset($b['company_id']) && $b['company_id'] === $companyId;
+            });
+            $batchCounter = count($companyBatches) + 1;
+            $timestamp = time();
+            
+            // Générer un numéro de souche unique avec format: SOUCHE-[CODE_ENTREPRISE]-YYYYMMDD-XXXX
+            $batchNumber = 'SOUCHE-' . $companyCode . '-' . date('Ymd') . '-' . str_pad($batchCounter, 4, '0', STR_PAD_LEFT);
+
             // Créer la nouvelle souche
             $batchData = [
-                'id' => 'batch_' . time() . '_' . rand(1000, 9999),
+                'id' => 'batch_' . $timestamp . '_' . rand(1000, 9999),
+                'batch_number' => $batchNumber,
                 'company_id' => $companyId,
                 'config_id' => $configId,
                 'created_by' => $createdBy,
@@ -119,12 +135,25 @@ class TicketBatchController extends Controller
                 'type' => $type,
                 'validity_start' => $validityStart,
                 'validity_end' => $validityEnd,
-                'used_tickets' => 0,
-                'remaining_tickets' => (int) $totalTickets,
+                'assigned_tickets' => (int) $totalTickets, // Tous les tickets sont assignés dès la création
+                'used_tickets' => 0, // Aucun ticket consommé au départ
+                'remaining_tickets' => (int) $totalTickets, // Disponibles = diminue lors de la consommation
                 'status' => 'active',
+                'tickets' => [],
                 'created_at' => date('Y-m-d H:i:s'),
                 'updated_at' => date('Y-m-d H:i:s'),
             ];
+
+            // Générer les tickets individuels avec numéros de suivi
+            for ($i = 1; $i <= $totalTickets; $i++) {
+                $ticketNumber = $batchNumber . '-T' . str_pad($i, 3, '0', STR_PAD_LEFT);
+                $batchData['tickets'][] = [
+                    'ticket_number' => $ticketNumber,
+                    'value' => (float) $ticketValue,
+                    'status' => 'available',
+                    'used_at' => null
+                ];
+            }
 
             // Ajouter à la liste
             $batches[] = $batchData;
@@ -205,18 +234,50 @@ class TicketBatchController extends Controller
                 $batches = json_decode(file_get_contents($filePath), true) ?? [];
             }
 
-            // Filtrer pour supprimer la souche
-            $originalCount = count($batches);
-            $batches = array_values(array_filter($batches, function ($batch) use ($id) {
-                return $batch['id'] !== $id;
-            }));
+            // Trouver la souche à supprimer pour récupérer les infos de l'employé
+            $batchToDelete = collect($batches)->firstWhere('id', $id);
 
-            if (count($batches) === $originalCount) {
+            if (!$batchToDelete) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Souche non trouvée'
                 ], 404);
             }
+
+            // Si la souche est liée à un employé, mettre à jour son solde
+            if (isset($batchToDelete['employee_id'])) {
+                $employeeId = $batchToDelete['employee_id'];
+                $ticketsToRemove = $batchToDelete['remaining_tickets']; // Tickets non consommés
+                $ticketValue = $batchToDelete['ticket_value'];
+                $amountToRemove = $ticketsToRemove * $ticketValue;
+
+                // Charger les employés
+                $employeesFile = storage_path('app/employees.json');
+                if (file_exists($employeesFile)) {
+                    $employees = json_decode(file_get_contents($employeesFile), true) ?? [];
+                    
+                    // Trouver et mettre à jour l'employé
+                    $employeeIndex = collect($employees)->search(function ($emp) use ($employeeId) {
+                        return $emp['id'] === $employeeId;
+                    });
+
+                    if ($employeeIndex !== false) {
+                        // Déduire le montant des tickets non consommés
+                        $employees[$employeeIndex]['ticket_balance'] -= $amountToRemove;
+                        $employees[$employeeIndex]['updated_at'] = date('Y-m-d H:i:s');
+                        
+                        // Sauvegarder les employés mis à jour
+                        file_put_contents($employeesFile, json_encode($employees, JSON_PRETTY_PRINT));
+                        
+                        Log::info("Solde de l'employé {$employeeId} réduit de {$amountToRemove}F ({$ticketsToRemove} tickets non consommés)");
+                    }
+                }
+            }
+
+            // Filtrer pour supprimer la souche
+            $batches = array_values(array_filter($batches, function ($batch) use ($id) {
+                return $batch['id'] !== $id;
+            }));
 
             // Sauvegarder dans le fichier
             file_put_contents($filePath, json_encode($batches, JSON_PRETTY_PRINT));

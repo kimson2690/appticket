@@ -6,6 +6,7 @@ import UserManagement from './UserManagement';
 import EmployeeManagement from './EmployeeManagement';
 import TicketConfiguration from './TicketConfiguration';
 import TicketBatchManagement from './TicketBatchManagement';
+import UserTicketManagement from './UserTicketManagement';
 import { apiService, type Statistics } from '../services/api';
 import { 
   LayoutDashboard, 
@@ -20,7 +21,8 @@ import {
   Search,
   Menu,
   X,
-  Package
+  Package,
+  Wallet
 } from 'lucide-react';
 
 interface AdminDashboardProps {
@@ -68,6 +70,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
     { id: 'restaurants', label: 'Restaurants', icon: Utensils, roles: ['Administrateur', 'Gestionnaire Restaurant'] },
     { id: 'tickets', label: 'Configuration', icon: Settings, roles: ['Administrateur', 'Gestionnaire Entreprise'] },
     { id: 'batches', label: 'Souches', icon: Package, roles: ['Administrateur', 'Gestionnaire Entreprise'] },
+    { id: 'user-tickets', label: 'Affecter Tickets', icon: Wallet, roles: ['Administrateur', 'Gestionnaire Entreprise'] },
     { id: 'analytics', label: 'Analyses', icon: BarChart3, roles: ['Administrateur', 'Gestionnaire Entreprise', 'Gestionnaire Restaurant'] },
     { id: 'roles', label: 'Rôles', icon: Ticket, roles: ['Administrateur'] },
   ];
@@ -437,6 +440,10 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
 
           {activeMenu === 'batches' && (
             <TicketBatchManagement />
+          )}
+
+          {activeMenu === 'user-tickets' && (
+            <UserTicketManagement />
           )}
 
           {activeMenu === 'analytics' && (

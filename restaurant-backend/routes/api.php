@@ -12,6 +12,8 @@ use App\Http\Controllers\Admin\EmployeeController;
 use App\Http\Controllers\Admin\StatisticsController;
 use App\Http\Controllers\Admin\TicketConfigurationController;
 use App\Http\Controllers\Admin\TicketBatchController;
+use App\Http\Controllers\Admin\UserTicketController;
+use App\Http\Controllers\Admin\MigrateBatchNumbersController;
 use App\Http\Controllers\AuthController;
 
 Route::get('/user', function (Request $request) {
@@ -69,6 +71,15 @@ Route::prefix('admin')->group(function () {
     Route::get('/ticket-batches/{id}', [TicketBatchController::class, 'show']);
     Route::delete('/ticket-batches/{id}', [TicketBatchController::class, 'destroy']);
     Route::post('/ticket-batches/{id}/use', [TicketBatchController::class, 'useTicket']);
+    
+    // Gestion des tickets utilisateurs
+    Route::post('/employees/{id}/assign-tickets', [UserTicketController::class, 'assignTickets']);
+    Route::post('/employees/{id}/recharge', [UserTicketController::class, 'rechargeBalance']);
+    Route::post('/employees/bulk-assign-tickets', [UserTicketController::class, 'bulkAssignTickets']);
+    Route::get('/ticket-assignments', [UserTicketController::class, 'getAssignments']);
+    
+    // Migration des numéros de souches
+    Route::post('/migrate-batch-numbers', [MigrateBatchNumbersController::class, 'migrate']);
     
     // Statistiques globales
     Route::get('/statistics', [StatisticsController::class, 'index']);

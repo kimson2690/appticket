@@ -400,6 +400,37 @@ class ApiService {
       method: 'DELETE',
     });
   }
+
+  // User Ticket Management API
+  async assignTicketsToEmployee(employeeId: string, data: { tickets_count: number; batch_id?: string; notes?: string }): Promise<Employee> {
+    const response = await this.request<Employee>(`/admin/employees/${employeeId}/assign-tickets`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+    return response.data;
+  }
+
+  async rechargeEmployeeBalance(employeeId: string, data: { amount: number; notes?: string }): Promise<Employee> {
+    const response = await this.request<Employee>(`/admin/employees/${employeeId}/recharge`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+    return response.data;
+  }
+
+  async getTicketAssignments(employeeId?: string): Promise<TicketAssignment[]> {
+    const params = employeeId ? `?employee_id=${employeeId}` : '';
+    const response = await this.request<TicketAssignment[]>(`/admin/ticket-assignments${params}`);
+    return response.data;
+  }
+
+  async bulkAssignTickets(data: { tickets_count: number; ticket_value: number; config_id: string; notes?: string }): Promise<{ success: number; total: number; employees: Employee[]; batches: TicketBatch[] }> {
+    const response = await this.request<{ success: number; total: number; employees: Employee[]; batches: TicketBatch[] }>('/admin/employees/bulk-assign-tickets', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+    return response.data;
+  }
 }
 
 export const apiService = new ApiService();
@@ -472,19 +503,43 @@ export interface TicketConfiguration {
 
 export interface TicketBatch {
   id: string;
+  batch_number?: string;
   company_id: string;
   config_id: string;
+  employee_id?: string;
+  employee_name?: string;
   created_by: string;
   total_tickets: number;
   ticket_value: number;
   type: 'standard' | 'premium' | 'bonus';
   validity_start: string;
   validity_end: string;
-  used_tickets: number;
-  remaining_tickets: number;
+  assigned_tickets?: number; // Tickets affectés aux employés
+  used_tickets: number; // Tickets réellement consommés
+  remaining_tickets: number; // Tickets disponibles pour affectation
   status: 'active' | 'expired' | 'depleted';
+  tickets?: Array<{
+    ticket_number: string;
+    value: number;
+    status: 'available' | 'used';
+    used_at: string | null;
+  }>;
   created_at: string;
   updated_at: string;
+}
+
+export interface TicketAssignment {
+  id: string;
+  employee_id: string;
+  employee_name: string;
+  batch_id?: string;
+  batch_number?: string;
+  tickets_count: number;
+  ticket_value: number;
+  type: 'manual' | 'batch';
+  assigned_by: string;
+  notes?: string;
+  created_at: string;
 }
 
 export type { Role, Permission, Company, Restaurant, User, Employee, Statistics, CompanyStats, DepartmentStats, MonthlyStats, TicketDistribution };

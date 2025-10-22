@@ -23,6 +23,7 @@ const TicketBatchManagement: React.FC = () => {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [batchToDelete, setBatchToDelete] = useState<string | null>(null);
   const [notification, setNotification] = useState<{ type: 'success' | 'error' | 'info'; message: string; title: string } | null>(null);
+  const [employeeFilter, setEmployeeFilter] = useState<string>('all');
 
   const [formData, setFormData] = useState({
     config_id: '',
@@ -298,7 +299,21 @@ const TicketBatchManagement: React.FC = () => {
               <TrendingUp className="w-6 h-6 text-orange-600" />
             </div>
             <div>
-              <p className="text-sm font-medium text-gray-600">Disponibles</p>
+              <p className="text-sm font-medium text-gray-600">Consommés</p>
+              <p className="text-2xl font-bold text-gray-900">
+                {batches.reduce((sum, batch) => sum + batch.used_tickets, 0)}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+          <div className="flex items-center space-x-3">
+            <div className="p-3 bg-green-100 rounded-xl">
+              <Clock className="w-6 h-6 text-green-600" />
+            </div>
+            <div>
+              <p className="text-sm font-medium text-gray-600">Restants</p>
               <p className="text-2xl font-bold text-gray-900">
                 {batches.reduce((sum, batch) => sum + batch.remaining_tickets, 0)}
               </p>
@@ -309,10 +324,10 @@ const TicketBatchManagement: React.FC = () => {
         <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
           <div className="flex items-center space-x-3">
             <div className="p-3 bg-purple-100 rounded-xl">
-              <Clock className="w-6 h-6 text-purple-600" />
+              <Package className="w-6 h-6 text-purple-600" />
             </div>
             <div>
-              <p className="text-sm font-medium text-gray-600">Actives</p>
+              <p className="text-sm font-medium text-gray-600">Souches Actives</p>
               <p className="text-2xl font-bold text-gray-900">
                 {batches.filter(b => b.status === 'active').length}
               </p>
@@ -323,8 +338,24 @@ const TicketBatchManagement: React.FC = () => {
 
       {/* Liste des souches */}
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100">
-        <div className="px-6 py-4 border-b border-gray-100">
+        <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
           <h2 className="text-lg font-semibold text-gray-900">Souches Créées</h2>
+          
+          {/* Filtre par employé */}
+          {batches.length > 0 && (
+            <div className="flex items-center space-x-2">
+              <label className="text-sm text-gray-600">Filtrer :</label>
+              <select
+                value={employeeFilter}
+                onChange={(e) => setEmployeeFilter(e.target.value)}
+                className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+              >
+                <option value="all">Toutes les souches</option>
+                <option value="with_employee">Avec employé</option>
+                <option value="without_employee">Sans employé</option>
+              </select>
+            </div>
+          )}
         </div>
         
         <div className="p-6">
@@ -342,13 +373,19 @@ const TicketBatchManagement: React.FC = () => {
             </div>
           ) : (
             <div className="space-y-4">
-              {batches.map((batch) => (
+              {batches
+                .filter((batch) => {
+                  if (employeeFilter === 'with_employee') return batch.employee_name;
+                  if (employeeFilter === 'without_employee') return !batch.employee_name;
+                  return true;
+                })
+                .map((batch) => (
                 <div key={batch.id} className="border border-gray-200 rounded-xl p-6 hover:shadow-md transition-shadow">
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex-1">
                       <div className="flex items-center space-x-3 mb-2">
                         <h3 className="font-semibold text-gray-900 text-lg">
-                          Souche #{batch.id.split('_')[1]}
+                          {batch.batch_number || `Souche #${batch.id.split('_')[1]}`}
                         </h3>
                         <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(batch.status)}`}>
                           {getStatusLabel(batch.status)}
@@ -357,7 +394,15 @@ const TicketBatchManagement: React.FC = () => {
                           {batch.type}
                         </span>
                       </div>
-                      <p className="text-sm text-gray-600">Créée par {batch.created_by} le {new Date(batch.created_at).toLocaleDateString('fr-FR')}</p>
+                      <div className="space-y-1">
+                        <p className="text-sm text-gray-600">Créée par {batch.created_by} le {new Date(batch.created_at).toLocaleDateString('fr-FR')}</p>
+                        {batch.employee_name && (
+                          <p className="text-sm font-medium text-blue-600 flex items-center">
+                            <span className="mr-1">👤</span>
+                            Attribuée à : {batch.employee_name}
+                          </p>
+                        )}
+                      </div>
                     </div>
                     <button
                       onClick={() => handleDeleteBatch(batch.id)}
@@ -369,12 +414,12 @@ const TicketBatchManagement: React.FC = () => {
 
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     <div>
-                      <p className="text-sm text-gray-600 mb-1">Tickets Total</p>
+                      <p className="text-sm text-gray-600 mb-1">Total</p>
                       <p className="font-semibold text-gray-900 text-lg">{batch.total_tickets}</p>
                     </div>
                     <div>
-                      <p className="text-sm text-gray-600 mb-1">Utilisés</p>
-                      <p className="font-semibold text-gray-900 text-lg">{batch.used_tickets}</p>
+                      <p className="text-sm text-gray-600 mb-1">Consommés</p>
+                      <p className="font-semibold text-orange-600 text-lg">{batch.used_tickets}</p>
                     </div>
                     <div>
                       <p className="text-sm text-gray-600 mb-1">Restants</p>
@@ -403,10 +448,10 @@ const TicketBatchManagement: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* Barre de progression */}
+                  {/* Barre de progression - Consommation réelle */}
                   <div className="mt-4">
                     <div className="flex items-center justify-between text-sm mb-2">
-                      <span className="text-gray-600">Progression</span>
+                      <span className="text-gray-600">Consommation réelle</span>
                       <span className="font-medium text-gray-900">
                         {Math.round((batch.used_tickets / batch.total_tickets) * 100)}%
                       </span>
@@ -417,6 +462,7 @@ const TicketBatchManagement: React.FC = () => {
                         style={{ width: `${(batch.used_tickets / batch.total_tickets) * 100}%` }}
                       ></div>
                     </div>
+                    <p className="text-xs text-gray-500 mt-1">Reflète les tickets réellement dépensés par les employés</p>
                   </div>
                 </div>
               ))}
@@ -528,18 +574,20 @@ const TicketBatchManagement: React.FC = () => {
                 {/* Date de fin */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Date de fin de validité
+                    Date de fin de validité *
                   </label>
                   <div className="relative">
                     <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
                     <input
                       type="date"
+                      required
                       value={formData.validity_end}
-                      className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg bg-gray-50"
-                      readOnly
+                      min={formData.validity_start}
+                      onChange={(e) => setFormData({ ...formData, validity_end: e.target.value })}
+                      className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
                     />
                   </div>
-                  <p className="mt-2 text-sm text-gray-500">Calculée automatiquement selon la configuration</p>
+                  <p className="mt-2 text-sm text-gray-500">Modifiable manuellement ou calculée automatiquement</p>
                 </div>
               </div>
 
