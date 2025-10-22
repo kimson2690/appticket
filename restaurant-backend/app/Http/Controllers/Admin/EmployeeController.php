@@ -22,6 +22,22 @@ class EmployeeController extends Controller
         
         if (file_exists($filePath)) {
             $employees = json_decode(file_get_contents($filePath), true) ?? [];
+            
+            // Corriger les données incohérentes (company_name basé sur company_id)
+            $corrected = false;
+            foreach ($employees as &$employee) {
+                $correctCompanyName = $this->getCompanyName($employee['company_id'] ?? '');
+                if ($employee['company_name'] !== $correctCompanyName) {
+                    $employee['company_name'] = $correctCompanyName;
+                    $corrected = true;
+                }
+            }
+            
+            // Sauvegarder si des corrections ont été apportées
+            if ($corrected) {
+                file_put_contents($filePath, json_encode($employees, JSON_PRETTY_PRINT));
+                Log::info('Données employés corrigées pour cohérence des entreprises');
+            }
         } else {
             $employees = [];
         }
@@ -30,6 +46,21 @@ class EmployeeController extends Controller
             'success' => true,
             'data' => $employees
         ]);
+    }
+
+    /**
+     * Get company name by ID
+     */
+    private function getCompanyName(string $companyId): string
+    {
+        switch ($companyId) {
+            case '1':
+                return 'TechCorp Solutions';
+            case '2':
+                return 'Burkina Tech SARL';
+            default:
+                return 'Non assigné';
+        }
     }
 
     /**
@@ -65,6 +96,9 @@ class EmployeeController extends Controller
                 $employees = json_decode(file_get_contents($filePath), true) ?? [];
             }
 
+            // Récupérer le nom de l'entreprise basé sur le company_id
+            $companyName = $this->getCompanyName($company_id);
+
             // Créer le nouvel employé
             $employeeData = [
                 'id' => 'emp_' . time() . '_' . rand(1000, 9999),
@@ -72,7 +106,7 @@ class EmployeeController extends Controller
                 'email' => $email,
                 'phone' => $phone,
                 'company_id' => $company_id,
-                'company_name' => 'TechCorp Solutions',
+                'company_name' => $companyName,
                 'department' => $department,
                 'position' => $position,
                 'employee_number' => '',
@@ -114,37 +148,31 @@ class EmployeeController extends Controller
     public function show(string $id): JsonResponse
     {
         try {
-            $employee = User::with(['role', 'company'])
-                ->whereHas('role', function ($q) {
-                    $q->where('name', 'Utilisateur');
-                })
-                ->findOrFail($id);
+            // Charger les employés depuis le fichier
+            $filePath = storage_path('app/employees.json');
+            $employees = [];
+            
+            if (file_exists($filePath)) {
+                $employees = json_decode(file_get_contents($filePath), true) ?? [];
+            }
+
+            // Trouver l'employé par ID
+            $employee = collect($employees)->firstWhere('id', $id);
+
+            if (!$employee) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Employé non trouvé'
+                ], 404);
+            }
 
             return response()->json([
                 'success' => true,
-                'data' => [
-                    'id' => (string) $employee->id,
-                    'name' => $employee->name,
-                    'email' => $employee->email,
-                    'phone' => $employee->phone,
-                    'company_id' => (string) $employee->company_id,
-                    'company_name' => $employee->company->name ?? 'Non assigné',
-                    'department' => $employee->department,
-                    'position' => $employee->position,
-                    'employee_number' => $employee->employee_number,
-                    'ticket_balance' => $employee->ticket_balance ?? 0,
-                    'status' => $employee->status,
-                    'hire_date' => $employee->hire_date?->format('Y-m-d'),
-                    'created_at' => $employee->created_at->format('Y-m-d'),
-                    'updated_at' => $employee->updated_at->format('Y-m-d'),
-                ]
+                'data' => $employee
             ]);
-        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Employé non trouvé'
-            ], 404);
+            
         } catch (\Exception $e) {
+            Log::error('EmployeeController@show - Erreur: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
                 'message' => 'Erreur lors de la récupération de l\'employé',
@@ -159,71 +187,72 @@ class EmployeeController extends Controller
     public function update(Request $request, string $id): JsonResponse
     {
         try {
-            $employee = User::whereHas('role', function ($q) {
-                $q->where('name', 'Utilisateur');
-            })->findOrFail($id);
-
-            $validated = $request->validate([
-                'name' => 'required|string|max:255',
-                'email' => 'required|email|max:255|unique:users,email,' . $id,
-                'phone' => 'nullable|string|max:20',
-                'password' => 'nullable|string|min:6',
-                'company_id' => 'required|exists:companies,id',
-                'department' => 'nullable|string|max:100',
-                'position' => 'nullable|string|max:100',
-                'employee_number' => 'nullable|string|max:50|unique:users,employee_number,' . $id,
-                'ticket_balance' => 'nullable|numeric|min:0',
-                'status' => ['required', Rule::in(['active', 'inactive', 'suspended'])],
-                'hire_date' => 'nullable|date',
-            ]);
-
-            // Diviser le nom complet en prénom et nom
-            $nameParts = explode(' ', trim($validated['name']), 2);
-            $validated['first_name'] = $nameParts[0];
-            $validated['last_name'] = $nameParts[1] ?? '';
-
-            // Hasher le mot de passe seulement s'il est fourni
-            if (!empty($validated['password'])) {
-                $validated['password'] = Hash::make($validated['password']);
-            } else {
-                unset($validated['password']);
+            Log::info('EmployeeController@update - Début pour ID: ' . $id);
+            Log::info('Données reçues:', $request->all());
+            
+            // Charger les employés depuis le fichier
+            $filePath = storage_path('app/employees.json');
+            $employees = [];
+            
+            if (file_exists($filePath)) {
+                $employees = json_decode(file_get_contents($filePath), true) ?? [];
             }
 
-            $employee->update($validated);
-            $employee->load(['role', 'company']);
+            // Trouver l'index de l'employé
+            $employeeIndex = collect($employees)->search(function ($employee) use ($id) {
+                return $employee['id'] === $id;
+            });
+
+            if ($employeeIndex === false) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Employé non trouvé'
+                ], 404);
+            }
+
+            // Récupérer les nouvelles données
+            $name = $request->input('name', $employees[$employeeIndex]['name']);
+            $email = $request->input('email', $employees[$employeeIndex]['email']);
+            $phone = $request->input('phone', $employees[$employeeIndex]['phone']);
+            $company_id = $request->input('company_id', $employees[$employeeIndex]['company_id']);
+            $department = $request->input('department', $employees[$employeeIndex]['department']);
+            $position = $request->input('position', $employees[$employeeIndex]['position']);
+            $status = $request->input('status', $employees[$employeeIndex]['status']);
+
+            // Récupérer le nom de l'entreprise basé sur le company_id
+            $companyName = $this->getCompanyName($company_id);
+
+            Log::info('Mise à jour avec nouvelle entreprise:', [
+                'company_id' => $company_id,
+                'company_name' => $companyName
+            ]);
+
+            // Mettre à jour l'employé
+            $employees[$employeeIndex] = array_merge($employees[$employeeIndex], [
+                'name' => $name,
+                'email' => $email,
+                'phone' => $phone,
+                'company_id' => $company_id,
+                'company_name' => $companyName, // Mise à jour du nom de l'entreprise
+                'department' => $department,
+                'position' => $position,
+                'status' => $status,
+                'updated_at' => date('Y-m-d'),
+            ]);
+
+            // Sauvegarder dans le fichier
+            file_put_contents($filePath, json_encode($employees, JSON_PRETTY_PRINT));
+
+            Log::info('Employé mis à jour:', $employees[$employeeIndex]);
 
             return response()->json([
                 'success' => true,
-                'data' => [
-                    'id' => (string) $employee->id,
-                    'name' => $employee->name,
-                    'email' => $employee->email,
-                    'phone' => $employee->phone,
-                    'company_id' => (string) $employee->company_id,
-                    'company_name' => $employee->company->name,
-                    'department' => $employee->department,
-                    'position' => $employee->position,
-                    'employee_number' => $employee->employee_number,
-                    'ticket_balance' => $employee->ticket_balance,
-                    'status' => $employee->status,
-                    'hire_date' => $employee->hire_date?->format('Y-m-d'),
-                    'created_at' => $employee->created_at->format('Y-m-d'),
-                    'updated_at' => $employee->updated_at->format('Y-m-d'),
-                ],
+                'data' => $employees[$employeeIndex],
                 'message' => 'Employé mis à jour avec succès'
             ]);
-        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Employé non trouvé'
-            ], 404);
-        } catch (\Illuminate\Validation\ValidationException $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Données invalides',
-                'errors' => $e->errors()
-            ], 422);
+            
         } catch (\Exception $e) {
+            Log::error('EmployeeController@update - Erreur: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
                 'message' => 'Erreur lors de la mise à jour de l\'employé',
@@ -238,22 +267,47 @@ class EmployeeController extends Controller
     public function destroy(string $id): JsonResponse
     {
         try {
-            $employee = User::whereHas('role', function ($q) {
-                $q->where('name', 'Utilisateur');
-            })->findOrFail($id);
+            Log::info('EmployeeController@destroy - Suppression ID: ' . $id);
+            
+            // Charger les employés depuis le fichier
+            $filePath = storage_path('app/employees.json');
+            $employees = [];
+            
+            if (file_exists($filePath)) {
+                $employees = json_decode(file_get_contents($filePath), true) ?? [];
+            }
 
-            $employee->delete();
+            Log::info('Employés avant suppression:', ['count' => count($employees)]);
+
+            // Filtrer pour supprimer l'employé
+            $originalCount = count($employees);
+            $employees = array_values(array_filter($employees, function ($employee) use ($id) {
+                return $employee['id'] !== $id;
+            }));
+
+            Log::info('Employés après suppression:', ['count' => count($employees), 'original' => $originalCount]);
+
+            if (count($employees) === $originalCount) {
+                Log::warning('Employé non trouvé pour suppression: ' . $id);
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Employé non trouvé'
+                ], 404);
+            }
+
+            // Sauvegarder dans le fichier
+            file_put_contents($filePath, json_encode($employees, JSON_PRETTY_PRINT));
+
+            Log::info('Employé supprimé avec succès: ' . $id);
 
             return response()->json([
                 'success' => true,
                 'message' => 'Employé supprimé avec succès'
             ]);
-        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Employé non trouvé'
-            ], 404);
+            
         } catch (\Exception $e) {
+            Log::error('EmployeeController@destroy - Erreur: ' . $e->getMessage());
+            Log::error('Stack trace: ' . $e->getTraceAsString());
             return response()->json([
                 'success' => false,
                 'message' => 'Erreur lors de la suppression de l\'employé',
@@ -261,4 +315,5 @@ class EmployeeController extends Controller
             ], 500);
         }
     }
+
 }
