@@ -10,6 +10,7 @@ use App\Http\Controllers\Admin\RestaurantController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\EmployeeController;
 use App\Http\Controllers\Admin\StatisticsController;
+use App\Http\Controllers\Admin\TicketConfigurationController;
 use App\Http\Controllers\AuthController;
 
 Route::get('/user', function (Request $request) {
@@ -52,6 +53,14 @@ Route::prefix('admin')->group(function () {
     Route::get('/employees/{id}', [EmployeeController::class, 'show']);
     Route::put('/employees/{id}', [EmployeeController::class, 'update']);
     Route::delete('/employees/{id}', [EmployeeController::class, 'destroy']);
+    
+    // Configuration des tickets
+    Route::get('/ticket-configurations', [TicketConfigurationController::class, 'index']);
+    Route::post('/ticket-configurations', [TicketConfigurationController::class, 'store']);
+    Route::get('/ticket-configurations/{id}', [TicketConfigurationController::class, 'show']);
+    Route::put('/ticket-configurations/{id}', [TicketConfigurationController::class, 'update']);
+    Route::delete('/ticket-configurations/{id}', [TicketConfigurationController::class, 'destroy']);
+    Route::get('/ticket-configurations/active/config', [TicketConfigurationController::class, 'getActiveConfig']);
     
     // Statistiques globales
     Route::get('/statistics', [StatisticsController::class, 'index']);

@@ -4,6 +4,7 @@ import CompanyManagement from './CompanyManagement';
 import RestaurantManagement from './RestaurantManagement';
 import UserManagement from './UserManagement';
 import EmployeeManagement from './EmployeeManagement';
+import TicketConfiguration from './TicketConfiguration';
 import { apiService, type Statistics } from '../services/api';
 import { 
   LayoutDashboard, 
@@ -428,11 +429,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
           )}
 
           {activeMenu === 'tickets' && (
-            <div className="text-center py-12">
-              <Ticket className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">Gestion des Tickets</h3>
-              <p className="text-gray-500">Cette section sera bientôt disponible</p>
-            </div>
+            <TicketConfiguration />
           )}
 
           {activeMenu === 'analytics' && (

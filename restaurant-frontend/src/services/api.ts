@@ -341,6 +341,40 @@ class ApiService {
 
     return data; // L'API de login retourne directement { success, user, token }
   }
+
+  // Ticket Configuration API
+  async getTicketConfigurations(): Promise<TicketConfiguration[]> {
+    const response = await this.request<TicketConfiguration[]>('/admin/ticket-configurations');
+    return response.data;
+  }
+
+  async createTicketConfiguration(configData: Omit<TicketConfiguration, 'id' | 'created_at' | 'updated_at'>): Promise<TicketConfiguration> {
+    const response = await this.request<TicketConfiguration>('/admin/ticket-configurations', {
+      method: 'POST',
+      body: JSON.stringify(configData),
+    });
+    return response.data;
+  }
+
+  async updateTicketConfiguration(id: string, configData: Partial<TicketConfiguration>): Promise<TicketConfiguration> {
+    const response = await this.request<TicketConfiguration>(`/admin/ticket-configurations/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(configData),
+    });
+    return response.data;
+  }
+
+  async deleteTicketConfiguration(id: string): Promise<void> {
+    await this.request(`/admin/ticket-configurations/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async getActiveTicketConfiguration(companyId?: string): Promise<TicketConfiguration> {
+    const params = companyId ? `?company_id=${companyId}` : '';
+    const response = await this.request<TicketConfiguration>(`/admin/ticket-configurations/active/config${params}`);
+    return response.data;
+  }
 }
 
 export const apiService = new ApiService();
@@ -396,6 +430,19 @@ interface TicketDistribution {
   label: string;
   count: number;
   percentage: number;
+}
+
+export interface TicketConfiguration {
+  id: string;
+  company_id: string;
+  ticket_value: number;
+  validity_duration_days: number;
+  type: 'standard' | 'premium' | 'bonus';
+  auto_renewal: boolean;
+  logo?: string;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
 }
 
 export type { Role, Permission, Company, Restaurant, User, Employee, Statistics, CompanyStats, DepartmentStats, MonthlyStats, TicketDistribution };
