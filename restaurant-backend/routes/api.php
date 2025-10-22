@@ -11,6 +11,7 @@ use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\EmployeeController;
 use App\Http\Controllers\Admin\StatisticsController;
 use App\Http\Controllers\Admin\TicketConfigurationController;
+use App\Http\Controllers\Admin\TicketBatchController;
 use App\Http\Controllers\AuthController;
 
 Route::get('/user', function (Request $request) {
@@ -61,6 +62,13 @@ Route::prefix('admin')->group(function () {
     Route::put('/ticket-configurations/{id}', [TicketConfigurationController::class, 'update']);
     Route::delete('/ticket-configurations/{id}', [TicketConfigurationController::class, 'destroy']);
     Route::get('/ticket-configurations/active/config', [TicketConfigurationController::class, 'getActiveConfig']);
+    
+    // Souches de tickets
+    Route::get('/ticket-batches', [TicketBatchController::class, 'index']);
+    Route::post('/ticket-batches', [TicketBatchController::class, 'store']);
+    Route::get('/ticket-batches/{id}', [TicketBatchController::class, 'show']);
+    Route::delete('/ticket-batches/{id}', [TicketBatchController::class, 'destroy']);
+    Route::post('/ticket-batches/{id}/use', [TicketBatchController::class, 'useTicket']);
     
     // Statistiques globales
     Route::get('/statistics', [StatisticsController::class, 'index']);

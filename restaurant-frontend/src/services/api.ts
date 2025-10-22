@@ -375,6 +375,31 @@ class ApiService {
     const response = await this.request<TicketConfiguration>(`/admin/ticket-configurations/active/config${params}`);
     return response.data;
   }
+
+  // Ticket Batch API
+  async getTicketBatches(): Promise<TicketBatch[]> {
+    const response = await this.request<TicketBatch[]>('/admin/ticket-batches');
+    return response.data;
+  }
+
+  async createTicketBatch(batchData: Omit<TicketBatch, 'id' | 'used_tickets' | 'remaining_tickets' | 'status' | 'created_at' | 'updated_at'>): Promise<TicketBatch> {
+    const response = await this.request<TicketBatch>('/admin/ticket-batches', {
+      method: 'POST',
+      body: JSON.stringify(batchData),
+    });
+    return response.data;
+  }
+
+  async getTicketBatch(id: string): Promise<TicketBatch> {
+    const response = await this.request<TicketBatch>(`/admin/ticket-batches/${id}`);
+    return response.data;
+  }
+
+  async deleteTicketBatch(id: string): Promise<void> {
+    await this.request(`/admin/ticket-batches/${id}`, {
+      method: 'DELETE',
+    });
+  }
 }
 
 export const apiService = new ApiService();
@@ -441,6 +466,23 @@ export interface TicketConfiguration {
   auto_renewal: boolean;
   logo?: string;
   is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface TicketBatch {
+  id: string;
+  company_id: string;
+  config_id: string;
+  created_by: string;
+  total_tickets: number;
+  ticket_value: number;
+  type: 'standard' | 'premium' | 'bonus';
+  validity_start: string;
+  validity_end: string;
+  used_tickets: number;
+  remaining_tickets: number;
+  status: 'active' | 'expired' | 'depleted';
   created_at: string;
   updated_at: string;
 }

@@ -5,6 +5,7 @@ import RestaurantManagement from './RestaurantManagement';
 import UserManagement from './UserManagement';
 import EmployeeManagement from './EmployeeManagement';
 import TicketConfiguration from './TicketConfiguration';
+import TicketBatchManagement from './TicketBatchManagement';
 import { apiService, type Statistics } from '../services/api';
 import { 
   LayoutDashboard, 
@@ -18,7 +19,8 @@ import {
   Bell,
   Search,
   Menu,
-  X
+  X,
+  Package
 } from 'lucide-react';
 
 interface AdminDashboardProps {
@@ -64,9 +66,10 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
     { id: 'employees', label: 'Employés', icon: Users, roles: ['Administrateur', 'Gestionnaire Entreprise'] },
     { id: 'companies', label: 'Entreprises', icon: Building2, roles: ['Administrateur'] },
     { id: 'restaurants', label: 'Restaurants', icon: Utensils, roles: ['Administrateur', 'Gestionnaire Restaurant'] },
-    { id: 'tickets', label: 'Tickets', icon: Ticket, roles: ['Administrateur', 'Gestionnaire Entreprise'] },
+    { id: 'tickets', label: 'Configuration', icon: Settings, roles: ['Administrateur', 'Gestionnaire Entreprise'] },
+    { id: 'batches', label: 'Souches', icon: Package, roles: ['Administrateur', 'Gestionnaire Entreprise'] },
     { id: 'analytics', label: 'Analyses', icon: BarChart3, roles: ['Administrateur', 'Gestionnaire Entreprise', 'Gestionnaire Restaurant'] },
-    { id: 'roles', label: 'Rôles', icon: Settings, roles: ['Administrateur'] },
+    { id: 'roles', label: 'Rôles', icon: Ticket, roles: ['Administrateur'] },
   ];
 
   // Filtrer les menus selon le rôle de l'utilisateur connecté
@@ -430,6 +433,10 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
 
           {activeMenu === 'tickets' && (
             <TicketConfiguration />
+          )}
+
+          {activeMenu === 'batches' && (
+            <TicketBatchManagement />
           )}
 
           {activeMenu === 'analytics' && (
