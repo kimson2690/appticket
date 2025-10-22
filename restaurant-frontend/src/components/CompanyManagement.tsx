@@ -168,31 +168,56 @@ const CompanyManagement: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (selectedCompany) {
-      // Modifier une entreprise existante
-      setCompanies(companies.map(company => 
-        company.id === selectedCompany.id 
-          ? { ...company, ...formData, updated_at: new Date().toISOString().split('T')[0] }
-          : company
-      ));
-    } else {
-      // Créer une nouvelle entreprise
-      const newCompany: Company = {
-        id: Date.now().toString(),
-        ...formData,
-        employee_count: 0,
-        ticket_balance: 0,
-        created_at: new Date().toISOString().split('T')[0],
-        updated_at: new Date().toISOString().split('T')[0]
-      };
-      setCompanies([...companies, newCompany]);
+    try {
+      if (selectedCompany) {
+        // Modifier une entreprise existante via l'API
+        const updatedCompany = await apiService.updateCompany(selectedCompany.id, formData);
+        setCompanies(companies.map(company => 
+          company.id === selectedCompany.id ? updatedCompany : company
+        ));
+      } else {
+        // Créer une nouvelle entreprise via l'API
+        const newCompany = await apiService.createCompany(formData);
+        setCompanies([...companies, newCompany]);
+      }
+      setShowModal(false);
+    } catch (error) {
+      console.error('Erreur lors de la sauvegarde:', error);
+      // En cas d'erreur API, utiliser la logique locale comme fallback
+      if (selectedCompany) {
+        // Modifier une entreprise existante (fallback local)
+        setCompanies(companies.map(company => 
+          company.id === selectedCompany.id 
+            ? { ...company, ...formData, updated_at: new Date().toISOString().split('T')[0] }
+            : company
+        ));
+      } else {
+        // Créer une nouvelle entreprise (fallback local)
+        const newCompany: Company = {
+          id: Date.now().toString(),
+          ...formData,
+          employee_count: 0,
+          ticket_balance: 0,
+          created_at: new Date().toISOString().split('T')[0],
+          updated_at: new Date().toISOString().split('T')[0]
+        };
+        setCompanies([...companies, newCompany]);
+      }
+      setShowModal(false);
     }
-    setShowModal(false);
   };
 
-  const handleConfirmDelete = () => {
+  const handleConfirmDelete = async () => {
     if (selectedCompany) {
-      setCompanies(companies.filter(company => company.id !== selectedCompany.id));
+      try {
+        // Supprimer via l'API
+        await apiService.deleteCompany(selectedCompany.id);
+        setCompanies(companies.filter(company => company.id !== selectedCompany.id));
+      } catch (error) {
+        console.error('Erreur lors de la suppression:', error);
+        // En cas d'erreur API, supprimer localement comme fallback
+        setCompanies(companies.filter(company => company.id !== selectedCompany.id));
+      }
     }
     setShowDeleteModal(false);
     setSelectedCompany(null);

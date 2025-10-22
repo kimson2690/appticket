@@ -13,6 +13,16 @@ function App() {
       const loggedIn = localStorage.getItem('isLoggedIn') === 'true';
       const role = localStorage.getItem('userRole');
       
+      console.log('Vérification du statut d\'authentification:', {
+        loggedIn,
+        role,
+        localStorage: {
+          isLoggedIn: localStorage.getItem('isLoggedIn'),
+          userRole: localStorage.getItem('userRole'),
+          userEmail: localStorage.getItem('userEmail')
+        }
+      });
+      
       setIsLoggedIn(loggedIn);
       setUserRole(role);
       setIsLoading(false);
@@ -44,8 +54,8 @@ function App() {
     );
   }
 
-  // Si l'utilisateur est connecté et est admin, afficher le dashboard
-  if (isLoggedIn && userRole === 'admin') {
+  // Si l'utilisateur est connecté, afficher le dashboard (pour tous les rôles)
+  if (isLoggedIn && userRole) {
     return <AdminDashboard onLogout={handleLogout} />;
   }
 

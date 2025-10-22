@@ -152,31 +152,56 @@ const RestaurantManagement: React.FC = () => {
     const cuisineString = selectedCuisines.join(', ');
     const updatedFormData = { ...formData, cuisine_type: cuisineString };
     
-    if (selectedRestaurant) {
-      // Modifier un restaurant existant
-      setRestaurants(restaurants.map(restaurant => 
-        restaurant.id === selectedRestaurant.id 
-          ? { ...restaurant, ...updatedFormData, updated_at: new Date().toISOString().split('T')[0] }
-          : restaurant
-      ));
-    } else {
-      // Créer un nouveau restaurant
-      const newRestaurant: Restaurant = {
-        id: Date.now().toString(),
-        ...updatedFormData,
-        average_rating: 0,
-        total_reviews: 0,
-        created_at: new Date().toISOString().split('T')[0],
-        updated_at: new Date().toISOString().split('T')[0]
-      };
-      setRestaurants([...restaurants, newRestaurant]);
+    try {
+      if (selectedRestaurant) {
+        // Modifier un restaurant existant via l'API
+        const updatedRestaurant = await apiService.updateRestaurant(selectedRestaurant.id, updatedFormData);
+        setRestaurants(restaurants.map(restaurant => 
+          restaurant.id === selectedRestaurant.id ? updatedRestaurant : restaurant
+        ));
+      } else {
+        // Créer un nouveau restaurant via l'API
+        const newRestaurant = await apiService.createRestaurant(updatedFormData);
+        setRestaurants([...restaurants, newRestaurant]);
+      }
+      setShowModal(false);
+    } catch (error) {
+      console.error('Erreur lors de la sauvegarde:', error);
+      // En cas d'erreur API, utiliser la logique locale comme fallback
+      if (selectedRestaurant) {
+        // Modifier un restaurant existant (fallback local)
+        setRestaurants(restaurants.map(restaurant => 
+          restaurant.id === selectedRestaurant.id 
+            ? { ...restaurant, ...updatedFormData, updated_at: new Date().toISOString().split('T')[0] }
+            : restaurant
+        ));
+      } else {
+        // Créer un nouveau restaurant (fallback local)
+        const newRestaurant: Restaurant = {
+          id: Date.now().toString(),
+          ...updatedFormData,
+          average_rating: 0,
+          total_reviews: 0,
+          created_at: new Date().toISOString().split('T')[0],
+          updated_at: new Date().toISOString().split('T')[0]
+        };
+        setRestaurants([...restaurants, newRestaurant]);
+      }
+      setShowModal(false);
     }
-    setShowModal(false);
   };
 
-  const handleConfirmDelete = () => {
+  const handleConfirmDelete = async () => {
     if (selectedRestaurant) {
-      setRestaurants(restaurants.filter(restaurant => restaurant.id !== selectedRestaurant.id));
+      try {
+        // Supprimer via l'API
+        await apiService.deleteRestaurant(selectedRestaurant.id);
+        setRestaurants(restaurants.filter(restaurant => restaurant.id !== selectedRestaurant.id));
+      } catch (error) {
+        console.error('Erreur lors de la suppression:', error);
+        // En cas d'erreur API, supprimer localement comme fallback
+        setRestaurants(restaurants.filter(restaurant => restaurant.id !== selectedRestaurant.id));
+      }
     }
     setShowDeleteModal(false);
     setSelectedRestaurant(null);

@@ -6,6 +6,8 @@ use App\Http\Controllers\RoleController;
 use App\Http\Controllers\PermissionController;
 use App\Http\Controllers\Admin\CompanyController;
 use App\Http\Controllers\Admin\RestaurantController;
+use App\Http\Controllers\Admin\UserController;
+use App\Http\Controllers\AuthController;
 
 Route::get('/user', function (Request $request) {
     return $request->user();
@@ -33,29 +35,16 @@ Route::prefix('admin')->group(function () {
     Route::get('/restaurants/{id}', [RestaurantController::class, 'show']);
     Route::put('/restaurants/{id}', [RestaurantController::class, 'update']);
     Route::delete('/restaurants/{id}', [RestaurantController::class, 'destroy']);
+    
+    // Gestion des utilisateurs
+    Route::get('/users', [UserController::class, 'index']);
+    Route::post('/users', [UserController::class, 'store']);
+    Route::get('/users/{id}', [UserController::class, 'show']);
+    Route::put('/users/{id}', [UserController::class, 'update']);
+    Route::delete('/users/{id}', [UserController::class, 'destroy']);
 });
 
 // Routes publiques pour l'authentification
-Route::post('login', function (Request $request) {
-    $credentials = $request->validate([
-        'email' => 'required|email',
-        'password' => 'required'
-    ]);
-
-    if ($credentials['email'] === 'admin@appticket.com' && $credentials['password'] === 'admin123') {
-        return response()->json([
-            'success' => true,
-            'user' => [
-                'id' => 1,
-                'email' => 'admin@appticket.com',
-                'role' => 'admin'
-            ],
-            'token' => 'mock-token-for-admin'
-        ]);
-    }
-
-    return response()->json([
-        'success' => false,
-        'message' => 'Identifiants incorrects'
-    ], 401);
-});
+Route::post('login', [AuthController::class, 'login']);
+Route::post('logout', [AuthController::class, 'logout']);
+Route::get('me', [AuthController::class, 'me']);

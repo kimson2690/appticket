@@ -67,6 +67,23 @@ interface Restaurant {
   updated_at: string;
 }
 
+interface User {
+  id: string;
+  name: string;
+  email: string;
+  phone?: string;
+  role_id: string;
+  role_name: string;
+  company_id?: string;
+  company_name?: string;
+  restaurant_id?: string;
+  restaurant_name?: string;
+  status: 'active' | 'inactive' | 'suspended';
+  email_verified_at?: string;
+  created_at: string;
+  updated_at: string;
+}
+
 class ApiService {
   private async request<T>(endpoint: string, options: RequestInit = {}): Promise<ApiResponse<T>> {
     const url = `${API_BASE_URL}${endpoint}`;
@@ -80,11 +97,14 @@ class ApiService {
       ...options,
     });
 
+    const data = await response.json();
+
     if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+      // Pour les erreurs d'authentification, on lance une exception avec le message de l'API
+      throw new Error(data.message || `HTTP error! status: ${response.status}`);
     }
 
-    return response.json();
+    return data;
   }
 
   // Roles API
@@ -182,15 +202,56 @@ class ApiService {
     });
   }
 
-  // Auth API
-  async login(email: string, password: string): Promise<{ user: any; token: string }> {
-    const response = await this.request<{ user: any; token: string }>('/login', {
+  // Users API
+  async getUsers(): Promise<User[]> {
+    const response = await this.request<User[]>('/admin/users');
+    return response.data;
+  }
+
+  async createUser(userData: Omit<User, 'id' | 'role_name' | 'company_name' | 'restaurant_name' | 'created_at' | 'updated_at'> & { password: string }): Promise<User> {
+    const response = await this.request<User>('/admin/users', {
       method: 'POST',
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify(userData),
     });
     return response.data;
+  }
+
+  async updateUser(id: string, userData: Partial<Omit<User, 'id' | 'created_at' | 'updated_at'>>): Promise<User> {
+    const response = await this.request<User>(`/admin/users/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(userData),
+    });
+    return response.data;
+  }
+
+  async deleteUser(id: string): Promise<void> {
+    await this.request(`/admin/users/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
+  // Auth API
+  async login(email: string, password: string): Promise<{ success: boolean; user: any; token: string }> {
+    const url = `${API_BASE_URL}/login`;
+    
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
+      body: JSON.stringify({ email, password }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.message || `HTTP error! status: ${response.status}`);
+    }
+
+    return data; // L'API de login retourne directement { success, user, token }
   }
 }
 
 export const apiService = new ApiService();
-export type { Role, Permission, Company, Restaurant };
+export type { Role, Permission, Company, Restaurant, User };

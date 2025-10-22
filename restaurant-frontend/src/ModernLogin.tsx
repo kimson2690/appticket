@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Eye, EyeOff, Mail, Lock, ShoppingBag, Users, TrendingUp } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, ShoppingBag, Users, TrendingUp } from 'lucide-react';
+import { apiService } from './services/api';
 
 interface ModernLoginProps {
   onShowRegister: () => void;
@@ -12,27 +13,55 @@ const ModernLogin: React.FC<ModernLoginProps> = ({ onShowRegister }) => {
   const [rememberMe, setRememberMe] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     
-    setTimeout(() => {
-      if (email === 'admin@appticket.com' && password === 'admin123') {
-        // Stocker les informations de connexion
-        localStorage.setItem('isLoggedIn', 'true');
-        localStorage.setItem('userRole', 'admin');
-        localStorage.setItem('userEmail', email);
-        if (rememberMe) {
-          localStorage.setItem('rememberMe', 'true');
-        }
-        
-        // Recharger la page pour déclencher la redirection
-        window.location.reload();
-      } else {
-        alert('Identifiants incorrects. Veuillez réessayer.');
+    try {
+      console.log('Tentative de connexion avec:', { email, password });
+      
+      // Utiliser l'API réelle pour l'authentification
+      const response = await apiService.login(email, password);
+      
+      console.log('Réponse de l\'API complète:', response);
+      console.log('Structure de response.user:', response.user);
+      console.log('response.success:', response.success);
+      
+      // Vérifier si la réponse est valide
+      if (!response.success || !response.user) {
+        throw new Error('Réponse API invalide');
       }
+      
+      // Stocker les informations de connexion
+      console.log('Stockage des informations utilisateur...');
+      localStorage.setItem('isLoggedIn', 'true');
+      localStorage.setItem('userRole', response.user.role);
+      localStorage.setItem('userEmail', response.user.email);
+      localStorage.setItem('userName', response.user.name);
+      localStorage.setItem('userId', response.user.id.toString());
+      localStorage.setItem('authToken', response.token);
+      
+      if (rememberMe) {
+        localStorage.setItem('rememberMe', 'true');
+      }
+      
+      console.log('Informations stockées dans localStorage:', {
+        isLoggedIn: localStorage.getItem('isLoggedIn'),
+        userRole: localStorage.getItem('userRole'),
+        userEmail: localStorage.getItem('userEmail')
+      });
+      
+      // Recharger la page pour déclencher la redirection
+      console.log('Rechargement de la page...');
+      window.location.reload();
+      
+    } catch (error) {
+      console.error('Erreur de connexion détaillée:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Identifiants incorrects';
+      alert(`Erreur de connexion: ${errorMessage}`);
+    } finally {
       setIsLoading(false);
-    }, 2000);
+    }
   };
 
   return (
@@ -88,7 +117,7 @@ const ModernLogin: React.FC<ModernLoginProps> = ({ onShowRegister }) => {
                     type="email" 
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="admin@appticket.com" 
+                    placeholder="fatimata@techcorp.bf" 
                     className="w-full rounded-xl border border-slate-200 bg-white px-11 py-3 text-[15px] text-slate-900 placeholder:text-slate-400 outline-none transition focus:border-slate-300 focus:ring-4 focus:ring-slate-100"
                     required
                   />
