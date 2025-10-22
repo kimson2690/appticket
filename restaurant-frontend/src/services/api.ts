@@ -424,7 +424,7 @@ class ApiService {
     return response.data;
   }
 
-  async bulkAssignTickets(data: { tickets_count: number; ticket_value: number; config_id: string; notes?: string }): Promise<{ success: number; total: number; employees: Employee[]; batches: TicketBatch[] }> {
+  async bulkAssignTickets(data: { tickets_count: number; ticket_value: number; config_id: string; notes?: string; created_by?: string }): Promise<{ success: number; total: number; employees: Employee[]; batches: TicketBatch[] }> {
     const response = await this.request<{ success: number; total: number; employees: Employee[]; batches: TicketBatch[] }>('/admin/employees/bulk-assign-tickets', {
       method: 'POST',
       body: JSON.stringify(data),

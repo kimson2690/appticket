@@ -110,11 +110,13 @@ const UserTicketManagement: React.FC = () => {
     e.preventDefault();
     
     try {
+      const userName = localStorage.getItem('userName') || 'Utilisateur';
       const result = await apiService.bulkAssignTickets({
         tickets_count: formData.tickets_count,
         ticket_value: formData.ticket_value,
         config_id: formData.config_id,
-        notes: formData.notes || undefined
+        notes: formData.notes || undefined,
+        created_by: userName
       });
       
       // Rafraîchir les données

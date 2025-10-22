@@ -225,7 +225,10 @@ class UserTicketController extends Controller
             $configId = $request->input('config_id');
             $notes = $request->input('notes', '');
             $userCompanyId = $request->header('X-User-Company-Id');
-            $userName = $request->header('X-User-Name', 'Système');
+            // Récupérer le nom d'utilisateur depuis le header, le body ou le localStorage
+            $userName = $request->header('X-User-Name') 
+                     ?? $request->input('created_by') 
+                     ?? 'Système';
 
             // Charger la configuration pour obtenir les paramètres
             $configsFile = storage_path('app/ticket_configurations.json');

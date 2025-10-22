@@ -24,6 +24,8 @@ const TicketBatchManagement: React.FC = () => {
   const [batchToDelete, setBatchToDelete] = useState<string | null>(null);
   const [notification, setNotification] = useState<{ type: 'success' | 'error' | 'info'; message: string; title: string } | null>(null);
   const [employeeFilter, setEmployeeFilter] = useState<string>('all');
+  const [selectedBatches, setSelectedBatches] = useState<string[]>([]);
+  const [showBulkDeleteModal, setShowBulkDeleteModal] = useState(false);
 
   const [formData, setFormData] = useState({
     config_id: '',
@@ -148,6 +150,63 @@ const TicketBatchManagement: React.FC = () => {
     setShowDeleteModal(false);
     setBatchToDelete(null);
   };
+
+  // Gestion de la sélection multiple
+  const handleSelectBatch = (batchId: string) => {
+    setSelectedBatches(prev => 
+      prev.includes(batchId) 
+        ? prev.filter(id => id !== batchId)
+        : [...prev, batchId]
+    );
+  };
+
+  const handleSelectAll = () => {
+    if (selectedBatches.length === filteredBatches.length) {
+      setSelectedBatches([]);
+    } else {
+      setSelectedBatches(filteredBatches.map(b => b.id));
+    }
+  };
+
+  const handleBulkDelete = () => {
+    if (selectedBatches.length > 0) {
+      setShowBulkDeleteModal(true);
+    }
+  };
+
+  const handleConfirmBulkDelete = async () => {
+    try {
+      // Supprimer toutes les souches sélectionnées
+      await Promise.all(
+        selectedBatches.map(batchId => apiService.deleteTicketBatch(batchId))
+      );
+      
+      setBatches(batches.filter(batch => !selectedBatches.includes(batch.id)));
+      setSelectedBatches([]);
+      
+      setNotification({
+        type: 'success',
+        title: 'Souches supprimées',
+        message: `${selectedBatches.length} souche(s) supprimée(s) avec succès.`
+      });
+      setTimeout(() => setNotification(null), 4000);
+    } catch (error) {
+      console.error('Erreur lors de la suppression multiple:', error);
+      setNotification({
+        type: 'error',
+        title: 'Erreur de suppression',
+        message: 'Une erreur est survenue lors de la suppression multiple.'
+      });
+    }
+    setShowBulkDeleteModal(false);
+  };
+
+  // Calculer les souches filtrées
+  const filteredBatches = batches.filter((batch) => {
+    if (employeeFilter === 'with_employee') return batch.employee_name;
+    if (employeeFilter === 'without_employee') return !batch.employee_name;
+    return true;
+  });
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -338,22 +397,56 @@ const TicketBatchManagement: React.FC = () => {
 
       {/* Liste des souches */}
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100">
-        <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-gray-900">Souches Créées</h2>
+        <div className="px-6 py-4 border-b border-gray-100">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold text-gray-900">Souches Créées</h2>
+            
+            {/* Filtre par employé */}
+            {batches.length > 0 && (
+              <div className="flex items-center space-x-2">
+                <label className="text-sm text-gray-600">Filtrer :</label>
+                <select
+                  value={employeeFilter}
+                  onChange={(e) => setEmployeeFilter(e.target.value)}
+                  className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                >
+                  <option value="all">Toutes les souches</option>
+                  <option value="with_employee">Avec employé</option>
+                  <option value="without_employee">Sans employé</option>
+                </select>
+              </div>
+            )}
+          </div>
           
-          {/* Filtre par employé */}
-          {batches.length > 0 && (
-            <div className="flex items-center space-x-2">
-              <label className="text-sm text-gray-600">Filtrer :</label>
-              <select
-                value={employeeFilter}
-                onChange={(e) => setEmployeeFilter(e.target.value)}
-                className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-              >
-                <option value="all">Toutes les souches</option>
-                <option value="with_employee">Avec employé</option>
-                <option value="without_employee">Sans employé</option>
-              </select>
+          {/* Actions de sélection multiple */}
+          {filteredBatches.length > 0 && (
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-4">
+                <label className="flex items-center space-x-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={selectedBatches.length === filteredBatches.length && filteredBatches.length > 0}
+                    onChange={handleSelectAll}
+                    className="w-4 h-4 text-orange-500 border-gray-300 rounded focus:ring-orange-500"
+                  />
+                  <span className="text-sm text-gray-600">Tout sélectionner</span>
+                </label>
+                {selectedBatches.length > 0 && (
+                  <span className="text-sm text-gray-600">
+                    {selectedBatches.length} sélectionnée(s)
+                  </span>
+                )}
+              </div>
+              
+              {selectedBatches.length > 0 && (
+                <button
+                  onClick={handleBulkDelete}
+                  className="flex items-center space-x-2 px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg font-medium transition-colors"
+                >
+                  <Trash2 className="w-4 h-4" />
+                  <span>Supprimer ({selectedBatches.length})</span>
+                </button>
+              )}
             </div>
           )}
         </div>
@@ -373,15 +466,19 @@ const TicketBatchManagement: React.FC = () => {
             </div>
           ) : (
             <div className="space-y-4">
-              {batches
-                .filter((batch) => {
-                  if (employeeFilter === 'with_employee') return batch.employee_name;
-                  if (employeeFilter === 'without_employee') return !batch.employee_name;
-                  return true;
-                })
-                .map((batch) => (
+              {filteredBatches.map((batch) => (
                 <div key={batch.id} className="border border-gray-200 rounded-xl p-6 hover:shadow-md transition-shadow">
-                  <div className="flex items-start justify-between mb-4">
+                  <div className="flex items-start space-x-4 mb-4">
+                    {/* Checkbox de sélection */}
+                    <div className="pt-1">
+                      <input
+                        type="checkbox"
+                        checked={selectedBatches.includes(batch.id)}
+                        onChange={() => handleSelectBatch(batch.id)}
+                        className="w-5 h-5 text-orange-500 border-gray-300 rounded focus:ring-orange-500 cursor-pointer"
+                      />
+                    </div>
+                    
                     <div className="flex-1">
                       <div className="flex items-center space-x-3 mb-2">
                         <h3 className="font-semibold text-gray-900 text-lg">
@@ -613,7 +710,7 @@ const TicketBatchManagement: React.FC = () => {
         </div>
       )}
 
-      {/* Modal de confirmation de suppression */}
+      {/* Modal de confirmation de suppression individuelle */}
       {showDeleteModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl max-w-md w-full p-6">
@@ -642,6 +739,38 @@ const TicketBatchManagement: React.FC = () => {
                 className="flex-1 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 font-medium transition-colors"
               >
                 Supprimer
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de confirmation de suppression multiple */}
+      {showBulkDeleteModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6">
+            <div className="flex items-center justify-center w-12 h-12 mx-auto mb-4 bg-red-100 rounded-full">
+              <AlertTriangle className="w-6 h-6 text-red-600" />
+            </div>
+            <h3 className="text-lg font-semibold text-gray-900 text-center mb-2">
+              Supprimer {selectedBatches.length} souche(s)
+            </h3>
+            <p className="text-gray-600 text-center mb-6">
+              Êtes-vous sûr de vouloir supprimer <strong>{selectedBatches.length} souche(s)</strong> de tickets ? 
+              Cette action est <strong>irréversible</strong> et supprimera toutes les souches sélectionnées.
+            </p>
+            <div className="flex space-x-3">
+              <button
+                onClick={() => setShowBulkDeleteModal(false)}
+                className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-medium transition-colors"
+              >
+                Annuler
+              </button>
+              <button
+                onClick={handleConfirmBulkDelete}
+                className="flex-1 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 font-medium transition-colors"
+              >
+                Supprimer tout
               </button>
             </div>
           </div>
