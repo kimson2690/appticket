@@ -420,6 +420,34 @@ class UserTicketController extends Controller
                 $assignments = json_decode(file_get_contents($assignmentsFile), true) ?? [];
             }
 
+            // Nettoyer les affectations orphelines (dont le batch_id n'existe plus)
+            $batchesFile = storage_path('app/ticket_batches.json');
+            if (file_exists($batchesFile)) {
+                $batches = json_decode(file_get_contents($batchesFile), true) ?? [];
+                $validBatchIds = array_column($batches, 'id');
+                
+                $assignmentsCountBefore = count($assignments);
+                
+                // Garder seulement les affectations avec batch_id valide OU sans batch_id (manuelles)
+                $assignments = array_filter($assignments, function($assignment) use ($validBatchIds) {
+                    // Si pas de batch_id (affectation manuelle), on garde
+                    if (!isset($assignment['batch_id']) || empty($assignment['batch_id'])) {
+                        return true;
+                    }
+                    // Sinon, on vérifie que le batch_id existe toujours
+                    return in_array($assignment['batch_id'], $validBatchIds);
+                });
+                
+                $assignmentsCountAfter = count($assignments);
+                $orphansDeleted = $assignmentsCountBefore - $assignmentsCountAfter;
+                
+                // Si des orphelins ont été supprimés, sauvegarder
+                if ($orphansDeleted > 0) {
+                    file_put_contents($assignmentsFile, json_encode(array_values($assignments), JSON_PRETTY_PRINT));
+                    Log::info("Nettoyage automatique: {$orphansDeleted} affectation(s) orpheline(s) supprimée(s)");
+                }
+            }
+
             // Filtrer par employé si spécifié
             if ($employeeId) {
                 $assignments = array_filter($assignments, function($assignment) use ($employeeId) {

@@ -211,10 +211,12 @@ const PartnerRestaurants: React.FC = () => {
           <div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl p-4 border border-orange-200">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-orange-700">Modifications</p>
-                <p className="text-2xl font-bold text-orange-900 mt-1">{hasChanges ? 'En attente' : 'Aucune'}</p>
+                <p className="text-sm font-medium text-orange-700">Taux de Couverture</p>
+                <p className="text-2xl font-bold text-orange-900 mt-1">
+                  {restaurants.length > 0 ? Math.round((selectedRestaurants.length / restaurants.length) * 100) : 0}%
+                </p>
               </div>
-              <AlertTriangle className="w-8 h-8 text-orange-500" />
+              <Star className="w-8 h-8 text-orange-500" />
             </div>
           </div>
         </div>

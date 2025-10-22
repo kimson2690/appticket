@@ -38,13 +38,29 @@ class EmployeeController extends Controller
                 file_put_contents($filePath, json_encode($employees, JSON_PRETTY_PRINT));
                 Log::info('Données employés corrigées pour cohérence des entreprises');
             }
+            
+            // Filtrage par rôle
+            $userRole = $request->header('X-User-Role');
+            $userCompanyId = $request->header('X-User-Company-Id');
+            
+            Log::info('EmployeeController@index - Rôle: ' . $userRole . ', Company ID: ' . $userCompanyId);
+            
+            // Si c'est un gestionnaire d'entreprise, filtrer par son entreprise uniquement
+            if ($userRole === 'Gestionnaire Entreprise' && $userCompanyId) {
+                $employees = array_filter($employees, function($employee) use ($userCompanyId) {
+                    return isset($employee['company_id']) && $employee['company_id'] === $userCompanyId;
+                });
+                Log::info('Employés filtrés pour gestionnaire: ' . count($employees));
+            }
+            // Si c'est un administrateur, il voit TOUS les employés (pas de filtre)
+            
         } else {
             $employees = [];
         }
 
         return response()->json([
             'success' => true,
-            'data' => $employees
+            'data' => array_values($employees)
         ]);
     }
 

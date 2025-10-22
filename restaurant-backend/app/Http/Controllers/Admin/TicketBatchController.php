@@ -282,6 +282,29 @@ class TicketBatchController extends Controller
             // Sauvegarder dans le fichier
             file_put_contents($filePath, json_encode($batches, JSON_PRETTY_PRINT));
 
+            // Supprimer également les affectations (assignments) liées à cette souche
+            $assignmentsFile = storage_path('app/ticket_assignments.json');
+            if (file_exists($assignmentsFile)) {
+                $assignments = json_decode(file_get_contents($assignmentsFile), true) ?? [];
+                
+                // Compter les affectations avant suppression
+                $assignmentsCountBefore = count($assignments);
+                
+                // Filtrer pour supprimer les affectations liées à cette souche
+                $assignments = array_values(array_filter($assignments, function ($assignment) use ($id) {
+                    return !isset($assignment['batch_id']) || $assignment['batch_id'] !== $id;
+                }));
+                
+                // Compter les affectations après suppression
+                $assignmentsCountAfter = count($assignments);
+                $assignmentsDeleted = $assignmentsCountBefore - $assignmentsCountAfter;
+                
+                // Sauvegarder les affectations mises à jour
+                file_put_contents($assignmentsFile, json_encode($assignments, JSON_PRETTY_PRINT));
+                
+                Log::info("Souche {$id} supprimée avec {$assignmentsDeleted} affectation(s) associée(s)");
+            }
+
             Log::info('Souche supprimée avec succès: ' . $id);
 
             return response()->json([

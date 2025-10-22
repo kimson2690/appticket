@@ -215,6 +215,12 @@ const UserTicketManagement: React.FC = () => {
   }
 
   const activeEmployees = employees.filter(e => e.status === 'active');
+  
+  // Calculer les souches actives (status === 'active')
+  const activeBatches = batches.filter(b => b.status === 'active');
+  
+  // Calculer le total de tickets affectés (somme de tous les tickets_count)
+  const totalTicketsAssigned = assignments.reduce((sum, assignment) => sum + assignment.tickets_count, 0);
 
   return (
     <div className="space-y-6">
@@ -329,7 +335,7 @@ const UserTicketManagement: React.FC = () => {
             </div>
             <div>
               <p className="text-sm font-medium text-gray-600">Souches Actives</p>
-              <p className="text-2xl font-bold text-gray-900">{batches.length}</p>
+              <p className="text-2xl font-bold text-gray-900">{activeBatches.length}</p>
             </div>
           </div>
         </div>
@@ -340,8 +346,8 @@ const UserTicketManagement: React.FC = () => {
               <TrendingUp className="w-6 h-6 text-purple-600" />
             </div>
             <div>
-              <p className="text-sm font-medium text-gray-600">Affectations</p>
-              <p className="text-2xl font-bold text-gray-900">{assignments.length}</p>
+              <p className="text-sm font-medium text-gray-600">Tickets Affectés</p>
+              <p className="text-2xl font-bold text-gray-900">{totalTicketsAssigned}</p>
             </div>
           </div>
         </div>
