@@ -70,11 +70,11 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
     { id: 'employees', label: 'Employés', icon: Users, roles: ['Administrateur', 'Gestionnaire Entreprise'] },
     { id: 'companies', label: 'Entreprises', icon: Building2, roles: ['Administrateur'] },
     { id: 'restaurants', label: 'Restaurants', icon: Utensils, roles: ['Administrateur', 'Gestionnaire Restaurant'] },
-    { id: 'partner-restaurants', label: 'Restaurants Partenaires', icon: Store, roles: ['Administrateur', 'Gestionnaire Entreprise'] },
-    { id: 'tickets', label: 'Configuration', icon: Settings, roles: ['Administrateur', 'Gestionnaire Entreprise'] },
-    { id: 'batches', label: 'Souches', icon: Package, roles: ['Administrateur', 'Gestionnaire Entreprise'] },
-    { id: 'user-tickets', label: 'Affecter Tickets', icon: Wallet, roles: ['Administrateur', 'Gestionnaire Entreprise'] },
-    { id: 'analytics', label: 'Analyses', icon: BarChart3, roles: ['Administrateur', 'Gestionnaire Entreprise', 'Gestionnaire Restaurant'] },
+    { id: 'partner-restaurants', label: 'Restaurants Partenaires', icon: Store, roles: ['Gestionnaire Entreprise'] },
+    { id: 'tickets', label: 'Configuration', icon: Settings, roles: ['Gestionnaire Entreprise'] },
+    { id: 'batches', label: 'Souches', icon: Package, roles: ['Gestionnaire Entreprise'] },
+    { id: 'user-tickets', label: 'Affecter Tickets', icon: Wallet, roles: ['Gestionnaire Entreprise'] },
+    { id: 'analytics', label: 'Analyses', icon: BarChart3, roles: ['Gestionnaire Entreprise', 'Gestionnaire Restaurant'] },
     { id: 'roles', label: 'Rôles', icon: Ticket, roles: ['Administrateur'] },
   ];
 
