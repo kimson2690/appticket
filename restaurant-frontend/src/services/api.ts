@@ -50,23 +50,26 @@ interface Restaurant {
   email: string;
   phone: string;
   address: string;
-  city: string;
+  city?: string;
   postal_code?: string;
-  country: string;
+  country?: string;
   cuisine_type: string;
   description?: string;
   logo?: string;
   website?: string;
   opening_hours?: string;
   delivery_fee: number;
-  minimum_order: number;
-  average_rating: number;
-  total_reviews: number;
-  status: 'active' | 'inactive' | 'suspended';
-  is_partner: boolean;
-  commission_rate: number;
-  created_at: string;
-  updated_at: string;
+  minimum_order?: number;
+  min_order?: number; // Alias pour minimum_order
+  average_rating?: number;
+  rating?: number; // Alias pour average_rating
+  total_reviews?: number;
+  status?: 'active' | 'inactive' | 'suspended';
+  is_active?: boolean;
+  is_partner?: boolean;
+  commission_rate?: number;
+  created_at?: string;
+  updated_at?: string;
 }
 
 interface User {
@@ -107,15 +110,26 @@ class ApiService {
   private async request<T>(endpoint: string, options: RequestInit = {}): Promise<ApiResponse<T>> {
     const url = `${API_BASE_URL}${endpoint}`;
     
+    // Récupérer les informations de l'utilisateur depuis localStorage
+    const userId = localStorage.getItem('userId');
+    const userName = localStorage.getItem('userName');
+    const userRole = localStorage.getItem('userRole');
+    const companyId = localStorage.getItem('userCompanyId');
+    
     console.log('=== REQUEST DEBUG ===');
     console.log('URL complète:', url);
     console.log('Options:', options);
+    console.log('User Info:', { userId, userName, userRole, companyId });
     
     try {
       const response = await fetch(url, {
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
+          'X-User-Id': userId || '',
+          'X-User-Name': userName || '',
+          'X-User-Role': userRole || '',
+          'X-User-Company-Id': companyId || '',
           ...options.headers,
         },
         ...options,
@@ -428,6 +442,25 @@ class ApiService {
     const response = await this.request<{ success: number; total: number; employees: Employee[]; batches: TicketBatch[] }>('/admin/employees/bulk-assign-tickets', {
       method: 'POST',
       body: JSON.stringify(data),
+    });
+    return response.data;
+  }
+
+  // Company-Restaurant Partnership API
+  async getPartnerRestaurants(): Promise<{ restaurant_ids: string[]; partnerships: any[] }> {
+    const response = await this.request<{ restaurant_ids: string[]; partnerships: any[] }>('/admin/company-restaurants/partners');
+    return response.data;
+  }
+
+  async getAvailableRestaurants(): Promise<Restaurant[]> {
+    const response = await this.request<Restaurant[]>('/admin/company-restaurants/available');
+    return response.data;
+  }
+
+  async updatePartnerRestaurants(restaurantIds: string[]): Promise<{ message: string; count: number }> {
+    const response = await this.request<{ message: string; count: number }>('/admin/company-restaurants/partners', {
+      method: 'POST',
+      body: JSON.stringify({ restaurant_ids: restaurantIds }),
     });
     return response.data;
   }

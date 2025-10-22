@@ -14,6 +14,7 @@ use App\Http\Controllers\Admin\TicketConfigurationController;
 use App\Http\Controllers\Admin\TicketBatchController;
 use App\Http\Controllers\Admin\UserTicketController;
 use App\Http\Controllers\Admin\MigrateBatchNumbersController;
+use App\Http\Controllers\Admin\CompanyRestaurantController;
 use App\Http\Controllers\AuthController;
 
 Route::get('/user', function (Request $request) {
@@ -80,6 +81,11 @@ Route::prefix('admin')->group(function () {
     
     // Migration des numéros de souches
     Route::post('/migrate-batch-numbers', [MigrateBatchNumbersController::class, 'migrate']);
+    
+    // Gestion des partenariats entreprise-restaurant
+    Route::get('/company-restaurants/partners', [CompanyRestaurantController::class, 'getPartnerRestaurants']);
+    Route::get('/company-restaurants/available', [CompanyRestaurantController::class, 'getAvailableRestaurants']);
+    Route::post('/company-restaurants/partners', [CompanyRestaurantController::class, 'updatePartnerRestaurants']);
     
     // Statistiques globales
     Route::get('/statistics', [StatisticsController::class, 'index']);
