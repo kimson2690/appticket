@@ -7,13 +7,15 @@ interface ApiResponse<T> {
 }
 
 interface Role {
-  id: string;
+  id: number;
   name: string;
   description: string;
-  is_system: boolean;
-  permissions: string[];
   user_count: number;
   created_at: string;
+  updated_at: string;
+  // Champs optionnels pour compatibilité avec le composant
+  is_system?: boolean;
+  permissions?: string[];
 }
 
 interface Permission {
@@ -146,7 +148,7 @@ class ApiService {
     return response.data;
   }
 
-  async createRole(roleData: { name: string; description: string; permissions: string[] }): Promise<Role> {
+  async createRole(roleData: { name: string; description: string }): Promise<Role> {
     const response = await this.request<Role>('/admin/roles', {
       method: 'POST',
       body: JSON.stringify(roleData),
@@ -154,7 +156,7 @@ class ApiService {
     return response.data;
   }
 
-  async updateRole(id: string, roleData: { name: string; description: string; permissions: string[] }): Promise<Role> {
+  async updateRole(id: string, roleData: { name: string; description: string }): Promise<Role> {
     const response = await this.request<Role>(`/admin/roles/${id}`, {
       method: 'PUT',
       body: JSON.stringify(roleData),
@@ -167,6 +169,7 @@ class ApiService {
       method: 'DELETE',
     });
   }
+
 
   // Permissions API
   async getPermissions(): Promise<Permission[]> {
