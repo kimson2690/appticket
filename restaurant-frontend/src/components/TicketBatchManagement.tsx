@@ -23,7 +23,9 @@ const TicketBatchManagement: React.FC = () => {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [batchToDelete, setBatchToDelete] = useState<string | null>(null);
   const [notification, setNotification] = useState<{ type: 'success' | 'error' | 'info'; message: string; title: string } | null>(null);
-  const [employeeFilter, setEmployeeFilter] = useState<string>('all');
+  const [periodFilter, setPeriodFilter] = useState<string>('all');
+  const [customStartDate, setCustomStartDate] = useState<string>('');
+  const [customEndDate, setCustomEndDate] = useState<string>('');
   const [selectedBatches, setSelectedBatches] = useState<string[]>([]);
   const [showBulkDeleteModal, setShowBulkDeleteModal] = useState(false);
 
@@ -201,10 +203,28 @@ const TicketBatchManagement: React.FC = () => {
     setShowBulkDeleteModal(false);
   };
 
-  // Calculer les souches filtrées
+  // Calculer les souches filtrées par période
   const filteredBatches = batches.filter((batch) => {
-    if (employeeFilter === 'with_employee') return batch.employee_name;
-    if (employeeFilter === 'without_employee') return !batch.employee_name;
+    const createdDate = new Date(batch.created_at);
+    const today = new Date();
+    const daysDiff = Math.floor((today.getTime() - createdDate.getTime()) / (1000 * 60 * 60 * 24));
+    
+    // Filtre personnalisé par dates
+    if (periodFilter === 'custom') {
+      if (customStartDate && customEndDate) {
+        const startDate = new Date(customStartDate);
+        const endDate = new Date(customEndDate);
+        endDate.setHours(23, 59, 59, 999); // Inclure toute la journée de fin
+        return createdDate >= startDate && createdDate <= endDate;
+      }
+      return true;
+    }
+    
+    // Filtres prédéfinis
+    if (periodFilter === 'today') return daysDiff === 0;
+    if (periodFilter === 'week') return daysDiff <= 7;
+    if (periodFilter === 'month') return daysDiff <= 30;
+    if (periodFilter === 'all') return true;
     return true;
   });
 
@@ -398,22 +418,65 @@ const TicketBatchManagement: React.FC = () => {
       {/* Liste des souches */}
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100">
         <div className="px-6 py-4 border-b border-gray-100">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-gray-900">Souches Créées</h2>
+          <div className="space-y-4 mb-4">
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-gray-900">Souches Créées</h2>
+              
+              {/* Filtre par période */}
+              {batches.length > 0 && (
+                <div className="flex items-center space-x-2">
+                  <label className="text-sm text-gray-600">Période :</label>
+                  <select
+                    value={periodFilter}
+                    onChange={(e) => setPeriodFilter(e.target.value)}
+                    className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                  >
+                    <option value="all">Toutes les périodes</option>
+                    <option value="today">Aujourd'hui</option>
+                    <option value="week">7 derniers jours</option>
+                    <option value="month">30 derniers jours</option>
+                    <option value="custom">Période personnalisée</option>
+                  </select>
+                </div>
+              )}
+            </div>
             
-            {/* Filtre par employé */}
-            {batches.length > 0 && (
-              <div className="flex items-center space-x-2">
-                <label className="text-sm text-gray-600">Filtrer :</label>
-                <select
-                  value={employeeFilter}
-                  onChange={(e) => setEmployeeFilter(e.target.value)}
-                  className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                >
-                  <option value="all">Toutes les souches</option>
-                  <option value="with_employee">Avec employé</option>
-                  <option value="without_employee">Sans employé</option>
-                </select>
+            {/* Sélection de dates personnalisées */}
+            {periodFilter === 'custom' && (
+              <div className="flex items-center space-x-3 bg-orange-50 border border-orange-200 rounded-lg p-3">
+                <Calendar className="w-5 h-5 text-orange-600" />
+                <div className="flex items-center space-x-2 flex-1">
+                  <div className="flex items-center space-x-2">
+                    <label className="text-sm font-medium text-gray-700">Du :</label>
+                    <input
+                      type="date"
+                      value={customStartDate}
+                      onChange={(e) => setCustomStartDate(e.target.value)}
+                      className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                    />
+                  </div>
+                  <span className="text-gray-500">→</span>
+                  <div className="flex items-center space-x-2">
+                    <label className="text-sm font-medium text-gray-700">Au :</label>
+                    <input
+                      type="date"
+                      value={customEndDate}
+                      onChange={(e) => setCustomEndDate(e.target.value)}
+                      className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                    />
+                  </div>
+                </div>
+                {customStartDate && customEndDate && (
+                  <button
+                    onClick={() => {
+                      setCustomStartDate('');
+                      setCustomEndDate('');
+                    }}
+                    className="text-sm text-orange-600 hover:text-orange-700 font-medium"
+                  >
+                    Réinitialiser
+                  </button>
+                )}
               </div>
             )}
           </div>
