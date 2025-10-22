@@ -23,7 +23,12 @@ class User extends Authenticatable
         'status',
         'company_id',
         'restaurant_id',
-        'created_by'
+        'created_by',
+        'department',
+        'position',
+        'employee_number',
+        'ticket_balance',
+        'hire_date'
     ];
 
     protected $hidden = [

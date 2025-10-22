@@ -3,6 +3,7 @@ import RoleManagement from './RoleManagement';
 import CompanyManagement from './CompanyManagement';
 import RestaurantManagement from './RestaurantManagement';
 import UserManagement from './UserManagement';
+import EmployeeManagement from './EmployeeManagement';
 import { 
   LayoutDashboard, 
   Users, 
@@ -31,7 +32,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
 
   const menuItems = [
     { id: 'dashboard', label: 'Tableau de bord', icon: LayoutDashboard },
-    { id: 'users', label: 'Utilisateurs', icon: Users },
+    { id: 'users', label: 'Gestionnaires', icon: Users },
+    { id: 'employees', label: 'Employés', icon: Users },
     { id: 'companies', label: 'Entreprises', icon: Building2 },
     { id: 'restaurants', label: 'Restaurants', icon: Utensils },
     { id: 'tickets', label: 'Tickets', icon: Ticket },
@@ -449,6 +451,9 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
 
           {/* User Management */}
           {activeMenu === 'users' && <UserManagement />}
+
+          {/* Employee Management */}
+          {activeMenu === 'employees' && <EmployeeManagement />}
 
           {/* Placeholder for other menu items */}
           {activeMenu !== 'dashboard' && activeMenu !== 'roles' && activeMenu !== 'companies' && activeMenu !== 'restaurants' && activeMenu !== 'users' && (

@@ -84,27 +84,60 @@ interface User {
   updated_at: string;
 }
 
+interface Employee {
+  id: string;
+  name: string;
+  email: string;
+  phone?: string;
+  company_id: string;
+  company_name: string;
+  department?: string;
+  position?: string;
+  employee_number?: string;
+  ticket_balance: number;
+  status: 'active' | 'inactive' | 'suspended';
+  hire_date?: string;
+  created_at: string;
+  updated_at: string;
+}
+
 class ApiService {
   private async request<T>(endpoint: string, options: RequestInit = {}): Promise<ApiResponse<T>> {
     const url = `${API_BASE_URL}${endpoint}`;
     
-    const response = await fetch(url, {
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-        ...options.headers,
-      },
-      ...options,
-    });
+    console.log('=== REQUEST DEBUG ===');
+    console.log('URL complète:', url);
+    console.log('Options:', options);
+    
+    try {
+      const response = await fetch(url, {
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          ...options.headers,
+        },
+        ...options,
+      });
 
-    const data = await response.json();
+      console.log('Response status:', response.status);
+      console.log('Response ok:', response.ok);
+      console.log('Response headers:', Object.fromEntries(response.headers.entries()));
 
-    if (!response.ok) {
-      // Pour les erreurs d'authentification, on lance une exception avec le message de l'API
-      throw new Error(data.message || `HTTP error! status: ${response.status}`);
+      const data = await response.json();
+      console.log('Response data:', data);
+
+      if (!response.ok) {
+        console.error('Response not ok - throwing error');
+        // Pour les erreurs d'authentification, on lance une exception avec le message de l'API
+        throw new Error(data.message || `HTTP error! status: ${response.status}`);
+      }
+
+      console.log('Request successful, returning data');
+      return data;
+    } catch (error) {
+      console.error('Erreur dans request:', error);
+      throw error;
     }
-
-    return data;
   }
 
   // Roles API
@@ -230,6 +263,54 @@ class ApiService {
     });
   }
 
+  // Employees API
+  async getEmployees(companyId?: string): Promise<Employee[]> {
+    const endpoint = companyId ? `/admin/employees?company_id=${companyId}` : '/admin/employees';
+    const response = await this.request<Employee[]>(endpoint);
+    return response.data;
+  }
+
+  async createEmployee(employeeData: Omit<Employee, 'id' | 'company_name' | 'created_at' | 'updated_at'> & { password: string }): Promise<Employee> {
+    console.log('=== API createEmployee ===');
+    console.log('URL:', `${API_BASE_URL}/admin/employees`);
+    console.log('Données envoyées:', employeeData);
+    
+    try {
+      const response = await this.request<Employee>('/admin/employees', {
+        method: 'POST',
+        body: JSON.stringify(employeeData),
+      });
+      console.log('Réponse API brute:', response);
+      console.log('response.data:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('Erreur dans createEmployee:', error);
+      throw error;
+    }
+  }
+
+  async updateEmployee(id: string, employeeData: Partial<Omit<Employee, 'id' | 'created_at' | 'updated_at'>>): Promise<Employee> {
+    const response = await this.request<Employee>(`/admin/employees/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(employeeData),
+    });
+    return response.data;
+  }
+
+  async deleteEmployee(id: string): Promise<void> {
+    await this.request(`/admin/employees/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async updateEmployeeTicketBalance(id: string, amount: number, operation: 'add' | 'subtract'): Promise<Employee> {
+    const response = await this.request<Employee>(`/admin/employees/${id}/tickets`, {
+      method: 'POST',
+      body: JSON.stringify({ amount, operation }),
+    });
+    return response.data;
+  }
+
   // Auth API
   async login(email: string, password: string): Promise<{ success: boolean; user: any; token: string }> {
     const url = `${API_BASE_URL}/login`;
@@ -254,4 +335,4 @@ class ApiService {
 }
 
 export const apiService = new ApiService();
-export type { Role, Permission, Company, Restaurant, User };
+export type { Role, Permission, Company, Restaurant, User, Employee };
