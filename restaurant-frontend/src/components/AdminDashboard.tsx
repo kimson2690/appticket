@@ -31,9 +31,58 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
   const [statistics, setStatistics] = useState<Statistics | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // Récupération des informations de l'utilisateur connecté
+  const currentUser = {
+    name: localStorage.getItem('userName') || 'Utilisateur',
+    email: localStorage.getItem('userEmail') || 'email@example.com',
+    role: localStorage.getItem('userRole') || 'Utilisateur',
+    id: localStorage.getItem('userId') || '1'
+  };
+
+  // Fonction pour obtenir les initiales de l'utilisateur
+  const getUserInitials = (name: string) => {
+    return name.split(' ').map(word => word.charAt(0)).join('').toUpperCase().substring(0, 2);
+  };
+
+  // Fonction pour obtenir le nom du rôle en français
+  const getRoleDisplayName = (role: string) => {
+    const roleMap: { [key: string]: string } = {
+      'Administrateur': 'Administrateur',
+      'Gestionnaire Entreprise': 'Gestionnaire Entreprise',
+      'Gestionnaire Restaurant': 'Gestionnaire Restaurant',
+      'Utilisateur': 'Employé',
+      'Gestionnaire Livraison': 'Gestionnaire Livraison'
+    };
+    return roleMap[role] || role;
+  };
+
+  // Définition de tous les menus possibles avec leurs permissions
+  const allMenuItems = [
+    { id: 'dashboard', label: 'Tableau de bord', icon: LayoutDashboard, roles: ['Administrateur', 'Gestionnaire Entreprise', 'Gestionnaire Restaurant'] },
+    { id: 'users', label: 'Gestionnaires', icon: Users, roles: ['Administrateur'] },
+    { id: 'employees', label: 'Employés', icon: Users, roles: ['Administrateur', 'Gestionnaire Entreprise'] },
+    { id: 'companies', label: 'Entreprises', icon: Building2, roles: ['Administrateur'] },
+    { id: 'restaurants', label: 'Restaurants', icon: Utensils, roles: ['Administrateur', 'Gestionnaire Restaurant'] },
+    { id: 'tickets', label: 'Tickets', icon: Ticket, roles: ['Administrateur', 'Gestionnaire Entreprise'] },
+    { id: 'analytics', label: 'Analyses', icon: BarChart3, roles: ['Administrateur', 'Gestionnaire Entreprise', 'Gestionnaire Restaurant'] },
+    { id: 'roles', label: 'Rôles', icon: Settings, roles: ['Administrateur'] },
+  ];
+
+  // Filtrer les menus selon le rôle de l'utilisateur connecté
+  const menuItems = allMenuItems.filter(item => item.roles.includes(currentUser.role));
+
+  // Charger les statistiques une seule fois au montage du composant
   useEffect(() => {
     loadStatistics();
   }, []);
+
+  // Vérifier l'accès au menu séparément
+  useEffect(() => {
+    const hasAccessToCurrentMenu = menuItems.some(item => item.id === activeMenu);
+    if (!hasAccessToCurrentMenu) {
+      setActiveMenu('dashboard'); // Rediriger vers le dashboard si pas d'accès
+    }
+  }, [activeMenu, currentUser.role]); // Dépendre du rôle plutôt que de menuItems
 
   const loadStatistics = async () => {
     try {
@@ -46,17 +95,6 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
       setLoading(false);
     }
   };
-
-  const menuItems = [
-    { id: 'dashboard', label: 'Tableau de bord', icon: LayoutDashboard },
-    { id: 'users', label: 'Gestionnaires', icon: Users },
-    { id: 'employees', label: 'Employés', icon: Users },
-    { id: 'companies', label: 'Entreprises', icon: Building2 },
-    { id: 'restaurants', label: 'Restaurants', icon: Utensils },
-    { id: 'tickets', label: 'Tickets', icon: Ticket },
-    { id: 'analytics', label: 'Analyses', icon: BarChart3 },
-    { id: 'roles', label: 'Rôles', icon: Settings },
-  ];
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
@@ -111,11 +149,12 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
         <div className="p-4 border-t border-gray-200">
           <div className="flex items-center space-x-3 p-3 rounded-xl hover:bg-gray-50 transition-colors">
             <div className="w-10 h-10 bg-gradient-to-br from-orange-500 to-orange-600 rounded-full flex items-center justify-center">
-              <span className="text-white font-medium text-sm">AD</span>
+              <span className="text-white font-medium text-sm">{getUserInitials(currentUser.name)}</span>
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-gray-900 truncate">Administrateur</p>
-              <p className="text-xs text-gray-500 truncate">admin@appticket.com</p>
+              <p className="text-sm font-medium text-gray-900 truncate">{currentUser.name}</p>
+              <p className="text-xs text-gray-500 truncate">{getRoleDisplayName(currentUser.role)}</p>
+              <p className="text-xs text-gray-400 truncate">{currentUser.email}</p>
             </div>
           </div>
           <button
@@ -163,7 +202,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
                   className="flex items-center space-x-2 p-2 rounded-lg hover:bg-gray-100 transition-colors"
                 >
                   <div className="w-8 h-8 bg-gradient-to-br from-orange-500 to-orange-600 rounded-full flex items-center justify-center">
-                    <span className="text-white font-medium text-xs">AD</span>
+                    <span className="text-white font-medium text-xs">{getUserInitials(currentUser.name)}</span>
                   </div>
                 </button>
                 

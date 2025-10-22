@@ -39,6 +39,8 @@ const ModernLogin: React.FC<ModernLoginProps> = ({ onShowRegister }) => {
       localStorage.setItem('userEmail', response.user.email);
       localStorage.setItem('userName', response.user.name);
       localStorage.setItem('userId', response.user.id.toString());
+      localStorage.setItem('userCompanyId', response.user.company_id?.toString() || '');
+      localStorage.setItem('userCompanyName', response.user.company_name || '');
       localStorage.setItem('authToken', response.token);
       
       if (rememberMe) {

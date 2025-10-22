@@ -36,6 +36,11 @@ function App() {
     localStorage.removeItem('isLoggedIn');
     localStorage.removeItem('userRole');
     localStorage.removeItem('userEmail');
+    localStorage.removeItem('userName');
+    localStorage.removeItem('userId');
+    localStorage.removeItem('userCompanyId');
+    localStorage.removeItem('userCompanyName');
+    localStorage.removeItem('authToken');
     localStorage.removeItem('rememberMe');
     
     setIsLoggedIn(false);

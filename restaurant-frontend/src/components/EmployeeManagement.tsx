@@ -27,6 +27,16 @@ const EmployeeManagement: React.FC = () => {
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
   const [selectedCompanyFilter, setSelectedCompanyFilter] = useState<string>('');
 
+  // Récupération des informations de l'utilisateur connecté
+  const currentUser = {
+    role: localStorage.getItem('userRole') || 'Utilisateur',
+    companyId: localStorage.getItem('userCompanyId') || null,
+    companyName: localStorage.getItem('userCompanyName') || ''
+  };
+
+  // Vérifier si l'utilisateur est un gestionnaire d'entreprise
+  const isCompanyManager = currentUser.role === 'Gestionnaire Entreprise';
+
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -70,7 +80,7 @@ const EmployeeManagement: React.FC = () => {
       email: '',
       phone: '',
       password: '',
-      company_id: '',
+      company_id: isCompanyManager ? (currentUser.companyId || '') : '',
       department: '',
       position: '',
       employee_number: '',
@@ -164,14 +174,22 @@ const EmployeeManagement: React.FC = () => {
   };
 
   // Filtrer les employés par entreprise
-  const filteredEmployees = selectedCompanyFilter 
-    ? employees.filter(emp => emp.company_id === selectedCompanyFilter)
-    : employees;
+  let filteredEmployees = employees;
+  
+  // Si c'est un gestionnaire d'entreprise, filtrer par son entreprise uniquement
+  if (isCompanyManager && currentUser.companyId) {
+    filteredEmployees = employees.filter(emp => emp.company_id === currentUser.companyId);
+  }
+  
+  // Appliquer le filtre de sélection d'entreprise (pour les administrateurs)
+  if (selectedCompanyFilter && !isCompanyManager) {
+    filteredEmployees = filteredEmployees.filter(emp => emp.company_id === selectedCompanyFilter);
+  }
 
-  // Statistiques
-  const totalEmployees = employees.length;
-  const activeEmployees = employees.filter(emp => emp.status === 'active').length;
-  const totalTickets = employees.reduce((sum, emp) => sum + emp.ticket_balance, 0);
+  // Statistiques basées sur les employés visibles
+  const totalEmployees = filteredEmployees.length;
+  const activeEmployees = filteredEmployees.filter(emp => emp.status === 'active').length;
+  const totalTickets = filteredEmployees.reduce((sum, emp) => sum + emp.ticket_balance, 0);
 
   if (loading) {
     return (
@@ -190,7 +208,12 @@ const EmployeeManagement: React.FC = () => {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Gestion des Employés</h1>
-          <p className="text-gray-600">Gérez les employés de vos entreprises partenaires.</p>
+          <p className="text-gray-600">
+            {isCompanyManager 
+              ? `Gérez les employés de ${currentUser.companyName || 'votre entreprise'}`
+              : 'Gérez les employés de vos entreprises partenaires'
+            }
+          </p>
         </div>
         <button
           onClick={handleCreateEmployee}
@@ -202,7 +225,7 @@ const EmployeeManagement: React.FC = () => {
       </div>
 
       {/* Statistics Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+      <div className={`grid grid-cols-1 gap-6 ${isCompanyManager ? 'md:grid-cols-3' : 'md:grid-cols-4'}`}>
         <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-200">
           <div className="flex items-center justify-between">
             <div>
@@ -239,35 +262,40 @@ const EmployeeManagement: React.FC = () => {
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-200">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Entreprises</p>
-              <p className="text-2xl font-bold text-indigo-600">{companies.length}</p>
-            </div>
-            <div className="h-12 w-12 bg-indigo-100 rounded-lg flex items-center justify-center">
-              <Building2 className="h-6 w-6 text-indigo-600" />
+        {/* Carte Entreprises - Seulement pour les administrateurs */}
+        {!isCompanyManager && (
+          <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-200">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Entreprises</p>
+                <p className="text-2xl font-bold text-indigo-600">{companies.length}</p>
+              </div>
+              <div className="h-12 w-12 bg-indigo-100 rounded-lg flex items-center justify-center">
+                <Building2 className="h-6 w-6 text-indigo-600" />
+              </div>
             </div>
           </div>
-        </div>
+        )}
       </div>
 
-      {/* Filters */}
-      <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-200">
-        <div className="flex items-center space-x-4">
-          <label className="text-sm font-medium text-gray-700">Filtrer par entreprise :</label>
-          <select
-            value={selectedCompanyFilter}
-            onChange={(e) => setSelectedCompanyFilter(e.target.value)}
-            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-          >
-            <option value="">Toutes les entreprises</option>
-            {companies.map((company) => (
-              <option key={company.id} value={company.id}>{company.name}</option>
-            ))}
-          </select>
+      {/* Filters - Seulement pour les administrateurs */}
+      {!isCompanyManager && (
+        <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-200">
+          <div className="flex items-center space-x-4">
+            <label className="text-sm font-medium text-gray-700">Filtrer par entreprise :</label>
+            <select
+              value={selectedCompanyFilter}
+              onChange={(e) => setSelectedCompanyFilter(e.target.value)}
+              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+            >
+              <option value="">Toutes les entreprises</option>
+              {companies.map((company) => (
+                <option key={company.id} value={company.id}>{company.name}</option>
+              ))}
+            </select>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Employees Table */}
       <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
@@ -463,17 +491,23 @@ const EmployeeManagement: React.FC = () => {
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Entreprise *
                     </label>
-                    <select
-                      required
-                      value={formData.company_id}
-                      onChange={(e) => setFormData({ ...formData, company_id: e.target.value })}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                    >
-                      <option value="">Sélectionner une entreprise</option>
-                      {companies.map((company) => (
-                        <option key={company.id} value={company.id}>{company.name}</option>
-                      ))}
-                    </select>
+                    {isCompanyManager ? (
+                      <div className="w-full px-4 py-3 border border-gray-200 bg-gray-50 rounded-lg text-gray-700">
+                        {currentUser.companyName || 'Entreprise non définie'}
+                      </div>
+                    ) : (
+                      <select
+                        required
+                        value={formData.company_id}
+                        onChange={(e) => setFormData({ ...formData, company_id: e.target.value })}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                      >
+                        <option value="">Sélectionner une entreprise</option>
+                        {companies.map((company) => (
+                          <option key={company.id} value={company.id}>{company.name}</option>
+                        ))}
+                      </select>
+                    )}
                   </div>
 
                   <div>
