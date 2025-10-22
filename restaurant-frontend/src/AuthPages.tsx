@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import ModernLogin from './ModernLogin';
-import ModernRegisterPageNew from './components/ModernRegisterPageNew';
+import RegisterForm from './components/RegisterForm';
 
 type AuthView = 'login' | 'register';
 
@@ -11,7 +11,7 @@ const AuthPages: React.FC = () => {
   const showLogin = () => setCurrentView('login');
 
   if (currentView === 'register') {
-    return <ModernRegisterPageNew onBackToLogin={showLogin} />;
+    return <RegisterForm onBackToLogin={showLogin} />;
   }
 
   return <ModernLogin onShowRegister={showRegister} />;

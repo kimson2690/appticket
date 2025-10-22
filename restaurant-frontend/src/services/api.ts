@@ -97,7 +97,7 @@ interface Employee {
   position?: string;
   employee_number?: string;
   ticket_balance: number;
-  status: 'active' | 'inactive' | 'suspended';
+  status: 'active' | 'inactive' | 'suspended' | 'pending';
   hire_date?: string;
   created_at: string;
   updated_at: string;

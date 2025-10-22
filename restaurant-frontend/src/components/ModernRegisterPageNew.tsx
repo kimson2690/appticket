@@ -1,14 +1,20 @@
-import React, { useState } from 'react';
-import { Eye, EyeOff, ArrowLeft, Mail, Lock, Building2, User, Phone, ShoppingBag, Users, TrendingUp } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Eye, EyeOff, ArrowLeft, Mail, Lock, Building2, User, Phone, Briefcase, CreditCard, Calendar } from 'lucide-react';
+import { apiService, type Company } from '../services/api';
 
 interface RegisterFormData {
-  firstName: string;
-  lastName: string;
+  name: string;
   email: string;
   phone: string;
   password: string;
   confirmPassword: string;
-  companyId: string;
+  company_id: string;
+  department: string;
+  position: string;
+  employee_number: string;
+  ticket_balance: number;
+  status: 'active' | 'inactive' | 'suspended';
+  hire_date: string;
   acceptTerms: boolean;
 }
 
@@ -18,34 +24,43 @@ interface ModernRegisterPageProps {
 
 const ModernRegisterPageNew: React.FC<ModernRegisterPageProps> = ({ onBackToLogin }) => {
   const [formData, setFormData] = useState<RegisterFormData>({
-    firstName: '',
-    lastName: '',
+    name: '',
     email: '',
     phone: '',
     password: '',
     confirmPassword: '',
-    companyId: '',
+    company_id: '',
+    department: '',
+    position: '',
+    employee_number: '',
+    ticket_balance: 0,
+    status: 'active',
+    hire_date: '',
     acceptTerms: false
   });
+  const [companies, setCompanies] = useState<Company[]>([]);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<Partial<RegisterFormData>>({});
 
-  // List of available companies (Burkina Faso)
-  const companies = [
-    { id: '1', name: 'TechCorp Burkina' },
-    { id: '2', name: 'Restaurant Wend Kuni' },
-    { id: '3', name: 'Entreprise Ouaga Foods' },
-    { id: '4', name: 'Société Faso Meals' },
-    { id: '5', name: 'Groupe Hospitality Burkina' }
-  ];
+  useEffect(() => {
+    loadCompanies();
+  }, []);
+
+  const loadCompanies = async () => {
+    try {
+      const companiesData = await apiService.getCompanies();
+      setCompanies(companiesData);
+    } catch (error) {
+      console.error('Erreur lors du chargement des entreprises:', error);
+    }
+  };
 
   const validateForm = (): boolean => {
     const newErrors: Partial<RegisterFormData> = {};
 
-    if (!formData.firstName.trim()) newErrors.firstName = 'Prénom requis';
-    if (!formData.lastName.trim()) newErrors.lastName = 'Nom requis';
+    if (!formData.name.trim()) newErrors.name = 'Nom complet requis';
     if (!formData.email.trim()) newErrors.email = 'Email requis';
     else if (!/\S+@\S+\.\S+/.test(formData.email)) newErrors.email = 'Email invalide';
     if (!formData.phone.trim()) newErrors.phone = 'Téléphone requis';
@@ -54,7 +69,7 @@ const ModernRegisterPageNew: React.FC<ModernRegisterPageProps> = ({ onBackToLogi
     if (formData.password !== formData.confirmPassword) {
       newErrors.confirmPassword = 'Les mots de passe ne correspondent pas';
     }
-    if (!formData.companyId) newErrors.companyId = 'Entreprise requise';
+    if (!formData.company_id) newErrors.company_id = 'Entreprise requise';
     if (!formData.acceptTerms) newErrors.acceptTerms = true as any;
 
     setErrors(newErrors);

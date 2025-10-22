@@ -79,7 +79,10 @@ class EmployeeController extends Controller
             $company_id = $request->input('company_id', '1');
             $department = $request->input('department', '');
             $position = $request->input('position', '');
+            $employee_number = $request->input('employee_number', '');
+            $ticket_balance = $request->input('ticket_balance', 0);
             $status = $request->input('status', 'active');
+            $hire_date = $request->input('hire_date', null);
             
             if (!$name || !$email) {
                 return response()->json([
@@ -109,10 +112,10 @@ class EmployeeController extends Controller
                 'company_name' => $companyName,
                 'department' => $department,
                 'position' => $position,
-                'employee_number' => '',
-                'ticket_balance' => 0,
+                'employee_number' => $employee_number,
+                'ticket_balance' => (int) $ticket_balance,
                 'status' => $status,
-                'hire_date' => null,
+                'hire_date' => $hire_date,
                 'created_at' => date('Y-m-d'),
                 'updated_at' => date('Y-m-d'),
             ];
@@ -217,7 +220,10 @@ class EmployeeController extends Controller
             $company_id = $request->input('company_id', $employees[$employeeIndex]['company_id']);
             $department = $request->input('department', $employees[$employeeIndex]['department']);
             $position = $request->input('position', $employees[$employeeIndex]['position']);
+            $employee_number = $request->input('employee_number', $employees[$employeeIndex]['employee_number'] ?? '');
+            $ticket_balance = $request->input('ticket_balance', $employees[$employeeIndex]['ticket_balance'] ?? 0);
             $status = $request->input('status', $employees[$employeeIndex]['status']);
+            $hire_date = $request->input('hire_date', $employees[$employeeIndex]['hire_date'] ?? null);
 
             // Récupérer le nom de l'entreprise basé sur le company_id
             $companyName = $this->getCompanyName($company_id);
@@ -236,7 +242,10 @@ class EmployeeController extends Controller
                 'company_name' => $companyName, // Mise à jour du nom de l'entreprise
                 'department' => $department,
                 'position' => $position,
+                'employee_number' => $employee_number,
+                'ticket_balance' => (int) $ticket_balance,
                 'status' => $status,
+                'hire_date' => $hire_date,
                 'updated_at' => date('Y-m-d'),
             ]);
 
