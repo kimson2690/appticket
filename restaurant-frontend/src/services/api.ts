@@ -505,6 +505,47 @@ class ApiService {
     });
     return response.data;
   }
+
+  // Daily Menus API
+  async getDailyMenus(): Promise<DailyMenu[]> {
+    const response = await this.request<DailyMenu[]>('/admin/daily-menus');
+    return response.data;
+  }
+
+  async createDailyMenu(data: Omit<DailyMenu, 'id' | 'created_by' | 'created_at' | 'updated_at'>): Promise<DailyMenu> {
+    const response = await this.request<DailyMenu>('/admin/daily-menus', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+    return response.data;
+  }
+
+  async getDailyMenu(id: string): Promise<DailyMenu> {
+    const response = await this.request<DailyMenu>(`/admin/daily-menus/${id}`);
+    return response.data;
+  }
+
+  async updateDailyMenu(id: string, data: Partial<Omit<DailyMenu, 'id' | 'created_by' | 'created_at' | 'updated_at'>>): Promise<DailyMenu> {
+    const response = await this.request<DailyMenu>(`/admin/daily-menus/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+    return response.data;
+  }
+
+  async deleteDailyMenu(id: string): Promise<{ message: string }> {
+    const response = await this.request<{ message: string }>(`/admin/daily-menus/${id}`, {
+      method: 'DELETE',
+    });
+    return response.data;
+  }
+
+  async toggleDailyMenuAvailability(id: string): Promise<DailyMenu> {
+    const response = await this.request<DailyMenu>(`/admin/daily-menus/${id}/toggle-availability`, {
+      method: 'POST',
+    });
+    return response.data;
+  }
 }
 
 export const apiService = new ApiService();
@@ -628,6 +669,30 @@ export interface MenuItem {
   preparation_time?: number;
   allergens?: string[];
   ingredients?: string[];
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface DailyMenu {
+  id: string;
+  restaurant_id: string;
+  name: string;
+  description: string;
+  type: 'daily' | 'weekly' | 'special';
+  day_of_week?: 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday' | 'sunday';
+  valid_from: string;
+  valid_until: string;
+  price: number;
+  items: Array<{
+    item_id: string;
+    category: string;
+  }>;
+  enriched_items?: Array<{
+    category: string;
+    item: MenuItem;
+  }>;
+  is_available: boolean;
   created_by: string;
   created_at: string;
   updated_at: string;

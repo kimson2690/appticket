@@ -16,6 +16,7 @@ use App\Http\Controllers\Admin\UserTicketController;
 use App\Http\Controllers\Admin\MigrateBatchNumbersController;
 use App\Http\Controllers\Admin\CompanyRestaurantController;
 use App\Http\Controllers\Admin\MenuItemController;
+use App\Http\Controllers\Admin\DailyMenuController;
 use App\Http\Controllers\AuthController;
 
 Route::get('/user', function (Request $request) {
@@ -52,6 +53,14 @@ Route::prefix('admin')->group(function () {
     Route::put('/menu-items/{id}', [MenuItemController::class, 'update']);
     Route::delete('/menu-items/{id}', [MenuItemController::class, 'destroy']);
     Route::post('/menu-items/{id}/toggle-availability', [MenuItemController::class, 'toggleAvailability']);
+    
+    // Gestion des menus composés (menu du jour/semaine)
+    Route::get('/daily-menus', [DailyMenuController::class, 'index']);
+    Route::post('/daily-menus', [DailyMenuController::class, 'store']);
+    Route::get('/daily-menus/{id}', [DailyMenuController::class, 'show']);
+    Route::put('/daily-menus/{id}', [DailyMenuController::class, 'update']);
+    Route::delete('/daily-menus/{id}', [DailyMenuController::class, 'destroy']);
+    Route::post('/daily-menus/{id}/toggle-availability', [DailyMenuController::class, 'toggleAvailability']);
     
     // Gestion des utilisateurs
     Route::get('/users', [UserController::class, 'index']);
