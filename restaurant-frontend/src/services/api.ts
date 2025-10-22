@@ -311,6 +311,12 @@ class ApiService {
     return response.data;
   }
 
+  // Statistics API
+  async getStatistics(): Promise<Statistics> {
+    const response = await this.request<Statistics>('/admin/statistics');
+    return response.data;
+  }
+
   // Auth API
   async login(email: string, password: string): Promise<{ success: boolean; user: any; token: string }> {
     const url = `${API_BASE_URL}/login`;
@@ -335,4 +341,58 @@ class ApiService {
 }
 
 export const apiService = new ApiService();
-export type { Role, Permission, Company, Restaurant, User, Employee };
+
+// Statistics interfaces
+interface Statistics {
+  overview: {
+    total_users: number;
+    active_users: number;
+    total_companies: number;
+    active_companies: number;
+    total_restaurants: number;
+    active_restaurants: number;
+    total_employees: number;
+    active_employees: number;
+    total_ticket_balance: number;
+  };
+  users_by_role: {
+    administrators: number;
+    managers: number;
+    employees: number;
+  };
+  companies_stats: CompanyStats[];
+  department_stats: DepartmentStats[];
+  monthly_stats: MonthlyStats[];
+  ticket_distribution: TicketDistribution[];
+  generated_at: string;
+}
+
+interface CompanyStats {
+  company_id: number;
+  company_name: string;
+  employee_count: number;
+  active_employees: number;
+  total_tickets: number;
+}
+
+interface DepartmentStats {
+  department: string;
+  employee_count: number;
+  total_tickets: number;
+}
+
+interface MonthlyStats {
+  month: string;
+  users: number;
+  tickets: number;
+  orders: number;
+}
+
+interface TicketDistribution {
+  range: string;
+  label: string;
+  count: number;
+  percentage: number;
+}
+
+export type { Role, Permission, Company, Restaurant, User, Employee, Statistics, CompanyStats, DepartmentStats, MonthlyStats, TicketDistribution };

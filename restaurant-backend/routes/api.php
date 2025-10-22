@@ -4,10 +4,12 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\PermissionController;
+use App\Http\Controllers\Admin\RoleController as AdminRoleController;
 use App\Http\Controllers\Admin\CompanyController;
 use App\Http\Controllers\Admin\RestaurantController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\EmployeeController;
+use App\Http\Controllers\Admin\StatisticsController;
 use App\Http\Controllers\AuthController;
 
 Route::get('/user', function (Request $request) {
@@ -17,7 +19,7 @@ Route::get('/user', function (Request $request) {
 // Routes pour la gestion des rôles et permissions
 Route::prefix('admin')->group(function () {
     // Rôles
-    Route::apiResource('roles', RoleController::class);
+    Route::apiResource('roles', AdminRoleController::class);
     
     // Permissions
     Route::get('permissions', [PermissionController::class, 'index']);
@@ -50,6 +52,9 @@ Route::prefix('admin')->group(function () {
     Route::get('/employees/{id}', [EmployeeController::class, 'show']);
     Route::put('/employees/{id}', [EmployeeController::class, 'update']);
     Route::delete('/employees/{id}', [EmployeeController::class, 'destroy']);
+    
+    // Statistiques globales
+    Route::get('/statistics', [StatisticsController::class, 'index']);
 });
 
 // Routes publiques pour l'authentification
