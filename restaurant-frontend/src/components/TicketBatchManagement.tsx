@@ -11,7 +11,9 @@ import {
   AlertTriangle,
   Package,
   TrendingUp,
-  Clock
+  Clock,
+  Users,
+  DollarSign
 } from 'lucide-react';
 import { apiService, type TicketBatch, type TicketConfiguration } from '../services/api';
 
@@ -528,101 +530,141 @@ const TicketBatchManagement: React.FC = () => {
               </button>
             </div>
           ) : (
-            <div className="space-y-4">
+            <div className="space-y-3">
               {filteredBatches.map((batch) => (
-                <div key={batch.id} className="border border-gray-200 rounded-xl p-6 hover:shadow-md transition-shadow">
-                  <div className="flex items-start space-x-4 mb-4">
-                    {/* Checkbox de sélection */}
-                    <div className="pt-1">
-                      <input
-                        type="checkbox"
-                        checked={selectedBatches.includes(batch.id)}
-                        onChange={() => handleSelectBatch(batch.id)}
-                        className="w-5 h-5 text-orange-500 border-gray-300 rounded focus:ring-orange-500 cursor-pointer"
-                      />
-                    </div>
-                    
-                    <div className="flex-1">
-                      <div className="flex items-center space-x-3 mb-2">
-                        <h3 className="font-semibold text-gray-900 text-lg">
-                          {batch.batch_number || `Souche #${batch.id.split('_')[1]}`}
-                        </h3>
-                        <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(batch.status)}`}>
-                          {getStatusLabel(batch.status)}
-                        </span>
-                        <span className={`px-3 py-1 rounded-full text-xs font-medium ${getTypeColor(batch.type)}`}>
-                          {batch.type}
-                        </span>
-                      </div>
-                      <div className="space-y-1">
-                        <p className="text-sm text-gray-600">Créée par {batch.created_by} le {new Date(batch.created_at).toLocaleDateString('fr-FR')}</p>
-                        {batch.employee_name && (
-                          <p className="text-sm font-medium text-blue-600 flex items-center">
-                            <span className="mr-1">👤</span>
-                            Attribuée à : {batch.employee_name}
-                          </p>
-                        )}
-                      </div>
-                    </div>
+                <div 
+                  key={batch.id} 
+                  className="group relative bg-gradient-to-br from-white to-gray-50 border-2 border-gray-100 rounded-xl p-4 hover:shadow-xl hover:border-orange-200 transition-all duration-300 hover:-translate-y-1"
+                >
+                  {/* Badge de statut flottant */}
+                  <div className="absolute top-3 right-3 flex items-center space-x-2">
+                    <span className={`px-4 py-1.5 rounded-full text-xs font-bold shadow-sm ${getStatusColor(batch.status)}`}>
+                      {getStatusLabel(batch.status)}
+                    </span>
                     <button
                       onClick={() => handleDeleteBatch(batch.id)}
-                      className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                      className="p-2.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all hover:scale-110"
                     >
                       <Trash2 className="w-5 h-5" />
                     </button>
                   </div>
 
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <div>
-                      <p className="text-sm text-gray-600 mb-1">Total</p>
-                      <p className="font-semibold text-gray-900 text-lg">{batch.total_tickets}</p>
+                  {/* Header avec checkbox et badges */}
+                  <div className="flex items-start space-x-3 mb-4">
+                    <div className="pt-0.5">
+                      <input
+                        type="checkbox"
+                        checked={selectedBatches.includes(batch.id)}
+                        onChange={() => handleSelectBatch(batch.id)}
+                        className="w-4 h-4 text-orange-500 border-gray-300 rounded-md focus:ring-2 focus:ring-orange-500 cursor-pointer transition-transform hover:scale-110"
+                      />
                     </div>
-                    <div>
-                      <p className="text-sm text-gray-600 mb-1">Consommés</p>
-                      <p className="font-semibold text-orange-600 text-lg">{batch.used_tickets}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-600 mb-1">Restants</p>
-                      <p className="font-semibold text-green-600 text-lg">{batch.remaining_tickets}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-600 mb-1">Valeur</p>
-                      <p className="font-semibold text-gray-900 text-lg">{batch.ticket_value}F</p>
+                    
+                    <div className="flex-1">
+                      <div className="flex items-center space-x-2 mb-2">
+                        <div className="flex items-center space-x-1.5">
+                          <Package className="w-4 h-4 text-orange-500" />
+                          <h3 className="font-bold text-gray-900 text-lg">
+                            {batch.batch_number || `Souche #${batch.id.split('_')[1]}`}
+                          </h3>
+                        </div>
+                        <span className={`px-2 py-0.5 rounded-md text-xs font-bold uppercase tracking-wide ${getTypeColor(batch.type)}`}>
+                          {batch.type}
+                        </span>
+                      </div>
+                      
+                      {/* Métadonnées */}
+                      <div className="space-y-1">
+                        <div className="flex items-center text-xs text-gray-600">
+                          <Calendar className="w-3 h-3 mr-1.5 text-gray-400" />
+                          <span>Créée par <span className="font-semibold text-gray-900">{batch.created_by}</span> le {new Date(batch.created_at).toLocaleDateString('fr-FR')}</span>
+                        </div>
+                        {batch.employee_name && (
+                          <div className="flex items-center text-xs">
+                            <Users className="w-3 h-3 mr-1.5 text-blue-500" />
+                            <span className="text-gray-600">Attribuée à</span>
+                            <span className="ml-1.5 px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded font-semibold">
+                              {batch.employee_name}
+                            </span>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
 
-                  <div className="mt-4 pt-4 border-t border-gray-100">
-                    <div className="grid grid-cols-2 gap-4 text-sm">
-                      <div>
-                        <span className="text-gray-600">Validité début:</span>
-                        <span className="ml-2 font-medium text-gray-900">
+                  {/* Statistiques avec cartes */}
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-3">
+                    <div className="bg-white rounded-lg p-2.5 border border-gray-100 hover:border-gray-200 transition-colors">
+                      <div className="flex items-center justify-between mb-1">
+                        <p className="text-[10px] font-medium text-gray-500 uppercase tracking-wide">Total</p>
+                        <Ticket className="w-3 h-3 text-gray-400" />
+                      </div>
+                      <p className="text-xl font-bold text-gray-900">{batch.total_tickets}</p>
+                    </div>
+                    <div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-lg p-2.5 border border-orange-200">
+                      <div className="flex items-center justify-between mb-1">
+                        <p className="text-[10px] font-medium text-orange-700 uppercase tracking-wide">Consommés</p>
+                        <TrendingUp className="w-3 h-3 text-orange-500" />
+                      </div>
+                      <p className="text-xl font-bold text-orange-600">{batch.used_tickets}</p>
+                    </div>
+                    <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-lg p-2.5 border border-green-200">
+                      <div className="flex items-center justify-between mb-1">
+                        <p className="text-[10px] font-medium text-green-700 uppercase tracking-wide">Restants</p>
+                        <CheckCircle className="w-3 h-3 text-green-500" />
+                      </div>
+                      <p className="text-xl font-bold text-green-600">{batch.remaining_tickets}</p>
+                    </div>
+                    <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg p-2.5 border border-purple-200">
+                      <div className="flex items-center justify-between mb-1">
+                        <p className="text-[10px] font-medium text-purple-700 uppercase tracking-wide">Valeur</p>
+                        <DollarSign className="w-3 h-3 text-purple-500" />
+                      </div>
+                      <p className="text-xl font-bold text-purple-600">{batch.ticket_value}F</p>
+                    </div>
+                  </div>
+
+                  {/* Période de validité */}
+                  <div className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-lg p-2.5 mb-3 border border-gray-200">
+                    <div className="flex items-center justify-between text-xs">
+                      <div className="flex items-center">
+                        <Clock className="w-3 h-3 mr-1.5 text-gray-500" />
+                        <span className="text-gray-600">Du</span>
+                        <span className="mx-1.5 px-2 py-0.5 bg-white rounded-md font-semibold text-gray-900 text-xs">
                           {new Date(batch.validity_start).toLocaleDateString('fr-FR')}
                         </span>
                       </div>
-                      <div>
-                        <span className="text-gray-600">Validité fin:</span>
-                        <span className="ml-2 font-medium text-gray-900">
+                      <span className="text-gray-400 text-sm">→</span>
+                      <div className="flex items-center">
+                        <span className="text-gray-600">Au</span>
+                        <span className="mx-1.5 px-2 py-0.5 bg-white rounded-md font-semibold text-gray-900 text-xs">
                           {new Date(batch.validity_end).toLocaleDateString('fr-FR')}
                         </span>
                       </div>
                     </div>
                   </div>
 
-                  {/* Barre de progression - Consommation réelle */}
-                  <div className="mt-4">
-                    <div className="flex items-center justify-between text-sm mb-2">
-                      <span className="text-gray-600">Consommation réelle</span>
-                      <span className="font-medium text-gray-900">
+                  {/* Barre de progression améliorée */}
+                  <div className="bg-white rounded-lg p-2.5 border border-gray-100">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center">
+                        <TrendingUp className="w-3 h-3 mr-1.5 text-orange-500" />
+                        <span className="text-xs font-semibold text-gray-700">Consommation</span>
+                      </div>
+                      <span className="text-lg font-bold text-orange-600">
                         {Math.round((batch.used_tickets / batch.total_tickets) * 100)}%
                       </span>
                     </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div className="relative w-full bg-gray-200 rounded-full h-2 overflow-hidden">
                       <div 
-                        className="bg-orange-500 h-2 rounded-full transition-all"
+                        className="absolute top-0 left-0 h-full bg-gradient-to-r from-orange-400 to-orange-600 rounded-full transition-all duration-500"
                         style={{ width: `${(batch.used_tickets / batch.total_tickets) * 100}%` }}
                       ></div>
                     </div>
-                    <p className="text-xs text-gray-500 mt-1">Reflète les tickets réellement dépensés par les employés</p>
+                    <p className="text-[10px] text-gray-500 mt-1 flex items-center">
+                      <CheckCircle className="w-2.5 h-2.5 mr-1" />
+                      {batch.used_tickets} / {batch.total_tickets} tickets
+                    </p>
                   </div>
                 </div>
               ))}

@@ -391,7 +391,9 @@ const UserTicketManagement: React.FC = () => {
                       </div>
                       <div className="ml-4">
                         <div className="text-sm font-medium text-gray-900">{employee.name}</div>
-                        <div className="text-sm text-gray-500">#{employee.employee_number || 'N/A'}</div>
+                        {employee.employee_number && (
+                          <div className="text-sm text-gray-500">#{employee.employee_number}</div>
+                        )}
                       </div>
                     </div>
                   </td>
