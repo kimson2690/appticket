@@ -8,6 +8,17 @@ const WeeklyMenuPlanning: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string; title: string } | null>(null);
+  const [savedDishes, setSavedDishes] = useState<typeof selectedDishes>({
+    monday: [],
+    tuesday: [],
+    wednesday: [],
+    thursday: [],
+    friday: [],
+    saturday: [],
+    sunday: []
+  });
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [selectedDishes, setSelectedDishes] = useState<{
     monday: string[];
     tuesday: string[];
@@ -47,19 +58,41 @@ const WeeklyMenuPlanning: React.FC = () => {
     }
   }, [notification]);
 
+  useEffect(() => {
+    console.log('📋 selectedDishes mis à jour:', selectedDishes);
+    console.log('Lundi:', selectedDishes.monday);
+    console.log('Mardi:', selectedDishes.tuesday);
+  }, [selectedDishes]);
+
   const loadData = async () => {
     try {
       setLoading(true);
+      console.log('=== DÉBUT CHARGEMENT PLANNING HEBDO ===');
+      
       const [planningData, itemsData] = await Promise.all([
         apiService.getWeeklyMenuPlanning(),
         apiService.getMenuItems()
       ]);
       
+      console.log('Planning reçu du backend:', planningData);
+      console.log('Type de planningData:', typeof planningData);
+      console.log('planningData.week_planning:', planningData?.week_planning);
+      
       setPlanning(planningData);
       setMenuItems(itemsData.filter(item => item.is_available));
       
       if (planningData && planningData.week_planning) {
+        console.log('✅ Week planning trouvé, mise à jour des plats sélectionnés');
+        console.log('Plats sélectionnés:', planningData.week_planning);
         setSelectedDishes(planningData.week_planning);
+        setSavedDishes(planningData.week_planning);
+        setHasUnsavedChanges(false);
+        if (planningData.updated_at) {
+          setLastSaved(new Date(planningData.updated_at));
+        }
+      } else {
+        console.log('❌ Pas de week_planning dans les données reçues');
+        console.log('Structure de planningData:', Object.keys(planningData || {}));
       }
     } catch (error) {
       console.error('Erreur:', error);
@@ -74,12 +107,18 @@ const WeeklyMenuPlanning: React.FC = () => {
       const dayDishes = prev[day as keyof typeof prev];
       const isSelected = dayDishes.includes(dishId);
       
-      return {
+      const newSelection = {
         ...prev,
         [day]: isSelected 
           ? dayDishes.filter(id => id !== dishId)
           : [...dayDishes, dishId]
       };
+      
+      // Vérifier s'il y a des changements non sauvegardés
+      const hasChanges = JSON.stringify(newSelection) !== JSON.stringify(savedDishes);
+      setHasUnsavedChanges(hasChanges);
+      
+      return newSelection;
     });
   };
 
@@ -94,6 +133,8 @@ const WeeklyMenuPlanning: React.FC = () => {
       });
       
       setNotification({ type: 'success', title: 'Enregistré', message: 'Votre planification hebdomadaire a été sauvegardée avec succès.' });
+      setLastSaved(new Date());
+      setHasUnsavedChanges(false);
       loadData();
     } catch (error) {
       console.error('Erreur:', error);
@@ -165,10 +206,65 @@ const WeeklyMenuPlanning: React.FC = () => {
           </button>
         </div>
 
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-          <p className="text-sm text-blue-800">
-            💡 <strong>Conseil :</strong> Sélectionnez les plats disponibles pour chaque jour. Vous pouvez copier la sélection d'un jour vers tous les autres jours en cliquant sur le bouton "Copier vers tous".
-          </p>
+        {/* Feedback visuel */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+          {/* Compteur total de plats sélectionnés */}
+          <div className="bg-gradient-to-br from-purple-50 to-purple-100 border border-purple-200 rounded-xl p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-purple-600">Plats sélectionnés</p>
+                <p className="text-2xl font-bold text-purple-900 mt-1">
+                  {Object.values(selectedDishes).flat().length}
+                </p>
+              </div>
+              <div className="p-3 bg-purple-200 rounded-lg">
+                <CheckCircle className="w-6 h-6 text-purple-600" />
+              </div>
+            </div>
+          </div>
+
+          {/* Statut de sauvegarde */}
+          <div className={`border rounded-xl p-4 ${hasUnsavedChanges ? 'bg-gradient-to-br from-orange-50 to-orange-100 border-orange-200' : 'bg-gradient-to-br from-green-50 to-green-100 border-green-200'}`}>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className={`text-sm font-medium ${hasUnsavedChanges ? 'text-orange-600' : 'text-green-600'}`}>
+                  {hasUnsavedChanges ? 'Modifications non sauvegardées' : 'Sauvegardé'}
+                </p>
+                {lastSaved && !hasUnsavedChanges && (
+                  <p className="text-xs text-green-700 mt-1">
+                    {lastSaved.toLocaleDateString('fr-FR')} à {lastSaved.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+                  </p>
+                )}
+                {hasUnsavedChanges && (
+                  <p className="text-xs text-orange-700 mt-1">
+                    Cliquez sur "Enregistrer"
+                  </p>
+                )}
+              </div>
+              <div className={`p-3 rounded-lg ${hasUnsavedChanges ? 'bg-orange-200' : 'bg-green-200'}`}>
+                {hasUnsavedChanges ? (
+                  <XCircle className="w-6 h-6 text-orange-600" />
+                ) : (
+                  <CheckCircle className="w-6 h-6 text-green-600" />
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Jours configurés */}
+          <div className="bg-gradient-to-br from-blue-50 to-blue-100 border border-blue-200 rounded-xl p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-blue-600">Jours configurés</p>
+                <p className="text-2xl font-bold text-blue-900 mt-1">
+                  {Object.values(selectedDishes).filter(arr => arr.length > 0).length} / 7
+                </p>
+              </div>
+              <div className="p-3 bg-blue-200 rounded-lg">
+                <Calendar className="w-6 h-6 text-blue-600" />
+              </div>
+            </div>
+          </div>
         </div>
 
         <div className="space-y-6">
