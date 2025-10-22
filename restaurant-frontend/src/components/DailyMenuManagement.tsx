@@ -6,7 +6,7 @@ interface DailyMenuForm {
   name: string;
   description: string;
   type: 'daily' | 'weekly' | 'special';
-  day_of_week?: 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday' | 'sunday';
+  day_of_week?: string;
   valid_from: string;
   valid_until: string;
   price: number;
@@ -198,19 +198,19 @@ const DailyMenuManagement: React.FC = () => {
     <div className="space-y-6">
       {notification && (
         <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-50 animate-slide-down">
-          <div className={\`rounded-xl shadow-2xl border-2 backdrop-blur-sm p-4 min-w-[320px] \${
+          <div className={`rounded-xl shadow-2xl border-2 backdrop-blur-sm p-4 min-w-[320px] ${
             notification.type === 'success' ? 'bg-green-50 border-green-200' :
             notification.type === 'error' ? 'bg-red-50 border-red-200' : 'bg-blue-50 border-blue-200'
-          }\`}>
+          }`}>
             <div className="flex items-start">
-              <div className={\`flex-shrink-0 \${notification.type === 'success' ? 'text-green-600' : notification.type === 'error' ? 'text-red-600' : 'text-blue-600'}\`}>
+              <div className={`flex-shrink-0 ${notification.type === 'success' ? 'text-green-600' : notification.type === 'error' ? 'text-red-600' : 'text-blue-600'}`}>
                 {notification.type === 'success' ? <CheckCircle className="w-6 h-6" /> : <XCircle className="w-6 h-6" />}
               </div>
               <div className="ml-3 flex-1">
-                <h3 className={\`text-sm font-bold \${notification.type === 'success' ? 'text-green-900' : notification.type === 'error' ? 'text-red-900' : 'text-blue-900'}\`}>
+                <h3 className={`text-sm font-bold ${notification.type === 'success' ? 'text-green-900' : notification.type === 'error' ? 'text-red-900' : 'text-blue-900'}`}>
                   {notification.title}
                 </h3>
-                <p className={\`mt-1 text-sm \${notification.type === 'success' ? 'text-green-700' : notification.type === 'error' ? 'text-red-700' : 'text-blue-700'}\`}>
+                <p className={`mt-1 text-sm ${notification.type === 'success' ? 'text-green-700' : notification.type === 'error' ? 'text-red-700' : 'text-blue-700'}`}>
                   {notification.message}
                 </p>
               </div>
@@ -283,7 +283,7 @@ const DailyMenuManagement: React.FC = () => {
                   <h3 className="font-bold text-gray-900 text-lg">{menu.name}</h3>
                   <p className="text-sm text-orange-600 font-medium">{menuTypes.find(t => t.value === menu.type)?.label}</p>
                 </div>
-                <div className={\`px-3 py-1 rounded-full text-xs font-medium \${menu.is_available ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'}\`}>
+                <div className={`px-3 py-1 rounded-full text-xs font-medium ${menu.is_available ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'}`}>
                   {menu.is_available ? 'Disponible' : 'Indisponible'}
                 </div>
               </div>
@@ -308,8 +308,8 @@ const DailyMenuManagement: React.FC = () => {
               </div>
               <div className="flex items-center space-x-2 pt-4 border-t border-gray-100">
                 <button onClick={() => toggleAvailability(menu.id)}
-                  className={\`flex-1 flex items-center justify-center space-x-1 px-3 py-2 rounded-lg transition-colors \${
-                    menu.is_available ? 'bg-gray-100 text-gray-700 hover:bg-gray-200' : 'bg-green-100 text-green-700 hover:bg-green-200'}\`}>
+                  className={`flex-1 flex items-center justify-center space-x-1 px-3 py-2 rounded-lg transition-colors ${
+                    menu.is_available ? 'bg-gray-100 text-gray-700 hover:bg-gray-200' : 'bg-green-100 text-green-700 hover:bg-green-200'}`}>
                   {menu.is_available ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   <span className="text-sm">{menu.is_available ? 'Masquer' : 'Afficher'}</span>
                 </button>
@@ -366,7 +366,7 @@ const DailyMenuManagement: React.FC = () => {
                   {formData.type === 'weekly' && (
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">Jour</label>
-                      <select value={formData.day_of_week || ''} onChange={(e) => setFormData({ ...formData, day_of_week: e.target.value as any })}
+                      <select value={formData.day_of_week || ''} onChange={(e) => setFormData({ ...formData, day_of_week: e.target.value })}
                         className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500">
                         <option value="">Sélectionner</option>
                         {daysOfWeek.map(day => <option key={day.value} value={day.value}>{day.label}</option>)}
@@ -405,7 +405,7 @@ const DailyMenuManagement: React.FC = () => {
                           const isSelected = selectedItems.some(si => si.item_id === item.id);
                           return (
                             <button key={item.id} type="button" onClick={() => toggleItemSelection(item.id, category)}
-                              className={\`text-left p-3 rounded-lg border-2 transition-all \${isSelected ? 'border-orange-500 bg-orange-50' : 'border-gray-200 hover:border-orange-300'}\`}>
+                              className={`text-left p-3 rounded-lg border-2 transition-all ${isSelected ? 'border-orange-500 bg-orange-50' : 'border-gray-200 hover:border-orange-300'}`}>
                               <div className="flex items-center justify-between">
                                 <div className="flex-1">
                                   <p className="font-medium text-gray-900">{item.name}</p>

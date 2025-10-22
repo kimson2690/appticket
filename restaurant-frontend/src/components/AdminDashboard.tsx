@@ -9,7 +9,7 @@ import TicketBatchManagement from './TicketBatchManagement';
 import UserTicketManagement from './UserTicketManagement';
 import PartnerRestaurants from './PartnerRestaurants';
 import MenuManagement from './MenuManagement';
-import DailyMenuManagement from './DailyMenuManagement';
+import WeeklyMenuPlanning from './WeeklyMenuPlanning';
 import { apiService, type Statistics } from '../services/api';
 import { 
   LayoutDashboard, 
@@ -75,7 +75,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
     { id: 'companies', label: 'Entreprises', icon: Building2, roles: ['Administrateur'] },
     { id: 'restaurants', label: 'Restaurants', icon: Utensils, roles: ['Administrateur', 'Gestionnaire Restaurant'] },
     { id: 'menu', label: 'Gestion du Menu', icon: ChefHat, roles: ['Gestionnaire Restaurant'] },
-    { id: 'daily-menus', label: 'Menus Composés', icon: Calendar, roles: ['Gestionnaire Restaurant'] },
+    { id: 'weekly-planning', label: 'Planning Hebdo', icon: Calendar, roles: ['Gestionnaire Restaurant'] },
     { id: 'partner-restaurants', label: 'Restaurants Partenaires', icon: Store, roles: ['Gestionnaire Entreprise'] },
     { id: 'tickets', label: 'Configuration', icon: Settings, roles: ['Gestionnaire Entreprise'] },
     { id: 'batches', label: 'Souches', icon: Package, roles: ['Gestionnaire Entreprise'] },
@@ -439,8 +439,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
             <MenuManagement />
           )}
 
-          {activeMenu === 'daily-menus' && (
-            <DailyMenuManagement />
+          {activeMenu === 'weekly-planning' && (
+            <WeeklyMenuPlanning />
           )}
 
           {activeMenu === 'users' && (

@@ -115,6 +115,7 @@ class ApiService {
     const userName = localStorage.getItem('userName');
     const userRole = localStorage.getItem('userRole');
     const companyId = localStorage.getItem('userCompanyId');
+    const restaurantId = localStorage.getItem('restaurantId') || localStorage.getItem('userRestaurantId');
     
     console.log('=== REQUEST DEBUG ===');
     console.log('URL complète:', url);
@@ -130,6 +131,7 @@ class ApiService {
           'X-User-Name': userName || '',
           'X-User-Role': userRole || '',
           'X-User-Company-Id': companyId || '',
+          'X-User-Restaurant-Id': restaurantId || '',
           ...options.headers,
         },
         ...options,
@@ -546,6 +548,20 @@ class ApiService {
     });
     return response.data;
   }
+
+  // Weekly Menu Planning API
+  async getWeeklyMenuPlanning(): Promise<WeeklyMenuPlanning> {
+    const response = await this.request<WeeklyMenuPlanning>('/admin/weekly-menu/current');
+    return response.data;
+  }
+
+  async saveWeeklyMenuPlanning(data: { week_planning: WeeklyMenuPlanning['week_planning']; restaurant_id?: string }): Promise<WeeklyMenuPlanning> {
+    const response = await this.request<WeeklyMenuPlanning>('/admin/weekly-menu', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+    return response.data;
+  }
 }
 
 export const apiService = new ApiService();
@@ -694,6 +710,33 @@ export interface DailyMenu {
   }>;
   is_available: boolean;
   created_by: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface WeeklyMenuPlanning {
+  id: string;
+  restaurant_id: string;
+  week_planning: {
+    monday: string[];
+    tuesday: string[];
+    wednesday: string[];
+    thursday: string[];
+    friday: string[];
+    saturday: string[];
+    sunday: string[];
+  };
+  enriched_items?: {
+    monday: MenuItem[];
+    tuesday: MenuItem[];
+    wednesday: MenuItem[];
+    thursday: MenuItem[];
+    friday: MenuItem[];
+    saturday: MenuItem[];
+    sunday: MenuItem[];
+  };
+  created_by?: string;
+  updated_by?: string;
   created_at: string;
   updated_at: string;
 }

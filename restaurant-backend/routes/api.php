@@ -17,6 +17,7 @@ use App\Http\Controllers\Admin\MigrateBatchNumbersController;
 use App\Http\Controllers\Admin\CompanyRestaurantController;
 use App\Http\Controllers\Admin\MenuItemController;
 use App\Http\Controllers\Admin\DailyMenuController;
+use App\Http\Controllers\Admin\WeeklyMenuController;
 use App\Http\Controllers\AuthController;
 
 Route::get('/user', function (Request $request) {
@@ -61,6 +62,11 @@ Route::prefix('admin')->group(function () {
     Route::put('/daily-menus/{id}', [DailyMenuController::class, 'update']);
     Route::delete('/daily-menus/{id}', [DailyMenuController::class, 'destroy']);
     Route::post('/daily-menus/{id}/toggle-availability', [DailyMenuController::class, 'toggleAvailability']);
+    
+    // Gestion de la planification hebdomadaire des plats
+    Route::get('/weekly-menu', [WeeklyMenuController::class, 'index']);
+    Route::post('/weekly-menu', [WeeklyMenuController::class, 'store']);
+    Route::get('/weekly-menu/current', [WeeklyMenuController::class, 'show']);
     
     // Gestion des utilisateurs
     Route::get('/users', [UserController::class, 'index']);
