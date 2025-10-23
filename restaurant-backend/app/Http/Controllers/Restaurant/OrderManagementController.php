@@ -113,6 +113,9 @@ class OrderManagementController extends Controller
             $orders[$orderIndex]['updated_at'] = now()->toDateTimeString();
 
             $this->saveOrders($orders);
+            
+            // Mettre à jour les souches de tickets pour refléter la consommation
+            $this->updateTicketBatchUsage($order['employee_id'], $order['total_amount']);
 
             Log::info('Commande validée: ' . $id . ' par ' . $userName);
 
@@ -310,5 +313,45 @@ class OrderManagementController extends Controller
 
         $content = file_get_contents($filePath);
         return json_decode($content, true) ?? [];
+    }
+
+    /**
+     * Mettre à jour l'utilisation des souches de tickets
+     */
+    private function updateTicketBatchUsage($employeeId, $amount)
+    {
+        $batchesFile = storage_path('app/ticket_batches.json');
+        
+        if (!file_exists($batchesFile)) {
+            return; // Pas de souches à mettre à jour
+        }
+
+        $batches = json_decode(file_get_contents($batchesFile), true) ?? [];
+        
+        // Trouver les souches de l'employé et les mettre à jour
+        foreach ($batches as &$batch) {
+            if (isset($batch['employee_id']) && $batch['employee_id'] === $employeeId) {
+                // Calculer combien de tickets ont été utilisés (basé sur la valeur)
+                $ticketValue = $batch['ticket_value'] ?? 500;
+                $ticketsUsed = intval($amount / $ticketValue);
+                
+                // Mettre à jour les compteurs
+                $batch['used_tickets'] = ($batch['used_tickets'] ?? 0) + $ticketsUsed;
+                $batch['remaining_tickets'] = max(0, ($batch['remaining_tickets'] ?? $batch['total_tickets']) - $ticketsUsed);
+                $batch['updated_at'] = now()->toDateTimeString();
+                
+                Log::info("Souche {$batch['id']} mise à jour: +{$ticketsUsed} tickets utilisés");
+                break; // On met à jour uniquement la première souche de l'employé
+            }
+        }
+        
+        // Sauvegarder
+        $cleanedBatches = $this->cleanUtf8Recursively($batches);
+        $json = json_encode($cleanedBatches, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        
+        if ($json !== false) {
+            file_put_contents($batchesFile, $json);
+            Log::info('Souches de tickets mises à jour après validation commande');
+        }
     }
 }
