@@ -19,18 +19,27 @@ class OrderController extends Controller
     public function store(Request $request)
     {
         try {
+            // Nettoyer toutes les données de la requête AVANT validation
+            $cleanedInput = $this->cleanUtf8Recursively($request->all());
+            $request->merge($cleanedInput);
+            
             $validated = $request->validate([
                 'restaurant_id' => 'required|string',
                 'items' => 'required|array|min:1',
                 'items.*.item_id' => 'required|string',
                 'items.*.quantity' => 'required|integer|min:1',
                 'items.*.price' => 'required|numeric|min:0',
+                'items.*.name' => 'nullable|string',
+                'items.*.restaurant_name' => 'nullable|string',
                 'delivery_address' => 'nullable|string',
                 'notes' => 'nullable|string',
             ]);
 
             $userId = $request->header('X-User-Id');
-            $userName = $request->header('X-User-Name');
+            $userNameRaw = $request->header('X-User-Name');
+            
+            // Nettoyer le nom d'utilisateur immédiatement
+            $userName = mb_convert_encoding($userNameRaw ?? '', 'UTF-8', 'UTF-8');
 
             if (!$userId) {
                 return response()->json(['error' => 'User ID manquant'], 401);
@@ -211,7 +220,17 @@ class OrderController extends Controller
     private function saveOrders($orders)
     {
         $filePath = storage_path('app/' . $this->ordersFile);
-        $json = json_encode($orders, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+        
+        // Nettoyer les caractères UTF-8 invalides
+        $cleanedOrders = $this->cleanUtf8Recursively($orders);
+        
+        $json = json_encode($cleanedOrders, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        
+        if ($json === false) {
+            Log::error('Erreur encodage JSON commandes: ' . json_last_error_msg());
+            throw new \Exception('Impossible d\'encoder les données en JSON');
+        }
+        
         file_put_contents($filePath, $json);
     }
 
@@ -236,7 +255,17 @@ class OrderController extends Controller
     private function saveEmployees($employees)
     {
         $filePath = storage_path('app/' . $this->employeesFile);
-        $json = json_encode($employees, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+        
+        // Nettoyer les caractères UTF-8 invalides
+        $cleanedEmployees = $this->cleanUtf8Recursively($employees);
+        
+        $json = json_encode($cleanedEmployees, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        
+        if ($json === false) {
+            Log::error('Erreur encodage JSON employés: ' . json_last_error_msg());
+            throw new \Exception('Impossible d\'encoder les données en JSON');
+        }
+        
         file_put_contents($filePath, $json);
     }
 
@@ -253,5 +282,34 @@ class OrderController extends Controller
 
         $content = file_get_contents($filePath);
         return json_decode($content, true) ?? [];
+    }
+
+    /**
+     * Nettoyer récursivement les caractères UTF-8 invalides
+     */
+    private function cleanUtf8Recursively($data)
+    {
+        if ($data === null) {
+            return null;
+        }
+        
+        if (is_array($data)) {
+            $cleaned = [];
+            foreach ($data as $key => $value) {
+                $cleanedKey = is_string($key) ? mb_convert_encoding($key, 'UTF-8', 'UTF-8') : $key;
+                $cleaned[$cleanedKey] = $this->cleanUtf8Recursively($value);
+            }
+            return $cleaned;
+        }
+        
+        if (is_string($data)) {
+            // Supprimer les caractères UTF-8 invalides et nettoyer
+            $cleaned = mb_convert_encoding($data, 'UTF-8', 'UTF-8');
+            // Supprimer les caractères de contrôle invisibles
+            $cleaned = preg_replace('/[\x00-\x1F\x7F]/u', '', $cleaned);
+            return $cleaned;
+        }
+        
+        return $data;
     }
 }

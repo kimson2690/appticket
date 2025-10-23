@@ -41,6 +41,8 @@ const ModernLogin: React.FC<ModernLoginProps> = ({ onShowRegister }) => {
       localStorage.setItem('userId', response.user.id.toString());
       localStorage.setItem('userCompanyId', response.user.company_id?.toString() || '');
       localStorage.setItem('userCompanyName', response.user.company_name || '');
+      localStorage.setItem('restaurantId', response.user.restaurant_id?.toString() || '');
+      localStorage.setItem('restaurantName', response.user.restaurant_name || '');
       localStorage.setItem('authToken', response.token);
       
       if (rememberMe) {
@@ -50,7 +52,8 @@ const ModernLogin: React.FC<ModernLoginProps> = ({ onShowRegister }) => {
       console.log('Informations stockées dans localStorage:', {
         isLoggedIn: localStorage.getItem('isLoggedIn'),
         userRole: localStorage.getItem('userRole'),
-        userEmail: localStorage.getItem('userEmail')
+        userEmail: localStorage.getItem('userEmail'),
+        restaurantId: localStorage.getItem('restaurantId')
       });
       
       // Recharger la page pour déclencher la redirection

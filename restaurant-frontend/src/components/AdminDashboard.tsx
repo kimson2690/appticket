@@ -13,6 +13,7 @@ import WeeklyMenuPlanning from './WeeklyMenuPlanning';
 import MyTickets from './MyTickets';
 import MyHistory from './MyHistory';
 import RestaurantOrderSystem from './RestaurantOrderSystem';
+import OrderManagement from './OrderManagement';
 import { apiService, type Statistics } from '../services/api';
 import { 
   LayoutDashboard, 
@@ -31,7 +32,8 @@ import {
   Wallet,
   Store,
   ChefHat,
-  Calendar
+  Calendar,
+  ShoppingCart
 } from 'lucide-react';
 
 interface AdminDashboardProps {
@@ -78,6 +80,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
     { id: 'companies', label: 'Entreprises', icon: Building2, roles: ['Administrateur'] },
     { id: 'restaurants', label: 'Restaurants', icon: Utensils, roles: ['Administrateur'] },
     { id: 'menu', label: 'Gestion du Menu', icon: ChefHat, roles: ['Gestionnaire Restaurant'] },
+    { id: 'orders', label: 'Commandes', icon: ShoppingCart, roles: ['Gestionnaire Restaurant'] },
     { id: 'weekly-planning', label: 'Planning Hebdo', icon: Calendar, roles: ['Gestionnaire Restaurant'] },
     { id: 'partner-restaurants', label: 'Restaurants Partenaires', icon: Store, roles: ['Gestionnaire Entreprise'] },
     { id: 'tickets', label: 'Configuration', icon: Settings, roles: ['Gestionnaire Entreprise'] },
@@ -447,6 +450,10 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
 
           {activeMenu === 'menu' && (
             <MenuManagement />
+          )}
+
+          {activeMenu === 'orders' && (
+            <OrderManagement />
           )}
 
           {activeMenu === 'weekly-planning' && (

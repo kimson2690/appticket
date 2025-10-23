@@ -117,6 +117,14 @@ Route::prefix('admin')->group(function () {
     Route::get('/statistics', [StatisticsController::class, 'index']);
 });
 
+// Routes pour les gestionnaires de restaurant
+Route::prefix('restaurant')->group(function () {
+    // Gestion des commandes
+    Route::get('/orders', [\App\Http\Controllers\Restaurant\OrderManagementController::class, 'index']);
+    Route::post('/orders/{id}/validate', [\App\Http\Controllers\Restaurant\OrderManagementController::class, 'validateOrder']);
+    Route::post('/orders/{id}/reject', [\App\Http\Controllers\Restaurant\OrderManagementController::class, 'rejectOrder']);
+});
+
 // Routes pour les employés
 Route::prefix('employee')->group(function () {
     // Profil et informations
