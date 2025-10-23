@@ -281,23 +281,40 @@ const RestaurantOrderSystem: React.FC = () => {
                   {/* Menus du restaurant */}
                   <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-4">
                     {menus.map((item) => (
-                      <div key={item.id} className="border rounded-lg p-4 hover:border-orange-300 hover:shadow-md transition-all">
-                        <div className="flex justify-between items-start mb-2">
-                          <h3 className="font-semibold text-lg text-gray-900">{item.name}</h3>
-                          <span className="text-xl font-bold text-orange-600">{formatCurrency(item.price)}</span>
-                        </div>
-                        {item.description && (
-                          <p className="text-sm text-gray-600 mb-3 line-clamp-2">{item.description}</p>
+                      <div key={item.id} className="border rounded-lg overflow-hidden hover:border-orange-300 hover:shadow-md transition-all">
+                        {/* Image du plat */}
+                        {item.image_url && (
+                          <div className="h-48 w-full overflow-hidden bg-gray-200">
+                            <img 
+                              src={item.image_url} 
+                              alt={item.name}
+                              className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+                              onError={(e) => {
+                                e.currentTarget.style.display = 'none';
+                                e.currentTarget.parentElement!.style.display = 'none';
+                              }}
+                            />
+                          </div>
                         )}
-                        <div className="flex items-center justify-between">
-                          <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">{item.category}</span>
-                          <button
-                            onClick={() => addToCart(item, restaurant)}
-                            className="bg-orange-500 text-white px-4 py-2 rounded-lg hover:bg-orange-600 transition-colors flex items-center space-x-2"
-                          >
-                            <Plus className="w-4 h-4" />
-                            <span>Ajouter</span>
-                          </button>
+                        
+                        <div className="p-4">
+                          <div className="flex justify-between items-start mb-2">
+                            <h3 className="font-semibold text-lg text-gray-900">{item.name}</h3>
+                            <span className="text-xl font-bold text-orange-600">{formatCurrency(item.price)}</span>
+                          </div>
+                          {item.description && (
+                            <p className="text-sm text-gray-600 mb-3 line-clamp-2">{item.description}</p>
+                          )}
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">{item.category}</span>
+                            <button
+                              onClick={() => addToCart(item, restaurant)}
+                              className="bg-orange-500 text-white px-4 py-2 rounded-lg hover:bg-orange-600 transition-colors flex items-center space-x-2"
+                            >
+                              <Plus className="w-4 h-4" />
+                              <span>Ajouter</span>
+                            </button>
+                          </div>
                         </div>
                       </div>
                     ))}
