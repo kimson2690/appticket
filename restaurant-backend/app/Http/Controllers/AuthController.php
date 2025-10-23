@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
+use Illuminate\Support\Facades\Log;
 
 class AuthController extends Controller
 {
@@ -21,47 +22,115 @@ class AuthController extends Controller
                 'password' => 'required'
             ]);
 
-            // Chercher l'utilisateur par email
+            Log::info('Tentative de connexion pour: ' . $credentials['email']);
+
+            // Chercher d'abord dans les utilisateurs (admins, gestionnaires)
             $user = User::with(['role', 'company', 'restaurant'])
                 ->where('email', $credentials['email'])
                 ->first();
 
-            // Vérifier si l'utilisateur existe et si le mot de passe est correct
-            if (!$user || !Hash::check($credentials['password'], $user->password)) {
+            if ($user) {
+                Log::info('Utilisateur trouvé dans users table');
+                
+                // Vérifier le mot de passe
+                if (!Hash::check($credentials['password'], $user->password)) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Identifiants incorrects'
+                    ], 401);
+                }
+
+                // Vérifier si l'utilisateur est actif
+                if ($user->status !== 'active') {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Compte désactivé. Contactez l\'administrateur.'
+                    ], 403);
+                }
+
+                // Générer un token
+                $token = 'token_' . $user->id . '_' . time();
+
                 return response()->json([
-                    'success' => false,
-                    'message' => 'Identifiants incorrects'
-                ], 401);
+                    'success' => true,
+                    'user' => [
+                        'id' => $user->id,
+                        'name' => $user->name,
+                        'email' => $user->email,
+                        'phone' => $user->phone,
+                        'role' => $user->role->name ?? 'Utilisateur',
+                        'role_id' => $user->role_id,
+                        'company_id' => $user->company_id,
+                        'company_name' => $user->company->name ?? null,
+                        'restaurant_id' => $user->restaurant_id,
+                        'restaurant_name' => $user->restaurant->name ?? null,
+                        'status' => $user->status
+                    ],
+                    'token' => $token
+                ]);
             }
 
-            // Vérifier si l'utilisateur est actif
-            if ($user->status !== 'active') {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Compte désactivé. Contactez l\'administrateur.'
-                ], 403);
+            // Si pas trouvé dans users, chercher dans employees.json
+            Log::info('Utilisateur non trouvé dans users, recherche dans employees.json');
+            $employeesFile = storage_path('app/employees.json');
+            
+            if (file_exists($employeesFile)) {
+                $employees = json_decode(file_get_contents($employeesFile), true) ?? [];
+                
+                foreach ($employees as $employee) {
+                    if ($employee['email'] === $credentials['email']) {
+                        Log::info('Employé trouvé dans employees.json');
+                        
+                        // Vérifier le mot de passe
+                        if (!Hash::check($credentials['password'], $employee['password'])) {
+                            return response()->json([
+                                'success' => false,
+                                'message' => 'Identifiants incorrects'
+                            ], 401);
+                        }
+
+                        // Vérifier le statut
+                        if ($employee['status'] !== 'active') {
+                            $message = $employee['status'] === 'pending' 
+                                ? 'Votre demande est en attente de validation par le gestionnaire.'
+                                : 'Compte désactivé. Contactez l\'administrateur.';
+                            
+                            return response()->json([
+                                'success' => false,
+                                'message' => $message
+                            ], 403);
+                        }
+
+                        // Générer un token
+                        $token = 'token_' . $employee['id'] . '_' . time();
+
+                        return response()->json([
+                            'success' => true,
+                            'user' => [
+                                'id' => $employee['id'],
+                                'name' => $employee['name'],
+                                'email' => $employee['email'],
+                                'phone' => $employee['phone'] ?? null,
+                                'role' => 'Utilisateur',
+                                'role_id' => null,
+                                'company_id' => $employee['company_id'] ?? null,
+                                'company_name' => $employee['company_name'] ?? null,
+                                'restaurant_id' => null,
+                                'restaurant_name' => null,
+                                'status' => $employee['status']
+                            ],
+                            'token' => $token
+                        ]);
+                    }
+                }
             }
 
-            // Générer un token (pour l'instant, on utilise un token simple)
-            $token = 'token_' . $user->id . '_' . time();
-
+            // Aucun utilisateur trouvé
+            Log::info('Aucun utilisateur trouvé avec cet email');
             return response()->json([
-                'success' => true,
-                'user' => [
-                    'id' => $user->id,
-                    'name' => $user->name,
-                    'email' => $user->email,
-                    'phone' => $user->phone,
-                    'role' => $user->role->name ?? 'Utilisateur',
-                    'role_id' => $user->role_id,
-                    'company_id' => $user->company_id,
-                    'company_name' => $user->company->name ?? null,
-                    'restaurant_id' => $user->restaurant_id,
-                    'restaurant_name' => $user->restaurant->name ?? null,
-                    'status' => $user->status
-                ],
-                'token' => $token
-            ]);
+                'success' => false,
+                'message' => 'Identifiants incorrects'
+            ], 401);
 
         } catch (ValidationException $e) {
             return response()->json([

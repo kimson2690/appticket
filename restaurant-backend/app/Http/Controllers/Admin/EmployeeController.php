@@ -91,6 +91,7 @@ class EmployeeController extends Controller
             // Validation des données requises
             $name = $request->input('name');
             $email = $request->input('email');
+            $password = $request->input('password');
             $phone = $request->input('phone', '');
             $company_id = $request->input('company_id', '1');
             $department = $request->input('department', '');
@@ -100,10 +101,10 @@ class EmployeeController extends Controller
             $status = $request->input('status', 'active');
             $hire_date = $request->input('hire_date', null);
             
-            if (!$name || !$email) {
+            if (!$name || !$email || !$password) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Nom et email sont requis'
+                    'message' => 'Nom, email et mot de passe sont requis'
                 ], 422);
             }
 
@@ -123,6 +124,7 @@ class EmployeeController extends Controller
                 'id' => 'emp_' . time() . '_' . rand(1000, 9999),
                 'name' => $name,
                 'email' => $email,
+                'password' => Hash::make($password),
                 'phone' => $phone,
                 'company_id' => $company_id,
                 'company_name' => $companyName,

@@ -19,6 +19,7 @@ use App\Http\Controllers\Admin\MenuItemController;
 use App\Http\Controllers\Admin\DailyMenuController;
 use App\Http\Controllers\Admin\WeeklyMenuController;
 use App\Http\Controllers\Employee\EmployeeDashboardController;
+use App\Http\Controllers\Employee\OrderController;
 use App\Http\Controllers\AuthController;
 
 Route::get('/user', function (Request $request) {
@@ -123,6 +124,11 @@ Route::prefix('employee')->group(function () {
     Route::get('/ticket-balance', [EmployeeDashboardController::class, 'getTicketBalance']);
     Route::get('/ticket-history', [EmployeeDashboardController::class, 'getTicketHistory']);
     Route::get('/my-batches', [EmployeeDashboardController::class, 'getMyBatches']);
+    
+    // Commandes
+    Route::get('/orders', [OrderController::class, 'index']);
+    Route::post('/orders', [OrderController::class, 'store']);
+    Route::get('/orders/{id}', [OrderController::class, 'show']);
 });
 
 // Routes publiques pour l'authentification

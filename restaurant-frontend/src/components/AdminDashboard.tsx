@@ -12,6 +12,7 @@ import MenuManagement from './MenuManagement';
 import WeeklyMenuPlanning from './WeeklyMenuPlanning';
 import MyTickets from './MyTickets';
 import MyHistory from './MyHistory';
+import RestaurantOrderSystem from './RestaurantOrderSystem';
 import { apiService, type Statistics } from '../services/api';
 import { 
   LayoutDashboard, 
@@ -87,6 +88,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
     
     // Menus pour les employés
     { id: 'my-tickets', label: 'Mes Tickets', icon: Wallet, roles: ['Utilisateur'] },
+    { id: 'order-food', label: 'Commander', icon: Utensils, roles: ['Utilisateur'] },
     { id: 'my-history', label: 'Historique', icon: BarChart3, roles: ['Utilisateur'] },
   ];
 
@@ -485,6 +487,10 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
 
           {activeMenu === 'my-tickets' && (
             <MyTickets />
+          )}
+
+          {activeMenu === 'order-food' && (
+            <RestaurantOrderSystem />
           )}
 
           {activeMenu === 'my-history' && (

@@ -562,6 +562,30 @@ class ApiService {
     });
     return response.data;
   }
+
+  // Orders API
+  async getOrders(): Promise<Order[]> {
+    const response = await this.request<Order[]>('/employee/orders');
+    return response.data;
+  }
+
+  async createOrder(orderData: {
+    restaurant_id: string;
+    items: OrderItem[];
+    delivery_address?: string;
+    notes?: string;
+  }): Promise<Order> {
+    const response = await this.request<Order>('/employee/orders', {
+      method: 'POST',
+      body: JSON.stringify(orderData),
+    });
+    return response.data;
+  }
+
+  async getOrder(id: string): Promise<Order> {
+    const response = await this.request<Order>(`/employee/orders/${id}`);
+    return response.data;
+  }
 }
 
 export const apiService = new ApiService();
@@ -710,6 +734,28 @@ export interface DailyMenu {
   }>;
   is_available: boolean;
   created_by: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface OrderItem {
+  item_id: string;
+  quantity: number;
+  price: number;
+}
+
+export interface Order {
+  id: string;
+  employee_id: string;
+  employee_name: string;
+  restaurant_id: string;
+  restaurant?: Restaurant;
+  items: OrderItem[];
+  total_amount: number;
+  ticket_amount_used: number;
+  status: 'pending' | 'confirmed' | 'preparing' | 'ready' | 'delivered' | 'cancelled';
+  delivery_address?: string;
+  notes?: string;
   created_at: string;
   updated_at: string;
 }
