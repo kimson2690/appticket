@@ -18,6 +18,7 @@ use App\Http\Controllers\Admin\CompanyRestaurantController;
 use App\Http\Controllers\Admin\MenuItemController;
 use App\Http\Controllers\Admin\DailyMenuController;
 use App\Http\Controllers\Admin\WeeklyMenuController;
+use App\Http\Controllers\Employee\EmployeeDashboardController;
 use App\Http\Controllers\AuthController;
 
 Route::get('/user', function (Request $request) {
@@ -113,6 +114,15 @@ Route::prefix('admin')->group(function () {
     
     // Statistiques globales
     Route::get('/statistics', [StatisticsController::class, 'index']);
+});
+
+// Routes pour les employés
+Route::prefix('employee')->group(function () {
+    // Profil et informations
+    Route::get('/profile', [EmployeeDashboardController::class, 'getProfile']);
+    Route::get('/ticket-balance', [EmployeeDashboardController::class, 'getTicketBalance']);
+    Route::get('/ticket-history', [EmployeeDashboardController::class, 'getTicketHistory']);
+    Route::get('/my-batches', [EmployeeDashboardController::class, 'getMyBatches']);
 });
 
 // Routes publiques pour l'authentification

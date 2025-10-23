@@ -59,7 +59,7 @@ function App() {
     );
   }
 
-  // Si l'utilisateur est connecté, afficher le dashboard (pour tous les rôles)
+  // Si l'utilisateur est connecté, afficher AdminDashboard (pour tous les rôles)
   if (isLoggedIn && userRole) {
     return <AdminDashboard onLogout={handleLogout} />;
   }

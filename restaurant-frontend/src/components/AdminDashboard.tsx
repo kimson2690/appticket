@@ -10,6 +10,8 @@ import UserTicketManagement from './UserTicketManagement';
 import PartnerRestaurants from './PartnerRestaurants';
 import MenuManagement from './MenuManagement';
 import WeeklyMenuPlanning from './WeeklyMenuPlanning';
+import MyTickets from './MyTickets';
+import MyHistory from './MyHistory';
 import { apiService, type Statistics } from '../services/api';
 import { 
   LayoutDashboard, 
@@ -73,7 +75,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
     { id: 'users', label: 'Gestionnaires', icon: Users, roles: ['Administrateur'] },
     { id: 'employees', label: 'Employés', icon: Users, roles: ['Administrateur', 'Gestionnaire Entreprise'] },
     { id: 'companies', label: 'Entreprises', icon: Building2, roles: ['Administrateur'] },
-    { id: 'restaurants', label: 'Restaurants', icon: Utensils, roles: ['Administrateur', 'Gestionnaire Restaurant'] },
+    { id: 'restaurants', label: 'Restaurants', icon: Utensils, roles: ['Administrateur'] },
     { id: 'menu', label: 'Gestion du Menu', icon: ChefHat, roles: ['Gestionnaire Restaurant'] },
     { id: 'weekly-planning', label: 'Planning Hebdo', icon: Calendar, roles: ['Gestionnaire Restaurant'] },
     { id: 'partner-restaurants', label: 'Restaurants Partenaires', icon: Store, roles: ['Gestionnaire Entreprise'] },
@@ -82,6 +84,10 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
     { id: 'user-tickets', label: 'Affecter Tickets', icon: Wallet, roles: ['Gestionnaire Entreprise'] },
     { id: 'analytics', label: 'Analyses', icon: BarChart3, roles: ['Gestionnaire Entreprise', 'Gestionnaire Restaurant'] },
     { id: 'roles', label: 'Rôles', icon: Ticket, roles: ['Administrateur'] },
+    
+    // Menus pour les employés
+    { id: 'my-tickets', label: 'Mes Tickets', icon: Wallet, roles: ['Utilisateur'] },
+    { id: 'my-history', label: 'Historique', icon: BarChart3, roles: ['Utilisateur'] },
   ];
 
   // Filtrer les menus selon le rôle de l'utilisateur connecté
@@ -96,7 +102,9 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
   useEffect(() => {
     const hasAccessToCurrentMenu = menuItems.some(item => item.id === activeMenu);
     if (!hasAccessToCurrentMenu) {
-      setActiveMenu('dashboard'); // Rediriger vers le dashboard si pas d'accès
+      // Pour les employés (Utilisateur), démarrer sur "my-tickets", sinon "dashboard"
+      const defaultMenu = currentUser.role === 'Utilisateur' ? 'my-tickets' : 'dashboard';
+      setActiveMenu(defaultMenu);
     }
   }, [activeMenu, currentUser.role]); // Dépendre du rôle plutôt que de menuItems
 
@@ -473,6 +481,14 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
               <h3 className="text-lg font-medium text-gray-900 mb-2">Analyses Avancées</h3>
               <p className="text-gray-500">Cette section sera bientôt disponible</p>
             </div>
+          )}
+
+          {activeMenu === 'my-tickets' && (
+            <MyTickets />
+          )}
+
+          {activeMenu === 'my-history' && (
+            <MyHistory />
           )}
         </main>
 
