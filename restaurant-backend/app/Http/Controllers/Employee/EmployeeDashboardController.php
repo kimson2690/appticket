@@ -170,11 +170,13 @@ class EmployeeDashboardController extends Controller
      */
     private function loadEmployees()
     {
-        if (!Storage::disk('local')->exists($this->employeesFile)) {
+        $filePath = storage_path('app/' . $this->employeesFile);
+        
+        if (!file_exists($filePath)) {
             return [];
         }
 
-        $content = Storage::disk('local')->get($this->employeesFile);
+        $content = file_get_contents($filePath);
         return json_decode($content, true) ?? [];
     }
 
@@ -183,11 +185,13 @@ class EmployeeDashboardController extends Controller
      */
     private function loadAssignments()
     {
-        if (!Storage::disk('local')->exists($this->assignmentsFile)) {
+        $filePath = storage_path('app/' . $this->assignmentsFile);
+        
+        if (!file_exists($filePath)) {
             return [];
         }
 
-        $content = Storage::disk('local')->get($this->assignmentsFile);
+        $content = file_get_contents($filePath);
         return json_decode($content, true) ?? [];
     }
 
@@ -196,11 +200,13 @@ class EmployeeDashboardController extends Controller
      */
     private function loadBatches()
     {
-        if (!Storage::disk('local')->exists($this->batchesFile)) {
+        $filePath = storage_path('app/' . $this->batchesFile);
+        
+        if (!file_exists($filePath)) {
             return [];
         }
 
-        $content = Storage::disk('local')->get($this->batchesFile);
+        $content = file_get_contents($filePath);
         return json_decode($content, true) ?? [];
     }
 }
