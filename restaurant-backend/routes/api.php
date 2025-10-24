@@ -21,6 +21,7 @@ use App\Http\Controllers\Admin\WeeklyMenuController;
 use App\Http\Controllers\Admin\NotificationController;
 use App\Http\Controllers\Employee\EmployeeDashboardController;
 use App\Http\Controllers\Employee\OrderController;
+use App\Http\Controllers\Company\ReportingController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\PasswordResetController;
 
@@ -125,6 +126,13 @@ Route::prefix('admin')->group(function () {
     
     // Statistiques globales
     Route::get('/statistics', [StatisticsController::class, 'index']);
+});
+
+// Routes pour le reporting des entreprises
+Route::prefix('company')->group(function () {
+    // Statistiques de dépenses
+    Route::get('/reports/restaurant-expenses', [ReportingController::class, 'getRestaurantExpenses']);
+    Route::get('/reports/employee-expenses', [ReportingController::class, 'getEmployeeExpenses']);
 });
 
 // Routes pour les gestionnaires de restaurant

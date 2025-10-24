@@ -9,6 +9,7 @@ import TicketConfiguration from './TicketConfiguration';
 import TicketBatchManagement from './TicketBatchManagement';
 import UserTicketManagement from './UserTicketManagement';
 import PartnerRestaurants from './PartnerRestaurants';
+import CompanyReporting from './CompanyReporting';
 import MenuManagement from './MenuManagement';
 import WeeklyMenuPlanning from './WeeklyMenuPlanning';
 import MyTickets from './MyTickets';
@@ -90,6 +91,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
     { id: 'tickets', label: 'Configuration', icon: Settings, roles: ['Gestionnaire Entreprise'] },
     { id: 'batches', label: 'Souches', icon: Package, roles: ['Gestionnaire Entreprise'] },
     { id: 'user-tickets', label: 'Affecter Tickets', icon: Wallet, roles: ['Gestionnaire Entreprise'] },
+    { id: 'reports', label: 'Rapports Dépenses', icon: BarChart3, roles: ['Gestionnaire Entreprise'] },
     { id: 'analytics', label: 'Analyses', icon: BarChart3, roles: ['Gestionnaire Entreprise', 'Gestionnaire Restaurant'] },
     { id: 'roles', label: 'Rôles', icon: Ticket, roles: ['Administrateur'] },
     
@@ -497,6 +499,10 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
 
           {activeMenu === 'partner-restaurants' && (
             <PartnerRestaurants />
+          )}
+
+          {activeMenu === 'reports' && (
+            <CompanyReporting />
           )}
 
           {activeMenu === 'analytics' && (

@@ -875,4 +875,86 @@ export const resetPassword = async (
   return response.json();
 };
 
+// Reporting API
+export const getRestaurantExpenses = async (params?: {
+  start_date?: string;
+  end_date?: string;
+  restaurant_id?: string;
+}): Promise<{
+  success: boolean;
+  data: {
+    expenses_by_restaurant: Array<{
+      restaurant_id: string;
+      restaurant_name: string;
+      total_amount: number;
+      total_orders: number;
+      employees_count: number;
+    }>;
+    summary: {
+      total_amount: number;
+      total_orders: number;
+      restaurants_count: number;
+      period: {
+        start_date: string | null;
+        end_date: string | null;
+      };
+    };
+  };
+}> => {
+  const queryParams = new URLSearchParams();
+  if (params?.start_date) queryParams.append('start_date', params.start_date);
+  if (params?.end_date) queryParams.append('end_date', params.end_date);
+  if (params?.restaurant_id) queryParams.append('restaurant_id', params.restaurant_id);
+
+  const url = `${API_BASE_URL}/company/reports/restaurant-expenses${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+  
+  const response = await fetch(url, {
+    headers: {
+      'Content-Type': 'application/json',
+      'X-User-Company-Id': localStorage.getItem('userCompanyId') || '',
+      'X-User-Role': localStorage.getItem('userRole') || '',
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error('Erreur lors du chargement des statistiques');
+  }
+
+  return response.json();
+};
+
+export const getEmployeeExpenses = async (params?: {
+  start_date?: string;
+  end_date?: string;
+  restaurant_id?: string;
+}): Promise<Array<{
+  employee_id: string;
+  employee_name: string;
+  employee_email: string;
+  total_amount: number;
+  total_orders: number;
+}>> => {
+  const queryParams = new URLSearchParams();
+  if (params?.start_date) queryParams.append('start_date', params.start_date);
+  if (params?.end_date) queryParams.append('end_date', params.end_date);
+  if (params?.restaurant_id) queryParams.append('restaurant_id', params.restaurant_id);
+
+  const url = `${API_BASE_URL}/company/reports/employee-expenses${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+  
+  const response = await fetch(url, {
+    headers: {
+      'Content-Type': 'application/json',
+      'X-User-Company-Id': localStorage.getItem('userCompanyId') || '',
+      'X-User-Role': localStorage.getItem('userRole') || '',
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error('Erreur lors du chargement des dépenses par employé');
+  }
+
+  const result = await response.json();
+  return result.data;
+};
+
 export type { Role, Permission, Company, Restaurant, User, Employee, Statistics, CompanyStats, DepartmentStats, MonthlyStats, TicketDistribution };
