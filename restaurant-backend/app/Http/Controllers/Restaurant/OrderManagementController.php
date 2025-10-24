@@ -358,7 +358,13 @@ class OrderManagementController extends Controller
         }
         
         if (is_string($data)) {
-            // Supprimer les caractères UTF-8 invalides et nettoyer
+            // Vérifier si déjà en UTF-8 valide
+            if (mb_check_encoding($data, 'UTF-8')) {
+                // Si déjà UTF-8 valide, juste supprimer les caractères de contrôle invisibles
+                return preg_replace('/[\x00-\x1F\x7F]/u', '', $data);
+            }
+            
+            // Sinon, convertir en UTF-8
             $cleaned = mb_convert_encoding($data, 'UTF-8', 'UTF-8');
             // Supprimer les caractères de contrôle invisibles
             $cleaned = preg_replace('/[\x00-\x1F\x7F]/u', '', $cleaned);
