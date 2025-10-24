@@ -152,3 +152,46 @@ Route::prefix('employee')->group(function () {
 Route::post('login', [AuthController::class, 'login']);
 Route::post('logout', [AuthController::class, 'logout']);
 Route::get('me', [AuthController::class, 'me']);
+
+// Route de test pour le serveur mail
+Route::get('test-email', function (Request $request) {
+    try {
+        $testEmail = $request->query('email', 'test@example.com');
+        
+        \Illuminate\Support\Facades\Mail::raw(
+            'Ceci est un email de test depuis AppTicket. ' .
+            'Si vous recevez cet email, votre configuration mail fonctionne correctement ! ✅' .
+            "\n\n" .
+            'Serveur: mail.kura-immo.com' .
+            "\n" .
+            'Date: ' . now()->format('d/m/Y H:i:s'),
+            function ($message) use ($testEmail) {
+                $message->to($testEmail)
+                        ->subject('Test de configuration mail - AppTicket');
+            }
+        );
+        
+        $mailer = config('mail.default');
+        
+        return response()->json([
+            'success' => true,
+            'message' => 'Email de test envoyé avec succès !',
+            'details' => [
+                'to' => $testEmail,
+                'from' => config('mail.from.address'),
+                'mailer' => $mailer,
+                'server' => config("mail.mailers.{$mailer}.host"),
+                'port' => config("mail.mailers.{$mailer}.port"),
+                'encryption' => config("mail.mailers.{$mailer}.encryption"),
+                'sent_at' => now()->format('d/m/Y H:i:s')
+            ]
+        ]);
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'error' => 'Erreur lors de l\'envoi de l\'email',
+            'message' => $e->getMessage(),
+            'trace' => config('app.debug') ? $e->getTraceAsString() : null
+        ], 500);
+    }
+});
