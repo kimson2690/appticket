@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
+use App\Mail\TicketsAssigned;
 
 class UserTicketController extends Controller
 {
@@ -120,6 +122,20 @@ class UserTicketController extends Controller
                     'assignment_id' => $assignment['id']
                 ]
             ]);
+            
+            // Envoyer email d'affectation de tickets à l'employé
+            try {
+                $employeeEmail = $employees[$employeeIndex]['email'];
+                Mail::to($employeeEmail)->send(new TicketsAssigned(
+                    $employeeName,
+                    $ticketsCount,
+                    $ticketValue,
+                    $amountToAdd
+                ));
+                Log::info("Email d'affectation de tickets envoyé à: $employeeEmail");
+            } catch (\Exception $e) {
+                Log::error("Erreur envoi email affectation tickets: " . $e->getMessage());
+            }
 
             return response()->json([
                 'success' => true,

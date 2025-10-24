@@ -9,6 +9,11 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
+use App\Mail\EmployeeRegistrationPending;
+use App\Mail\EmployeeApproved;
+use App\Mail\EmployeeRejected;
+use App\Mail\NewEmployeeRegistration;
 
 class EmployeeController extends Controller
 {
@@ -161,6 +166,33 @@ class EmployeeController extends Controller
                         'employee_email' => $email
                     ]
                 ]);
+                
+                // Envoyer email à l'employé
+                try {
+                    Mail::to($email)->send(new EmployeeRegistrationPending($name, $companyName));
+                    Log::info("Email d'inscription en attente envoyé à: $email");
+                } catch (\Exception $e) {
+                    Log::error("Erreur envoi email à employé: " . $e->getMessage());
+                }
+                
+                // Envoyer email au gestionnaire de l'entreprise
+                try {
+                    // Récupérer le gestionnaire de l'entreprise depuis la BD
+                    $manager = User::where('company_id', $company_id)
+                                  ->whereHas('role', function($query) {
+                                      $query->where('name', 'Gestionnaire Entreprise');
+                                  })
+                                  ->first();
+                    
+                    if ($manager && $manager->email) {
+                        Mail::to($manager->email)->send(new NewEmployeeRegistration($name, $email, $companyName));
+                        Log::info("Email de nouvelle inscription envoyé au gestionnaire: {$manager->email}");
+                    } else {
+                        Log::warning("Aucun gestionnaire trouvé pour l'entreprise $company_id");
+                    }
+                } catch (\Exception $e) {
+                    Log::error("Erreur envoi email au gestionnaire: " . $e->getMessage());
+                }
             }
 
             return response()->json([
@@ -290,6 +322,13 @@ class EmployeeController extends Controller
                 Log::info('Nouveau mot de passe hashé pour l\'employé');
             }
 
+            // Détecter si c'est une approbation (pending → active)
+            $oldStatus = $employees[$employeeIndex]['status'];
+            $isApproval = ($oldStatus === 'pending' && $status === 'active');
+            
+            // Détecter si c'est un rejet (pending → rejected ou suppression)
+            $isRejection = ($oldStatus === 'pending' && $status === 'rejected');
+
             // Mettre à jour l'employé
             $employees[$employeeIndex] = array_merge($employees[$employeeIndex], $updateData);
 
@@ -297,6 +336,26 @@ class EmployeeController extends Controller
             file_put_contents($filePath, json_encode($employees, JSON_PRETTY_PRINT));
 
             Log::info('Employé mis à jour:', $employees[$employeeIndex]);
+            
+            // Envoyer email d'approbation si nécessaire
+            if ($isApproval) {
+                try {
+                    Mail::to($email)->send(new EmployeeApproved($name, $companyName));
+                    Log::info("Email d'approbation envoyé à: $email");
+                } catch (\Exception $e) {
+                    Log::error("Erreur envoi email approbation: " . $e->getMessage());
+                }
+            }
+            
+            // Envoyer email de rejet si nécessaire
+            if ($isRejection) {
+                try {
+                    Mail::to($email)->send(new EmployeeRejected($name, $companyName));
+                    Log::info("Email de rejet envoyé à: $email");
+                } catch (\Exception $e) {
+                    Log::error("Erreur envoi email rejet: " . $e->getMessage());
+                }
+            }
 
             return response()->json([
                 'success' => true,
@@ -409,6 +468,14 @@ class EmployeeController extends Controller
                     'approved_at' => date('Y-m-d H:i:s')
                 ]
             ]);
+            
+            // Envoyer email d'approbation à l'employé
+            try {
+                Mail::to($employee['email'])->send(new EmployeeApproved($employee['name'], $employee['company_name']));
+                Log::info("Email d'approbation envoyé à: {$employee['email']}");
+            } catch (\Exception $e) {
+                Log::error("Erreur envoi email approbation: " . $e->getMessage());
+            }
 
             return response()->json([
                 'success' => true,
@@ -459,6 +526,14 @@ class EmployeeController extends Controller
                     'rejected_at' => date('Y-m-d H:i:s')
                 ]
             ]);
+            
+            // Envoyer email de rejet à l'employé
+            try {
+                Mail::to($employee['email'])->send(new EmployeeRejected($employee['name'], $employee['company_name']));
+                Log::info("Email de rejet envoyé à: {$employee['email']}");
+            } catch (\Exception $e) {
+                Log::error("Erreur envoi email rejet: " . $e->getMessage());
+            }
 
             // Supprimer l'employé rejeté
             $employees = array_values(array_filter($employees, function ($emp) use ($id) {

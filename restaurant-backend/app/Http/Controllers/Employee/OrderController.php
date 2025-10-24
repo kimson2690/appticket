@@ -6,6 +6,9 @@ use App\Http\Controllers\Controller;
 use App\Http\Controllers\Admin\NotificationController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
+use App\Mail\OrderConfirmation;
+use App\Mail\NewOrderReceived;
 
 class OrderController extends Controller
 {
@@ -142,6 +145,30 @@ class OrderController extends Controller
                     'items_count' => count($validated['items'])
                 ]
             ]);
+            
+            // Envoyer email de confirmation à l'employé
+            try {
+                $orderItemsForEmail = array_map(function($item) {
+                    return [
+                        'name' => $item['name'] ?? 'Article',
+                        'quantity' => $item['quantity'],
+                        'price' => $item['price'] * $item['quantity']
+                    ];
+                }, $validated['items']);
+                
+                Mail::to($employee['email'])->send(new OrderConfirmation(
+                    $userName, 
+                    $restaurantName, 
+                    $totalAmount,
+                    $orderItemsForEmail
+                ));
+                Log::info("Email de confirmation commande envoyé à: {$employee['email']}");
+            } catch (\Exception $e) {
+                Log::error("Erreur envoi email confirmation commande: " . $e->getMessage());
+            }
+            
+            // Envoyer email au restaurant (TODO: récupérer email du gestionnaire restaurant)
+            Log::info("Email à envoyer au restaurant $restaurantName pour nouvelle commande");
 
             return response()->json([
                 'success' => true,
