@@ -228,22 +228,22 @@ const ModernLogin: React.FC<ModernLoginProps> = ({ onShowRegister }) => {
                 </span>
               </button>
 
-              <p className="pt-4 text-center text-sm text-white/60">
+              {/* Lien d'inscription */}
+              <p className="text-white/70">
                 Pas encore de compte ? {' '}
-                <button
-                  type="button"
-                  onClick={onShowRegister}
+                <Link
+                  to="/register"
                   className="text-orange-400 hover:text-orange-300 font-semibold transition-colors inline-flex items-center gap-1 group"
                 >
                   <span>Créer un compte</span>
                   <span className="group-hover:translate-x-1 transition-transform">→</span>
-                </button>
+                </Link>
               </p>
             </form>
 
-            {/* Identifiants de test avec design premium */}
-            <div className="mt-8 p-4 bg-gradient-to-br from-orange-500/10 to-purple-500/10 rounded-2xl border border-orange-500/20 backdrop-blur-sm">
-              <div className="flex items-center gap-2 mb-2">
+            {/* Identifiants de test */}
+            <div className="mt-6 bg-white/5 backdrop-blur-sm rounded-xl border border-white/10 p-4">
+              <div className="flex items-center gap-2 mb-3">
                 <Shield className="h-4 w-4 text-orange-400" />
                 <h3 className="text-xs font-bold text-white/90 uppercase tracking-wider">Identifiants de test</h3>
               </div>
