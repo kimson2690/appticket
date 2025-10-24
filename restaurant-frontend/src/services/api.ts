@@ -828,4 +828,51 @@ export interface WeeklyMenuPlanning {
   updated_at: string;
 }
 
+// ==================== Password Reset ====================
+
+/**
+ * Demande de réinitialisation de mot de passe
+ */
+export const forgotPassword = async (email: string): Promise<{ success: boolean; message: string }> => {
+  const response = await fetch(`${API_BASE_URL}/forgot-password`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ email }),
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || 'Erreur lors de la demande de réinitialisation');
+  }
+
+  return response.json();
+};
+
+/**
+ * Réinitialiser le mot de passe avec le token
+ */
+export const resetPassword = async (
+  email: string,
+  token: string,
+  password: string,
+  password_confirmation: string
+): Promise<{ success: boolean; message: string }> => {
+  const response = await fetch(`${API_BASE_URL}/reset-password`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ email, token, password, password_confirmation }),
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || 'Erreur lors de la réinitialisation du mot de passe');
+  }
+
+  return response.json();
+};
+
 export type { Role, Permission, Company, Restaurant, User, Employee, Statistics, CompanyStats, DepartmentStats, MonthlyStats, TicketDistribution };

@@ -39,18 +39,12 @@ class PasswordReset extends Mailable
      */
     public function content(): Content
     {
-        $message = "Bonjour {$this->userName},\n\n";
-        $message .= "Vous avez demandé la réinitialisation de votre mot de passe.\n\n";
-        $message .= "Cliquez sur le lien ci-dessous pour créer un nouveau mot de passe :\n";
-        $message .= "{$this->resetUrl}\n\n";
-        $message .= "Ce lien est valide pendant 60 minutes.\n\n";
-        $message .= "Si vous n'avez pas demandé cette réinitialisation, ignorez cet email.\n\n";
-        $message .= "Cordialement,\n";
-        $message .= "L'équipe AppTicket";
-
         return new Content(
-            text: 'emails.plain',
-            with: ['content' => $message]
+            html: 'emails.password-reset',
+            with: [
+                'userName' => $this->userName,
+                'resetUrl' => $this->resetUrl
+            ]
         );
     }
 

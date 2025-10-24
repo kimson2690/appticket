@@ -1,20 +1,22 @@
-import React, { useState } from 'react';
+import React from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import ModernLogin from './ModernLogin';
 import RegisterForm from './components/RegisterForm';
-
-type AuthView = 'login' | 'register';
+import ForgotPasswordPage from './components/ForgotPasswordPage';
+import ResetPasswordPage from './components/ResetPasswordPage';
 
 const AuthPages: React.FC = () => {
-  const [currentView, setCurrentView] = useState<AuthView>('login');
-
-  const showRegister = () => setCurrentView('register');
-  const showLogin = () => setCurrentView('login');
-
-  if (currentView === 'register') {
-    return <RegisterForm onBackToLogin={showLogin} />;
-  }
-
-  return <ModernLogin onShowRegister={showRegister} />;
+  return (
+    <Router>
+      <Routes>
+        <Route path="/login" element={<ModernLogin />} />
+        <Route path="/register" element={<RegisterForm />} />
+        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+        <Route path="/reset-password" element={<ResetPasswordPage />} />
+        <Route path="*" element={<Navigate to="/login" replace />} />
+      </Routes>
+    </Router>
+  );
 };
 
 export default AuthPages;

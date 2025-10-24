@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { Mail, Lock, Eye, EyeOff, ShoppingBag, Users, TrendingUp, Sparkles, Zap, Shield } from 'lucide-react';
 import { apiService } from './services/api';
 
 interface ModernLoginProps {
-  onShowRegister: () => void;
+  onShowRegister?: () => void;
 }
 
 const ModernLogin: React.FC<ModernLoginProps> = ({ onShowRegister }) => {
@@ -198,12 +199,12 @@ const ModernLogin: React.FC<ModernLoginProps> = ({ onShowRegister }) => {
                   />
                   <span className="ml-3 text-sm text-white/70 group-hover:text-white transition-colors">Se souvenir de moi</span>
                 </label>
-                <button
-                  type="button"
+                <Link
+                  to="/forgot-password"
                   className="text-sm text-orange-400 hover:text-orange-300 font-medium transition-colors relative after:absolute after:bottom-0 after:left-0 after:h-0.5 after:w-0 after:bg-orange-400 after:transition-all hover:after:w-full"
                 >
                   Mot de passe oublié ?
-                </button>
+                </Link>
               </div>
 
               <button 

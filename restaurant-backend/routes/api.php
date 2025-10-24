@@ -22,6 +22,7 @@ use App\Http\Controllers\Admin\NotificationController;
 use App\Http\Controllers\Employee\EmployeeDashboardController;
 use App\Http\Controllers\Employee\OrderController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\PasswordResetController;
 
 Route::get('/user', function (Request $request) {
     return $request->user();
@@ -152,6 +153,10 @@ Route::prefix('employee')->group(function () {
 Route::post('login', [AuthController::class, 'login']);
 Route::post('logout', [AuthController::class, 'logout']);
 Route::get('me', [AuthController::class, 'me']);
+
+// Routes de réinitialisation de mot de passe
+Route::post('forgot-password', [PasswordResetController::class, 'forgotPassword']);
+Route::post('reset-password', [PasswordResetController::class, 'resetPassword']);
 
 // Route de test pour le serveur mail
 Route::get('test-email', function (Request $request) {

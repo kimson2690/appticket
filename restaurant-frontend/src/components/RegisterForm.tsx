@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { Eye, EyeOff, ArrowLeft, Mail, Lock, Building2, User, Phone, Briefcase, Calendar, Sparkles, Zap, Shield, UserPlus } from 'lucide-react';
 import { apiService, type Company } from '../services/api';
 import { useNotification } from '../contexts/NotificationContext';
@@ -20,10 +21,11 @@ interface RegisterFormData {
 }
 
 interface RegisterFormProps {
-  onBackToLogin: () => void;
+  onBackToLogin?: () => void;
 }
 
 const RegisterForm: React.FC<RegisterFormProps> = ({ onBackToLogin }) => {
+  const navigate = useNavigate();
   const { success, error: showError } = useNotification();
   
   const [formData, setFormData] = useState<RegisterFormData>({
@@ -102,7 +104,11 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onBackToLogin }) => {
       
       // Rediriger vers la page de connexion après 5 secondes
       setTimeout(() => {
-        onBackToLogin();
+        if (onBackToLogin) {
+          onBackToLogin();
+        } else {
+          navigate('/login');
+        }
       }, 5000);
     } catch (error) {
       console.error('Erreur lors de la création du compte:', error);
@@ -166,13 +172,13 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onBackToLogin }) => {
                 <span className="text-xl font-bold tracking-tight bg-gradient-to-r from-orange-400 to-orange-600 bg-clip-text text-transparent">AppTicket</span>
               </div>
             </div>
-            <button
-              onClick={onBackToLogin}
+            <Link
+              to="/login"
               className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-white transition-all"
             >
               <ArrowLeft className="h-4 w-4" />
-              <span className="text-sm">Connexion</span>
-            </button>
+              Retour
+            </Link>
           </div>
 
           <div className="mb-6">
