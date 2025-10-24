@@ -108,10 +108,20 @@ class OrderController extends Controller
 
             Log::info('Commande créée: ' . $orderId . ' pour ' . $userName . ' - Montant: ' . $totalAmount . 'F');
 
-            // Récupérer les infos du restaurant
-            $restaurants = $this->loadRestaurants();
-            $restaurant = collect($restaurants)->firstWhere('id', $validated['restaurant_id']);
-            $restaurantName = $restaurant['name'] ?? 'Restaurant';
+            // Récupérer le nom du restaurant (priorité au nom envoyé par le frontend)
+            $restaurantName = 'Restaurant'; // Valeur par défaut
+            
+            // Si restaurant_name est fourni dans les items, l'utiliser
+            if (!empty($validated['items'][0]['restaurant_name'])) {
+                $restaurantName = $validated['items'][0]['restaurant_name'];
+            } else {
+                // Sinon, chercher dans restaurants.json
+                $restaurants = $this->loadRestaurants();
+                $restaurant = collect($restaurants)->firstWhere('id', $validated['restaurant_id']);
+                if ($restaurant && !empty($restaurant['name'])) {
+                    $restaurantName = $restaurant['name'];
+                }
+            }
 
             // Créer une notification pour l'employé (confirmation de commande)
             NotificationController::createNotification([
