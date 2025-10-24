@@ -29,17 +29,19 @@ class NotificationController extends Controller
             $userId = $request->header('X-User-Id');
             $userRole = $request->header('X-User-Role');
             $userCompanyId = $request->header('X-User-Company-Id');
+            $userRestaurantId = $request->header('X-User-Restaurant-Id');
 
-            Log::info('Récupération des notifications', [
+            Log::info('NotificationController@index - Récupération des notifications pour:', [
                 'user_id' => $userId,
                 'role' => $userRole,
-                'company_id' => $userCompanyId
+                'company_id' => $userCompanyId,
+                'restaurant_id' => $userRestaurantId
             ]);
 
             $notifications = $this->loadNotifications();
 
             // Filtrer les notifications selon le rôle et l'utilisateur
-            $userNotifications = array_filter($notifications, function($notif) use ($userId, $userRole, $userCompanyId) {
+            $userNotifications = array_filter($notifications, function($notif) use ($userId, $userRole, $userCompanyId, $userRestaurantId) {
                 // Notification directement pour cet utilisateur
                 if (isset($notif['user_id']) && $notif['user_id'] === $userId) {
                     return true;
@@ -47,10 +49,16 @@ class NotificationController extends Controller
 
                 // Notification pour un rôle spécifique
                 if (isset($notif['role']) && $notif['role'] === $userRole) {
-                    // Si notification pour gestionnaire, vérifier l'entreprise
+                    // Si notification pour gestionnaire entreprise, vérifier l'entreprise
                     if ($userRole === 'Gestionnaire Entreprise' && isset($notif['company_id'])) {
                         return $notif['company_id'] === $userCompanyId;
                     }
+                    
+                    // Si notification pour gestionnaire restaurant, vérifier le restaurant
+                    if ($userRole === 'Gestionnaire Restaurant' && isset($notif['restaurant_id'])) {
+                        return $notif['restaurant_id'] === $userRestaurantId;
+                    }
+                    
                     return true;
                 }
 

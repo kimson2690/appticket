@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Employee;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\Admin\NotificationController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
@@ -102,6 +103,45 @@ class OrderController extends Controller
             }
 
             Log::info('Commande créée: ' . $orderId . ' pour ' . $userName . ' - Montant: ' . $totalAmount . 'F');
+
+            // Récupérer les infos du restaurant
+            $restaurants = $this->loadRestaurants();
+            $restaurant = collect($restaurants)->firstWhere('id', $validated['restaurant_id']);
+            $restaurantName = $restaurant['name'] ?? 'Restaurant';
+
+            // Créer une notification pour l'employé (confirmation de commande)
+            NotificationController::createNotification([
+                'type' => 'success',
+                'title' => 'Commande confirmée',
+                'message' => "Votre commande chez $restaurantName d'un montant de {$totalAmount}F a été créée avec succès.",
+                'user_id' => $userId,
+                'action_url' => '/employee/orders',
+                'metadata' => [
+                    'order_id' => $orderId,
+                    'restaurant_name' => $restaurantName,
+                    'total_amount' => $totalAmount,
+                    'items_count' => count($validated['items'])
+                ]
+            ]);
+
+            // Créer une notification pour le gestionnaire du restaurant
+            // Utilise le filtrage par rôle et restaurant_id au lieu de user_id
+            NotificationController::createNotification([
+                'type' => 'info',
+                'title' => 'Nouvelle commande',
+                'message' => "$userName a passé une commande de {$totalAmount}F chez $restaurantName.",
+                'role' => 'Gestionnaire Restaurant',
+                'restaurant_id' => $validated['restaurant_id'],
+                'action_url' => '/admin/orders',
+                'metadata' => [
+                    'order_id' => $orderId,
+                    'employee_name' => $userName,
+                    'employee_id' => $userId,
+                    'restaurant_name' => $restaurantName,
+                    'total_amount' => $totalAmount,
+                    'items_count' => count($validated['items'])
+                ]
+            ]);
 
             return response()->json([
                 'success' => true,

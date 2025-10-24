@@ -163,6 +163,25 @@ class TicketBatchController extends Controller
 
             Log::info('Souche de tickets créée:', $batchData);
 
+            // Créer une notification pour le gestionnaire
+            $totalValue = $totalTickets * $ticketValue;
+            NotificationController::createNotification([
+                'type' => 'success',
+                'title' => 'Souche créée avec succès',
+                'message' => "Une nouvelle souche de {$totalTickets} tickets d'une valeur totale de {$totalValue}F a été créée ($batchNumber).",
+                'role' => 'Gestionnaire Entreprise',
+                'company_id' => $companyId,
+                'action_url' => '/admin/ticket-batches',
+                'metadata' => [
+                    'batch_id' => $batchData['id'],
+                    'batch_number' => $batchNumber,
+                    'total_tickets' => $totalTickets,
+                    'ticket_value' => $ticketValue,
+                    'total_value' => $totalValue,
+                    'type' => $type
+                ]
+            ]);
+
             return response()->json([
                 'success' => true,
                 'data' => $batchData,

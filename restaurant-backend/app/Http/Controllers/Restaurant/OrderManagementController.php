@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Restaurant;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\Admin\NotificationController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
@@ -119,6 +120,27 @@ class OrderManagementController extends Controller
 
             Log::info('Commande validée: ' . $id . ' par ' . $userName);
 
+            // Récupérer le nom du restaurant
+            $restaurants = $this->loadRestaurants();
+            $restaurant = collect($restaurants)->firstWhere('id', $order['restaurant_id']);
+            $restaurantName = $restaurant['name'] ?? 'Restaurant';
+
+            // Notification pour l'employé : commande validée
+            NotificationController::createNotification([
+                'type' => 'success',
+                'title' => 'Commande validée ✅',
+                'message' => "Votre commande chez $restaurantName d'un montant de {$order['total_amount']}F a été validée par le restaurant. Votre repas est en préparation !",
+                'user_id' => $order['employee_id'],
+                'action_url' => '/employee/orders',
+                'metadata' => [
+                    'order_id' => $id,
+                    'restaurant_name' => $restaurantName,
+                    'total_amount' => $order['total_amount'],
+                    'confirmed_by' => $userName,
+                    'confirmed_at' => $orders[$orderIndex]['confirmed_at']
+                ]
+            ]);
+
             return response()->json([
                 'success' => true,
                 'message' => 'Commande validée avec succès',
@@ -185,6 +207,30 @@ class OrderManagementController extends Controller
             }
 
             Log::info('Commande rejetée: ' . $id . ' par ' . $userName);
+
+            // Récupérer le nom du restaurant
+            $restaurants = $this->loadRestaurants();
+            $restaurant = collect($restaurants)->firstWhere('id', $order['restaurant_id']);
+            $restaurantName = $restaurant['name'] ?? 'Restaurant';
+
+            // Notification pour l'employé : commande rejetée
+            $rejectionReason = $orders[$orderIndex]['rejection_reason'];
+            NotificationController::createNotification([
+                'type' => 'warning',
+                'title' => 'Commande rejetée ❌',
+                'message' => "Votre commande chez $restaurantName d'un montant de {$order['total_amount']}F a été rejetée. Raison: $rejectionReason. Votre solde de tickets a été remboursé.",
+                'user_id' => $order['employee_id'],
+                'action_url' => '/employee/orders',
+                'metadata' => [
+                    'order_id' => $id,
+                    'restaurant_name' => $restaurantName,
+                    'total_amount' => $order['total_amount'],
+                    'rejection_reason' => $rejectionReason,
+                    'rejected_by' => $userName,
+                    'rejected_at' => $orders[$orderIndex]['rejected_at'],
+                    'refunded' => true
+                ]
+            ]);
 
             return response()->json([
                 'success' => true,
@@ -298,6 +344,21 @@ class OrderManagementController extends Controller
         }
         
         file_put_contents($filePath, $json);
+    }
+
+    /**
+     * Charger les restaurants
+     */
+    private function loadRestaurants()
+    {
+        $filePath = storage_path('app/' . $this->restaurantsFile);
+        
+        if (!file_exists($filePath)) {
+            return [];
+        }
+
+        $content = file_get_contents($filePath);
+        return json_decode($content, true) ?? [];
     }
 
     /**
