@@ -41,21 +41,14 @@ class OrderConfirmation extends Mailable
      */
     public function content(): Content
     {
-        $message = "Bonjour {$this->employeeName},\n\n";
-        $message .= "Votre commande chez {$this->restaurantName} a bien été enregistrée !\n\n";
-        $message .= "Détail de votre commande :\n";
-        foreach ($this->orderItems as $item) {
-            $message .= "- {$item['name']} x{$item['quantity']} = {$item['price']}F\n";
-        }
-        $message .= "\nMontant total : {$this->totalAmount}F\n\n";
-        $message .= "Votre commande est en attente de validation par le restaurant.\n\n";
-        $message .= "Bon appétit !\n\n";
-        $message .= "Cordialement,\n";
-        $message .= "L'équipe AppTicket";
-
         return new Content(
-            text: 'emails.plain',
-            with: ['content' => $message]
+            html: 'emails.order-confirmation',
+            with: [
+                'employeeName' => $this->employeeName,
+                'restaurantName' => $this->restaurantName,
+                'orderItems' => $this->orderItems,
+                'totalAmount' => $this->totalAmount
+            ]
         );
     }
 

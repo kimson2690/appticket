@@ -37,15 +37,12 @@ class EmployeeRejected extends Mailable
      */
     public function content(): Content
     {
-        $message = "Bonjour {$this->employeeName},\n\n";
-        $message .= "Nous vous informons que votre demande d'inscription sur AppTicket pour {$this->companyName} n'a pas été approuvée.\n\n";
-        $message .= "Pour plus d'informations, veuillez contacter le gestionnaire de votre entreprise.\n\n";
-        $message .= "Cordialement,\n";
-        $message .= "L'équipe AppTicket";
-
         return new Content(
-            text: 'emails.plain',
-            with: ['content' => $message]
+            html: 'emails.employee-rejected',
+            with: [
+                'employeeName' => $this->employeeName,
+                'companyName' => $this->companyName
+            ]
         );
     }
 

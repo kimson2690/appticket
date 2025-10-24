@@ -41,18 +41,14 @@ class TicketsAssigned extends Mailable
      */
     public function content(): Content
     {
-        $message = "Bonjour {$this->employeeName},\n\n";
-        $message .= "Vous venez de recevoir {$this->ticketsCount} ticket(s) restaurant !\n\n";
-        $message .= "Valeur unitaire : {$this->ticketValue}F\n";
-        $message .= "Valeur totale : {$this->totalAmount}F\n\n";
-        $message .= "Vous pouvez maintenant les utiliser pour commander vos repas.\n\n";
-        $message .= "Bon appétit !\n\n";
-        $message .= "Cordialement,\n";
-        $message .= "L'équipe AppTicket";
-
         return new Content(
-            text: 'emails.plain',
-            with: ['content' => $message]
+            html: 'emails.tickets-assigned',
+            with: [
+                'employeeName' => $this->employeeName,
+                'ticketsCount' => $this->ticketsCount,
+                'ticketValue' => $this->ticketValue,
+                'totalAmount' => $this->totalAmount
+            ]
         );
     }
 

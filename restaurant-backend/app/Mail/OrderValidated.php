@@ -39,17 +39,13 @@ class OrderValidated extends Mailable
      */
     public function content(): Content
     {
-        $message = "Bonjour {$this->employeeName},\n\n";
-        $message .= "Bonne nouvelle ! Votre commande chez {$this->restaurantName} a été validée.\n\n";
-        $message .= "Montant : {$this->totalAmount}F\n\n";
-        $message .= "Votre repas est en préparation !\n\n";
-        $message .= "Bon appétit !\n\n";
-        $message .= "Cordialement,\n";
-        $message .= "L'équipe AppTicket";
-
         return new Content(
-            text: 'emails.plain',
-            with: ['content' => $message]
+            html: 'emails.order-validated',
+            with: [
+                'employeeName' => $this->employeeName,
+                'restaurantName' => $this->restaurantName,
+                'totalAmount' => $this->totalAmount
+            ]
         );
     }
 

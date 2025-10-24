@@ -41,18 +41,14 @@ class OrderRejected extends Mailable
      */
     public function content(): Content
     {
-        $message = "Bonjour {$this->employeeName},\n\n";
-        $message .= "Nous sommes désolés, votre commande chez {$this->restaurantName} a été rejetée.\n\n";
-        $message .= "Montant : {$this->totalAmount}F\n";
-        $message .= "Raison : {$this->rejectionReason}\n\n";
-        $message .= "Votre solde de tickets a été remboursé.\n\n";
-        $message .= "Vous pouvez passer une nouvelle commande quand vous le souhaitez.\n\n";
-        $message .= "Cordialement,\n";
-        $message .= "L'équipe AppTicket";
-
         return new Content(
-            text: 'emails.plain',
-            with: ['content' => $message]
+            html: 'emails.order-rejected',
+            with: [
+                'employeeName' => $this->employeeName,
+                'restaurantName' => $this->restaurantName,
+                'totalAmount' => $this->totalAmount,
+                'rejectionReason' => $this->rejectionReason
+            ]
         );
     }
 

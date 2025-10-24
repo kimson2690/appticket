@@ -40,17 +40,12 @@ class EmployeeRegistrationPending extends Mailable
      */
     public function content(): Content
     {
-        $message = "Bonjour {$this->employeeName},\n\n";
-        $message .= "Votre demande d'inscription sur AppTicket a bien été reçue !\n\n";
-        $message .= "Votre compte est actuellement en attente de validation par le gestionnaire de {$this->companyName}.\n\n";
-        $message .= "Vous recevrez un email de confirmation dès que votre compte sera approuvé.\n\n";
-        $message .= "Merci de votre patience.\n\n";
-        $message .= "Cordialement,\n";
-        $message .= "L'équipe AppTicket";
-
         return new Content(
-            text: 'emails.plain',
-            with: ['content' => $message]
+            html: 'emails.employee-registration-pending',
+            with: [
+                'employeeName' => $this->employeeName,
+                'companyName' => $this->companyName
+            ]
         );
     }
 

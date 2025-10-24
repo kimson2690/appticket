@@ -41,21 +41,14 @@ class NewOrderReceived extends Mailable
      */
     public function content(): Content
     {
-        $message = "Bonjour,\n\n";
-        $message .= "Vous avez reçu une nouvelle commande chez {$this->restaurantName} !\n\n";
-        $message .= "Client : {$this->employeeName}\n\n";
-        $message .= "Détail de la commande :\n";
-        foreach ($this->orderItems as $item) {
-            $message .= "- {$item['name']} x{$item['quantity']}\n";
-        }
-        $message .= "\nMontant total : {$this->totalAmount}F\n\n";
-        $message .= "Veuillez vous connecter à AppTicket pour valider ou rejeter cette commande.\n\n";
-        $message .= "Cordialement,\n";
-        $message .= "L'équipe AppTicket";
-
         return new Content(
-            text: 'emails.plain',
-            with: ['content' => $message]
+            html: 'emails.new-order-received',
+            with: [
+                'restaurantName' => $this->restaurantName,
+                'employeeName' => $this->employeeName,
+                'orderItems' => $this->orderItems,
+                'totalAmount' => $this->totalAmount
+            ]
         );
     }
 

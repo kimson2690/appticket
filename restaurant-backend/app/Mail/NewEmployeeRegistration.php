@@ -39,18 +39,13 @@ class NewEmployeeRegistration extends Mailable
      */
     public function content(): Content
     {
-        $message = "Bonjour,\n\n";
-        $message .= "Une nouvelle demande d'inscription a été reçue pour {$this->companyName}.\n\n";
-        $message .= "Détails de l'employé :\n";
-        $message .= "Nom : {$this->employeeName}\n";
-        $message .= "Email : {$this->employeeEmail}\n\n";
-        $message .= "Veuillez vous connecter à AppTicket pour approuver ou rejeter cette demande.\n\n";
-        $message .= "Cordialement,\n";
-        $message .= "L'équipe AppTicket";
-
         return new Content(
-            text: 'emails.plain',
-            with: ['content' => $message]
+            html: 'emails.new-employee-registration',
+            with: [
+                'employeeName' => $this->employeeName,
+                'employeeEmail' => $this->employeeEmail,
+                'companyName' => $this->companyName
+            ]
         );
     }
 

@@ -37,16 +37,12 @@ class EmployeeApproved extends Mailable
      */
     public function content(): Content
     {
-        $message = "Bonjour {$this->employeeName},\n\n";
-        $message .= "Bonne nouvelle ! Votre compte AppTicket a été approuvé par le gestionnaire de {$this->companyName}.\n\n";
-        $message .= "Vous pouvez maintenant vous connecter et commencer à utiliser l'application.\n\n";
-        $message .= "Bienvenue sur AppTicket !\n\n";
-        $message .= "Cordialement,\n";
-        $message .= "L'équipe AppTicket";
-
         return new Content(
-            text: 'emails.plain',
-            with: ['content' => $message]
+            html: 'emails.employee-approved',
+            with: [
+                'employeeName' => $this->employeeName,
+                'companyName' => $this->companyName
+            ]
         );
     }
 
