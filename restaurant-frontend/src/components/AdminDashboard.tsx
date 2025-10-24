@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import RoleManagement from './RoleManagement';
 import CompanyManagement from './CompanyManagement';
 import RestaurantManagement from './RestaurantManagement';
@@ -42,6 +43,8 @@ interface AdminDashboardProps {
 }
 
 const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
+  const location = useLocation();
+  const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [activeMenu, setActiveMenu] = useState('dashboard');
   const [userMenuOpen, setUserMenuOpen] = useState(false);
@@ -98,6 +101,18 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
 
   // Filtrer les menus selon le rôle de l'utilisateur connecté
   const menuItems = allMenuItems.filter(item => item.roles.includes(currentUser.role));
+
+  // Synchroniser activeMenu avec l'URL lors de la navigation
+  useEffect(() => {
+    const path = location.pathname;
+    // Extraire le menu depuis l'URL (ex: /admin/orders -> orders)
+    const menuFromUrl = path.replace('/admin/', '').replace('/', '');
+    
+    // Si l'URL contient un menu valide, l'activer
+    if (menuFromUrl && menuItems.some(item => item.id === menuFromUrl)) {
+      setActiveMenu(menuFromUrl);
+    }
+  }, [location, menuItems]);
 
   // Charger les statistiques une seule fois au montage du composant
   useEffect(() => {
@@ -160,6 +175,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
                 key={item.id}
                 onClick={() => {
                   setActiveMenu(item.id);
+                  navigate(`/admin/${item.id}`);
                   setSidebarOpen(false);
                 }}
                 className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-left transition-all duration-200 ${
