@@ -146,7 +146,7 @@ const RestaurantOrderSystem: React.FC = () => {
 
       const orderData = {
         restaurant_id: cart[0].restaurant_id,
-        items: cart.map(({ item_id, quantity, price }) => ({ item_id, quantity, price })),
+        items: cart.map(({ item_id, quantity, price, name }) => ({ item_id, quantity, price, name })),
         delivery_address: deliveryAddress || undefined,
         notes: notes || undefined
       };
