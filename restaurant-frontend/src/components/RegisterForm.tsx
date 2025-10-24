@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Eye, EyeOff, ArrowLeft, Mail, Lock, Building2, User, Phone, Briefcase, Calendar, CheckCircle, XCircle, X, Sparkles, Zap, Shield, UserPlus } from 'lucide-react';
+import { Eye, EyeOff, ArrowLeft, Mail, Lock, Building2, User, Phone, Briefcase, Calendar, Sparkles, Zap, Shield, UserPlus } from 'lucide-react';
 import { apiService, type Company } from '../services/api';
+import { useNotification } from '../contexts/NotificationContext';
 
 interface RegisterFormData {
   name: string;
@@ -23,6 +24,8 @@ interface RegisterFormProps {
 }
 
 const RegisterForm: React.FC<RegisterFormProps> = ({ onBackToLogin }) => {
+  const { success, error: showError } = useNotification();
+  
   const [formData, setFormData] = useState<RegisterFormData>({
     name: '',
     email: '',
@@ -44,7 +47,6 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onBackToLogin }) => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<Partial<RegisterFormData>>({});
-  const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
   useEffect(() => {
     loadCompanies();
@@ -92,10 +94,11 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onBackToLogin }) => {
       await apiService.createEmployee(employeeData);
       
       // Afficher la notification de succès
-      setNotification({
-        type: 'success',
-        message: 'Compte créé avec succès ! Votre demande est en attente de validation par le gestionnaire de votre entreprise. Vous recevrez une notification une fois votre compte approuvé.'
-      });
+      success(
+        'Inscription réussie !',
+        'Votre demande est en attente de validation par le gestionnaire de votre entreprise. Vous recevrez une notification une fois votre compte approuvé.',
+        5000
+      );
       
       // Rediriger vers la page de connexion après 5 secondes
       setTimeout(() => {
@@ -103,10 +106,10 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onBackToLogin }) => {
       }, 5000);
     } catch (error) {
       console.error('Erreur lors de la création du compte:', error);
-      setNotification({
-        type: 'error',
-        message: 'Erreur lors de la création du compte. Veuillez réessayer.'
-      });
+      showError(
+        'Erreur de création',
+        'Impossible de créer le compte. Veuillez vérifier vos informations et réessayer.'
+      );
     } finally {
       setIsLoading(false);
     }
@@ -116,46 +119,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onBackToLogin }) => {
     <div className="min-h-screen relative overflow-hidden" style={{
       background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%)'
     }}>
-      {/* Notification Toast */}
-      {notification && (
-        <div className="fixed top-6 left-1/2 -translate-x-1/2 z-50 animate-slide-down">
-          <div className={`flex items-start space-x-4 rounded-2xl p-5 shadow-2xl backdrop-blur-sm max-w-2xl ${
-            notification.type === 'success' 
-              ? 'bg-green-50/95 border-2 border-green-200' 
-              : 'bg-red-50/95 border-2 border-red-200'
-          }`}>
-            {notification.type === 'success' ? (
-              <CheckCircle className="w-6 h-6 text-green-600 flex-shrink-0 mt-0.5" />
-            ) : (
-              <XCircle className="w-6 h-6 text-red-600 flex-shrink-0 mt-0.5" />
-            )}
-            <div className="flex-1">
-              <h3 className={`font-semibold mb-1 ${
-                notification.type === 'success' ? 'text-green-900' : 'text-red-900'
-              }`}>
-                {notification.type === 'success' ? 'Inscription réussie !' : 'Erreur'}
-              </h3>
-              <p className={`text-sm ${
-                notification.type === 'success' ? 'text-green-800' : 'text-red-800'
-              }`}>
-                {notification.message}
-              </p>
-            </div>
-            <button
-              onClick={() => setNotification(null)}
-              className={`p-1 rounded-lg transition-colors ${
-                notification.type === 'success' 
-                  ? 'hover:bg-green-100' 
-                  : 'hover:bg-red-100'
-              }`}
-            >
-              <X className={`w-5 h-5 ${
-                notification.type === 'success' ? 'text-green-600' : 'text-red-600'
-              }`} />
-            </button>
-          </div>
-        </div>
-      )}
+      {/* Les notifications sont gérées par NotificationContext */}
 
       {/* Orbes lumineux animés */}
       <div className="absolute top-20 left-10 w-96 h-96 bg-orange-500/20 rounded-full blur-3xl animate-pulse" style={{ animationDuration: '4s' }}></div>

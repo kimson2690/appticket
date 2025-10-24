@@ -146,6 +146,23 @@ class EmployeeController extends Controller
 
             Log::info('Employé sauvegardé dans le fichier:', $employeeData);
 
+            // Créer une notification pour le gestionnaire si l'employé est en attente
+            if ($status === 'pending') {
+                NotificationController::createNotification([
+                    'type' => 'info',
+                    'title' => 'Nouvelle demande d\'inscription',
+                    'message' => "$name souhaite rejoindre votre entreprise ($companyName) en tant que $position.",
+                    'role' => 'Gestionnaire Entreprise',
+                    'company_id' => $company_id,
+                    'action_url' => '/admin/employees',
+                    'metadata' => [
+                        'employee_id' => $employeeData['id'],
+                        'employee_name' => $name,
+                        'employee_email' => $email
+                    ]
+                ]);
+            }
+
             return response()->json([
                 'success' => true,
                 'data' => $employeeData,
@@ -338,6 +355,119 @@ class EmployeeController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Erreur lors de la suppression de l\'employé',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Approuver une demande d'inscription
+     */
+    public function approve(Request $request, string $id): JsonResponse
+    {
+        try {
+            $filePath = storage_path('app/employees.json');
+            $employees = json_decode(file_get_contents($filePath), true) ?? [];
+
+            $employeeIndex = collect($employees)->search(function ($emp) use ($id) {
+                return $emp['id'] === $id;
+            });
+
+            if ($employeeIndex === false) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Employé non trouvé'
+                ], 404);
+            }
+
+            // Mettre à jour le statut
+            $employees[$employeeIndex]['status'] = 'active';
+            $employees[$employeeIndex]['updated_at'] = date('Y-m-d H:i:s');
+
+            file_put_contents($filePath, json_encode($employees, JSON_PRETTY_PRINT));
+
+            $employee = $employees[$employeeIndex];
+
+            // Créer une notification pour l'employé
+            NotificationController::createNotification([
+                'type' => 'success',
+                'title' => 'Compte activé !',
+                'message' => "Votre demande d'inscription a été approuvée. Bienvenue chez {$employee['company_name']} !",
+                'user_id' => $employee['id'],
+                'action_url' => '/login',
+                'metadata' => [
+                    'company_name' => $employee['company_name'],
+                    'approved_at' => date('Y-m-d H:i:s')
+                ]
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Employé approuvé avec succès',
+                'data' => $employee
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('EmployeeController@approve - Erreur: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Erreur lors de l\'approbation',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Rejeter une demande d'inscription
+     */
+    public function reject(Request $request, string $id): JsonResponse
+    {
+        try {
+            $filePath = storage_path('app/employees.json');
+            $employees = json_decode(file_get_contents($filePath), true) ?? [];
+
+            $employeeIndex = collect($employees)->search(function ($emp) use ($id) {
+                return $emp['id'] === $id;
+            });
+
+            if ($employeeIndex === false) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Employé non trouvé'
+                ], 404);
+            }
+
+            $employee = $employees[$employeeIndex];
+
+            // Créer une notification pour l'employé avant suppression
+            NotificationController::createNotification([
+                'type' => 'warning',
+                'title' => 'Demande non approuvée',
+                'message' => "Votre demande d'inscription chez {$employee['company_name']} n'a pas été approuvée. Contactez votre gestionnaire pour plus d'informations.",
+                'user_id' => $employee['id'],
+                'metadata' => [
+                    'company_name' => $employee['company_name'],
+                    'rejected_at' => date('Y-m-d H:i:s')
+                ]
+            ]);
+
+            // Supprimer l'employé rejeté
+            $employees = array_values(array_filter($employees, function ($emp) use ($id) {
+                return $emp['id'] !== $id;
+            }));
+
+            file_put_contents($filePath, json_encode($employees, JSON_PRETTY_PRINT));
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Demande rejetée avec succès'
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('EmployeeController@reject - Erreur: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Erreur lors du rejet',
                 'error' => $e->getMessage()
             ], 500);
         }

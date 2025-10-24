@@ -18,6 +18,7 @@ use App\Http\Controllers\Admin\CompanyRestaurantController;
 use App\Http\Controllers\Admin\MenuItemController;
 use App\Http\Controllers\Admin\DailyMenuController;
 use App\Http\Controllers\Admin\WeeklyMenuController;
+use App\Http\Controllers\Admin\NotificationController;
 use App\Http\Controllers\Employee\EmployeeDashboardController;
 use App\Http\Controllers\Employee\OrderController;
 use App\Http\Controllers\AuthController;
@@ -83,6 +84,8 @@ Route::prefix('admin')->group(function () {
     Route::get('/employees/{id}', [EmployeeController::class, 'show']);
     Route::put('/employees/{id}', [EmployeeController::class, 'update']);
     Route::delete('/employees/{id}', [EmployeeController::class, 'destroy']);
+    Route::post('/employees/{id}/approve', [EmployeeController::class, 'approve']);
+    Route::post('/employees/{id}/reject', [EmployeeController::class, 'reject']);
     
     // Configuration des tickets
     Route::get('/ticket-configurations', [TicketConfigurationController::class, 'index']);
@@ -112,6 +115,12 @@ Route::prefix('admin')->group(function () {
     Route::get('/company-restaurants/partners', [CompanyRestaurantController::class, 'getPartnerRestaurants']);
     Route::get('/company-restaurants/available', [CompanyRestaurantController::class, 'getAvailableRestaurants']);
     Route::post('/company-restaurants/partners', [CompanyRestaurantController::class, 'updatePartnerRestaurants']);
+    
+    // Gestion des notifications
+    Route::get('/notifications', [NotificationController::class, 'index']);
+    Route::put('/notifications/{id}/read', [NotificationController::class, 'markAsRead']);
+    Route::put('/notifications/mark-all-read', [NotificationController::class, 'markAllAsRead']);
+    Route::delete('/notifications/{id}', [NotificationController::class, 'destroy']);
     
     // Statistiques globales
     Route::get('/statistics', [StatisticsController::class, 'index']);

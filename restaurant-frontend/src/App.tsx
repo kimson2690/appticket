@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import AuthPages from './AuthPages'
 import AdminDashboard from './components/AdminDashboard'
+import { NotificationProvider } from './contexts/NotificationContext'
 
 function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -59,13 +60,22 @@ function App() {
     );
   }
 
-  // Si l'utilisateur est connecté, afficher AdminDashboard (pour tous les rôles)
-  if (isLoggedIn && userRole) {
-    return <AdminDashboard onLogout={handleLogout} />;
-  }
-
-  // Sinon, afficher les pages d'authentification
-  return <AuthPages />;
+  // Wrap the app with NotificationProvider
+  return (
+    <NotificationProvider
+      maxNotifications={5}
+      defaultDuration={4000}
+      defaultPosition="top-right"
+    >
+      {/* Si l'utilisateur est connecté, afficher AdminDashboard (pour tous les rôles) */}
+      {isLoggedIn && userRole ? (
+        <AdminDashboard onLogout={handleLogout} />
+      ) : (
+        /* Sinon, afficher les pages d'authentification */
+        <AuthPages />
+      )}
+    </NotificationProvider>
+  );
 }
 
 export default App

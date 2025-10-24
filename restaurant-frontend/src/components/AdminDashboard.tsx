@@ -14,6 +14,7 @@ import MyTickets from './MyTickets';
 import MyHistory from './MyHistory';
 import RestaurantOrderSystem from './RestaurantOrderSystem';
 import OrderManagement from './OrderManagement';
+import NotificationCenter from './NotificationCenter';
 import { apiService, type Statistics } from '../services/api';
 import { 
   LayoutDashboard, 
@@ -220,10 +221,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
             </div>
 
             <div className="flex items-center space-x-4">
-              <button className="relative p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors">
-                <Bell className="w-5 h-5" />
-                <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full"></span>
-              </button>
+              {/* Système de notifications */}
+              <NotificationCenter />
               
               <div className="relative">
                 <button

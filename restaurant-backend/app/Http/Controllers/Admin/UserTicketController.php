@@ -105,6 +105,22 @@ class UserTicketController extends Controller
 
             Log::info('Tickets affectés avec succès');
 
+            // Créer une notification pour l'employé
+            $employeeName = $employees[$employeeIndex]['name'];
+            $newBalance = $employees[$employeeIndex]['ticket_balance'];
+            NotificationController::createNotification([
+                'type' => 'success',
+                'title' => 'Nouveaux tickets reçus !',
+                'message' => "Vous avez reçu $ticketsCount ticket(s) d'une valeur de {$ticketValue}F chacun. Solde total: {$newBalance}F.",
+                'user_id' => $employeeId,
+                'action_url' => '/employee/tickets',
+                'metadata' => [
+                    'tickets_count' => $ticketsCount,
+                    'ticket_value' => $ticketValue,
+                    'assignment_id' => $assignment['id']
+                ]
+            ]);
+
             return response()->json([
                 'success' => true,
                 'data' => $employees[$employeeIndex],
@@ -366,6 +382,21 @@ class UserTicketController extends Controller
                         'created_at' => date('Y-m-d H:i:s')
                     ];
                     $assignments[] = $assignment;
+
+                    // Créer une notification pour cet employé
+                    NotificationController::createNotification([
+                        'type' => 'success',
+                        'title' => 'Tickets distribués !',
+                        'message' => "Distribution mensuelle : Vous avez reçu $ticketsCount ticket(s) de {$ticketValue}F. Bon appétit !",
+                        'user_id' => $employee['id'],
+                        'action_url' => '/employee/tickets',
+                        'metadata' => [
+                            'batch_number' => $batchNumber,
+                            'tickets_count' => $ticketsCount,
+                            'ticket_value' => $ticketValue,
+                            'assignment_id' => $assignment['id']
+                        ]
+                    ]);
 
                     $updatedEmployees[] = $employee;
                     $successCount++;

@@ -586,6 +586,31 @@ class ApiService {
     const response = await this.request<Order>(`/employee/orders/${id}`);
     return response.data;
   }
+
+  // Notifications API
+  async getNotifications(): Promise<AppNotification[]> {
+    const response = await this.request<{ notifications: AppNotification[] }>('/admin/notifications') as any;
+    // Le backend retourne { success, notifications }, pas { data: { notifications } }
+    return response.notifications || [];
+  }
+
+  async markNotificationAsRead(id: string): Promise<void> {
+    await this.request(`/admin/notifications/${id}/read`, {
+      method: 'PUT',
+    });
+  }
+
+  async markAllNotificationsAsRead(): Promise<void> {
+    await this.request('/admin/notifications/mark-all-read', {
+      method: 'PUT',
+    });
+  }
+
+  async deleteNotification(id: string): Promise<void> {
+    await this.request(`/admin/notifications/${id}`, {
+      method: 'DELETE',
+    });
+  }
 }
 
 export const apiService = new ApiService();
@@ -694,6 +719,22 @@ export interface TicketAssignment {
   type: 'manual' | 'batch';
   assigned_by: string;
   notes?: string;
+  created_at: string;
+}
+
+export interface AppNotification {
+  id: string;
+  type: 'info' | 'success' | 'warning' | 'alert';
+  title: string;
+  message: string;
+  user_id?: string;
+  role?: string;
+  company_id?: string;
+  restaurant_id?: string;
+  action_url?: string;
+  metadata?: Record<string, any>;
+  read: boolean;
+  read_at?: string;
   created_at: string;
 }
 
