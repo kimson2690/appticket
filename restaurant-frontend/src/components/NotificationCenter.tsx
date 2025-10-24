@@ -10,6 +10,7 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({ onNotificationC
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [expandedNotifications, setExpandedNotifications] = useState<Set<string>>(new Set());
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   // Charger les notifications
@@ -75,6 +76,20 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({ onNotificationC
     } catch (error) {
       console.error('Erreur lors de la suppression:', error);
     }
+  };
+
+  // Basculer l'état étendu d'une notification
+  const toggleExpanded = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setExpandedNotifications(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(id)) {
+        newSet.delete(id);
+      } else {
+        newSet.add(id);
+      }
+      return newSet;
+    });
   };
 
   // Gérer le clic sur une notification
@@ -237,9 +252,21 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({ onNotificationC
                           <span className="flex-shrink-0 w-2 h-2 bg-orange-500 rounded-full"></span>
                         )}
                       </div>
-                      <p className="text-sm text-gray-600 mb-2 line-clamp-2">
-                        {notification.message}
-                      </p>
+                      <div className="mb-2">
+                        <p className={`text-sm text-gray-600 whitespace-pre-wrap ${
+                          expandedNotifications.has(notification.id) ? '' : 'line-clamp-3'
+                        }`}>
+                          {notification.message}
+                        </p>
+                        {notification.message.length > 120 && (
+                          <button
+                            onClick={(e) => toggleExpanded(notification.id, e)}
+                            className="text-xs text-orange-600 hover:text-orange-700 font-medium mt-1"
+                          >
+                            {expandedNotifications.has(notification.id) ? 'Voir moins' : 'Voir plus'}
+                          </button>
+                        )}
+                      </div>
                       <div className="flex items-center justify-between">
                         <span className="text-xs text-gray-400">
                           {formatDate(notification.created_at)}
