@@ -10,6 +10,7 @@ import TicketBatchManagement from './TicketBatchManagement';
 import UserTicketManagement from './UserTicketManagement';
 import PartnerRestaurants from './PartnerRestaurants';
 import CompanyReporting from './CompanyReporting';
+import RestaurantReporting from './RestaurantReporting';
 import MenuManagement from './MenuManagement';
 import WeeklyMenuPlanning from './WeeklyMenuPlanning';
 import MyTickets from './MyTickets';
@@ -86,6 +87,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
     { id: 'restaurants', label: 'Restaurants', icon: Utensils, roles: ['Administrateur'] },
     { id: 'menu', label: 'Gestion du Menu', icon: ChefHat, roles: ['Gestionnaire Restaurant'] },
     { id: 'orders', label: 'Commandes', icon: ShoppingCart, roles: ['Gestionnaire Restaurant'] },
+    { id: 'restaurant-reports', label: 'Rapports Commandes', icon: BarChart3, roles: ['Gestionnaire Restaurant'] },
     { id: 'weekly-planning', label: 'Planning Hebdo', icon: Calendar, roles: ['Gestionnaire Restaurant'] },
     { id: 'partner-restaurants', label: 'Restaurants Partenaires', icon: Store, roles: ['Gestionnaire Entreprise'] },
     { id: 'tickets', label: 'Configuration', icon: Settings, roles: ['Gestionnaire Entreprise'] },
@@ -471,6 +473,10 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
 
           {activeMenu === 'orders' && (
             <OrderManagement />
+          )}
+
+          {activeMenu === 'restaurant-reports' && (
+            <RestaurantReporting />
           )}
 
           {activeMenu === 'weekly-planning' && (

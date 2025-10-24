@@ -141,6 +141,10 @@ Route::prefix('restaurant')->group(function () {
     Route::get('/orders', [\App\Http\Controllers\Restaurant\OrderManagementController::class, 'index']);
     Route::post('/orders/{id}/validate', [\App\Http\Controllers\Restaurant\OrderManagementController::class, 'validateOrder']);
     Route::post('/orders/{id}/reject', [\App\Http\Controllers\Restaurant\OrderManagementController::class, 'rejectOrder']);
+    
+    // Statistiques et rapports
+    Route::get('/reports/company-orders', [\App\Http\Controllers\Restaurant\RestaurantReportingController::class, 'getCompanyOrders']);
+    Route::get('/reports/employee-orders', [\App\Http\Controllers\Restaurant\RestaurantReportingController::class, 'getEmployeeOrders']);
 });
 
 // Routes pour les employés
