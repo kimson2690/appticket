@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Company;
 
 use App\Http\Controllers\Controller;
+use App\Models\Restaurant;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
@@ -261,17 +262,23 @@ class ReportingController extends Controller
     }
 
     /**
-     * Charger les restaurants
+     * Charger les restaurants depuis la base de données
      */
     private function loadRestaurants()
     {
-        $filePath = storage_path('app/' . $this->restaurantsFile);
-        
-        if (!file_exists($filePath)) {
+        try {
+            return Restaurant::all()->map(function ($restaurant) {
+                return [
+                    'id' => (string) $restaurant->id,
+                    'name' => $restaurant->name,
+                    'address' => $restaurant->address,
+                    'phone' => $restaurant->phone,
+                    'status' => $restaurant->status,
+                ];
+            })->toArray();
+        } catch (\Exception $e) {
+            Log::error('Erreur lors du chargement des restaurants: ' . $e->getMessage());
             return [];
         }
-
-        $content = file_get_contents($filePath);
-        return json_decode($content, true) ?? [];
     }
 }
