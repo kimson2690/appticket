@@ -123,10 +123,20 @@ class OrderManagementController extends Controller
 
             Log::info('Commande validée: ' . $id . ' par ' . $userName);
 
-            // Récupérer le nom du restaurant
-            $restaurants = $this->loadRestaurants();
-            $restaurant = collect($restaurants)->firstWhere('id', $order['restaurant_id']);
-            $restaurantName = $restaurant['name'] ?? 'Restaurant';
+            // Récupérer le nom du restaurant (priorité aux données de la commande)
+            $restaurantName = 'Restaurant'; // Valeur par défaut
+            
+            // Priorité 1: Utiliser restaurant_name des items de la commande
+            if (!empty($order['items'][0]['restaurant_name'])) {
+                $restaurantName = $order['items'][0]['restaurant_name'];
+            } else {
+                // Priorité 2: Chercher dans restaurants.json (fallback)
+                $restaurants = $this->loadRestaurants();
+                $restaurant = collect($restaurants)->firstWhere('id', $order['restaurant_id']);
+                if ($restaurant && !empty($restaurant['name'])) {
+                    $restaurantName = $restaurant['name'];
+                }
+            }
 
             // Notification pour l'employé : commande validée
             NotificationController::createNotification([
@@ -229,10 +239,20 @@ class OrderManagementController extends Controller
 
             Log::info('Commande rejetée: ' . $id . ' par ' . $userName);
 
-            // Récupérer le nom du restaurant
-            $restaurants = $this->loadRestaurants();
-            $restaurant = collect($restaurants)->firstWhere('id', $order['restaurant_id']);
-            $restaurantName = $restaurant['name'] ?? 'Restaurant';
+            // Récupérer le nom du restaurant (priorité aux données de la commande)
+            $restaurantName = 'Restaurant'; // Valeur par défaut
+            
+            // Priorité 1: Utiliser restaurant_name des items de la commande
+            if (!empty($order['items'][0]['restaurant_name'])) {
+                $restaurantName = $order['items'][0]['restaurant_name'];
+            } else {
+                // Priorité 2: Chercher dans restaurants.json (fallback)
+                $restaurants = $this->loadRestaurants();
+                $restaurant = collect($restaurants)->firstWhere('id', $order['restaurant_id']);
+                if ($restaurant && !empty($restaurant['name'])) {
+                    $restaurantName = $restaurant['name'];
+                }
+            }
 
             // Notification pour l'employé : commande rejetée
             $rejectionReason = $orders[$orderIndex]['rejection_reason'];
