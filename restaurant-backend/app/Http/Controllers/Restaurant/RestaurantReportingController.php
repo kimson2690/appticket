@@ -39,7 +39,7 @@ class RestaurantReportingController extends Controller
             $companies = $this->loadCompanies();
 
             // Filtrer les commandes du restaurant
-            $filteredOrders = collect($orders)->filter(function ($order) use ($restaurantId, $validated) {
+            $filteredOrders = collect($orders)->filter(function ($order) use ($restaurantId, $validated, $employees) {
                 // Doit être du restaurant concerné
                 if ($order['restaurant_id'] !== $restaurantId) {
                     return false;
@@ -64,7 +64,8 @@ class RestaurantReportingController extends Controller
                 // Filtre par entreprise
                 if (!empty($validated['company_id'])) {
                     $employee = collect($employees)->firstWhere('id', $order['employee_id']);
-                    if (!$employee || $employee['company_id'] !== $validated['company_id']) {
+                    // Comparaison souple pour gérer string vs int
+                    if (!$employee || (string)$employee['company_id'] !== (string)$validated['company_id']) {
                         return false;
                     }
                 }
@@ -125,6 +126,33 @@ class RestaurantReportingController extends Controller
 
             // Nettoyer et trier
             $results = array_values($ordersByCompany);
+            
+            // Si un filtre company_id est appliqué, ne retourner que cette entreprise
+            if (!empty($validated['company_id'])) {
+                $results = array_filter($results, function($result) use ($validated) {
+                    // Comparaison souple pour gérer string vs int
+                    return (string)$result['company_id'] === (string)$validated['company_id'];
+                });
+                $results = array_values($results); // Réindexer le tableau
+                
+                // Si l'entreprise n'a aucune commande, créer une entrée vide
+                if (empty($results)) {
+                    $company = collect($companies)->firstWhere('id', $validated['company_id']);
+                    if ($company) {
+                        $results = [[
+                            'company_id' => $validated['company_id'],
+                            'company_name' => $company['name'],
+                            'total_amount' => 0,
+                            'total_orders' => 0,
+                            'confirmed_orders' => 0,
+                            'pending_orders' => 0,
+                            'rejected_orders' => 0,
+                            'employees_count' => 0
+                        ]];
+                    }
+                }
+            }
+            
             usort($results, function ($a, $b) {
                 return $b['total_orders'] - $a['total_orders'];
             });
