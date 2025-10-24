@@ -268,21 +268,30 @@ class EmployeeController extends Controller
                 'company_name' => $companyName
             ]);
 
-            // Mettre à jour l'employé
-            $employees[$employeeIndex] = array_merge($employees[$employeeIndex], [
+            // Préparer les données de mise à jour
+            $updateData = [
                 'name' => $name,
                 'email' => $email,
                 'phone' => $phone,
                 'company_id' => $company_id,
-                'company_name' => $companyName, // Mise à jour du nom de l'entreprise
+                'company_name' => $companyName,
                 'department' => $department,
                 'position' => $position,
                 'employee_number' => $employee_number,
                 'ticket_balance' => (int) $ticket_balance,
                 'status' => $status,
                 'hire_date' => $hire_date,
-                'updated_at' => date('Y-m-d'),
-            ]);
+                'updated_at' => date('Y-m-d H:i:s'),
+            ];
+
+            // Si un nouveau mot de passe est fourni, le hasher et l'ajouter
+            if ($request->filled('password')) {
+                $updateData['password'] = Hash::make($request->input('password'));
+                Log::info('Nouveau mot de passe hashé pour l\'employé');
+            }
+
+            // Mettre à jour l'employé
+            $employees[$employeeIndex] = array_merge($employees[$employeeIndex], $updateData);
 
             // Sauvegarder dans le fichier
             file_put_contents($filePath, json_encode($employees, JSON_PRETTY_PRINT));
