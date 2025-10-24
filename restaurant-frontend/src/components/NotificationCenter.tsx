@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Bell, X, Check, AlertTriangle, Info, ChevronRight } from 'lucide-react';
 import { apiService, type AppNotification } from '../services/api';
 
@@ -7,6 +8,7 @@ interface NotificationCenterProps {
 }
 
 const NotificationCenter: React.FC<NotificationCenterProps> = ({ onNotificationCountChange }) => {
+  const navigate = useNavigate();
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -99,9 +101,14 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({ onNotificationC
       markAsRead(notification.id);
     }
     
-    // TODO: Implémenter la navigation une fois le Router configuré
-    // Pour l'instant, on ferme juste le dropdown
-    setIsOpen(false);
+    // Naviguer vers l'URL d'action si elle existe
+    if (notification.action_url) {
+      setIsOpen(false);
+      navigate(notification.action_url);
+    } else {
+      // Sinon, fermer juste le dropdown
+      setIsOpen(false);
+    }
   };
 
   // Fermer le dropdown si on clique à l'extérieur

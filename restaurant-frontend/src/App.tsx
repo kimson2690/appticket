@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import { BrowserRouter as Router } from 'react-router-dom'
 import AuthPages from './AuthPages'
 import AdminDashboard from './components/AdminDashboard'
 import { NotificationProvider } from './contexts/NotificationContext'
@@ -69,7 +70,9 @@ function App() {
     >
       {/* Si l'utilisateur est connecté, afficher AdminDashboard (pour tous les rôles) */}
       {isLoggedIn && userRole ? (
-        <AdminDashboard onLogout={handleLogout} />
+        <Router>
+          <AdminDashboard onLogout={handleLogout} />
+        </Router>
       ) : (
         /* Sinon, afficher les pages d'authentification */
         <AuthPages />
