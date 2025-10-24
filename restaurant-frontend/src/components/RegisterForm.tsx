@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Eye, EyeOff, ArrowLeft, Mail, Lock, Building2, User, Phone, Briefcase, Calendar, CheckCircle, XCircle, X } from 'lucide-react';
+import { Eye, EyeOff, ArrowLeft, Mail, Lock, Building2, User, Phone, Briefcase, Calendar, CheckCircle, XCircle, X, Sparkles, Zap, Shield, UserPlus } from 'lucide-react';
 import { apiService, type Company } from '../services/api';
 
 interface RegisterFormData {
@@ -113,12 +113,8 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onBackToLogin }) => {
   };
 
   return (
-    <div className="min-h-screen relative" style={{
-      background: `
-        radial-gradient(1200px 600px at 80% -10%, rgba(249, 115, 22, 0.18), transparent 60%),
-        radial-gradient(800px 400px at 20% 110%, rgba(34, 197, 94, 0.14), transparent 60%),
-        linear-gradient(180deg, #0b1020 0%, #0a0f1a 100%)
-      `
+    <div className="min-h-screen relative overflow-hidden" style={{
+      background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%)'
     }}>
       {/* Notification Toast */}
       {notification && (
@@ -161,25 +157,38 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onBackToLogin }) => {
         </div>
       )}
 
-      {/* Motif de grille décoratif */}
-      <div className="absolute inset-0 pointer-events-none">
-        <svg className="absolute inset-0 h-full w-full opacity-[0.07]" xmlns="http://www.w3.org/2000/svg">
-          <defs>
-            <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
-              <path d="M40 0H0V40" fill="none" stroke="white" strokeOpacity="0.12"/>
-            </pattern>
-          </defs>
-          <rect width="100%" height="100%" fill="url(#grid)"/>
-        </svg>
+      {/* Orbes lumineux animés */}
+      <div className="absolute top-20 left-10 w-96 h-96 bg-orange-500/20 rounded-full blur-3xl animate-pulse" style={{ animationDuration: '4s' }}></div>
+      <div className="absolute bottom-20 right-10 w-96 h-96 bg-purple-500/20 rounded-full blur-3xl animate-pulse" style={{ animationDuration: '6s', animationDelay: '1s' }}></div>
+      <div className="absolute top-1/2 left-1/2 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl animate-pulse" style={{ animationDuration: '5s', animationDelay: '2s' }}></div>
+
+      {/* Grille animée */}
+      <div className="absolute inset-0 opacity-20">
+        <div className="absolute inset-0" style={{
+          backgroundImage: `
+            linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px)
+          `,
+          backgroundSize: '50px 50px',
+          animation: 'gridMove 20s linear infinite'
+        }}></div>
       </div>
 
-      <div className="relative mx-auto max-w-4xl px-6 py-10">
-        <div className="rounded-[28px] bg-white/95 p-6 text-slate-900 backdrop-blur md:p-8 lg:p-10" style={{
-          boxShadow: `
-            0 8px 28px rgba(2, 6, 23, 0.25),
-            0 2px 8px rgba(2, 6, 23, 0.12)
-          `
-        }}>
+      {/* Particules flottantes */}
+      <div className="absolute top-1/4 left-1/4 w-2 h-2 bg-orange-400/60 rounded-full animate-ping" style={{ animationDuration: '3s' }}></div>
+      <div className="absolute top-1/3 right-1/3 w-2 h-2 bg-purple-400/60 rounded-full animate-ping" style={{ animationDuration: '4s', animationDelay: '1s' }}></div>
+      <div className="absolute bottom-1/4 left-1/3 w-2 h-2 bg-blue-400/60 rounded-full animate-ping" style={{ animationDuration: '5s', animationDelay: '2s' }}></div>
+
+      <div className="relative mx-auto max-w-7xl px-6 py-10">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-start">
+          {/* Section gauche - Formulaire */}
+          <section className="relative backdrop-blur-xl bg-white/5 border-2 border-white/10 rounded-3xl p-8 md:p-10" style={{
+            boxShadow: `
+              0 25px 50px -12px rgba(0, 0, 0, 0.5),
+              inset 0 1px 0 0 rgba(255, 255, 255, 0.05)
+            `,
+            animation: 'float 6s ease-in-out infinite'
+          }}>
           {/* Header */}
           <div className="mb-8 flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -188,20 +197,26 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onBackToLogin }) => {
                   <path d="M3 7C3 5.89543 3.89543 5 5 5H19C20.1046 5 21 5.89543 21 7V9.5C20.1716 9.5 19.5 10.1716 19.5 11C19.5 11.8284 20.1716 12.5 21 12.5V17C21 18.1046 20.1046 19 19 19H5C3.89543 19 3 18.1046 3 17V12.5C3.82843 12.5 4.5 11.8284 4.5 11C4.5 10.1716 3.82843 9.5 3 9.5V7Z"/>
                 </svg>
               </span>
-              <span className="text-xl font-medium tracking-tight text-slate-950">AppTicket</span>
+              <div className="flex items-center gap-2">
+                <Sparkles className="h-5 w-5 text-orange-400 animate-pulse" style={{ animationDuration: '3s' }} />
+                <span className="text-xl font-bold tracking-tight bg-gradient-to-r from-orange-400 to-orange-600 bg-clip-text text-transparent">AppTicket</span>
+              </div>
             </div>
             <button
               onClick={onBackToLogin}
-              className="flex items-center gap-2 text-slate-600 hover:text-slate-800 transition-colors"
+              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-white transition-all"
             >
               <ArrowLeft className="h-4 w-4" />
-              <span className="text-sm">Retour à la connexion</span>
+              <span className="text-sm">Connexion</span>
             </button>
           </div>
 
-          <h1 className="mb-8 text-3xl md:text-4xl font-semibold tracking-tight text-slate-950">
-            Créer un compte employé
-          </h1>
+          <div className="mb-6">
+            <h1 className="text-3xl md:text-4xl font-bold text-white mb-2 leading-tight">
+              Créer un compte
+            </h1>
+            <p className="text-white/70">Rejoignez votre entreprise sur AppTicket</p>
+          </div>
 
           {/* Formulaire */}
           <form onSubmit={handleSubmit} className="space-y-6">
@@ -210,177 +225,177 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onBackToLogin }) => {
               
               {/* Nom complet */}
               <div>
-                <label className="mb-2 block text-sm font-medium text-slate-700">Nom complet *</label>
+                <label className="mb-2 block text-sm font-medium text-white/90">Nom complet *</label>
                 <div className="relative">
-                  <User className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                  <User className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/40" />
                   <input 
                     type="text" 
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                     placeholder="Ex: Moussa Kaboré" 
-                    className={`w-full rounded-xl border ${errors.name ? 'border-red-300' : 'border-slate-200'} bg-white px-11 py-3 text-[15px] text-slate-900 placeholder:text-slate-400 outline-none transition focus:border-slate-300 focus:ring-4 focus:ring-slate-100`}
+                    className={`w-full rounded-xl border ${errors.name ? 'border-red-400' : 'border-white/10'} bg-white/5 px-11 py-3 text-[15px] text-white placeholder:text-white/40 outline-none transition focus:border-orange-400 focus:ring-4 focus:ring-orange-400/20`}
                     required
                   />
                 </div>
-                {errors.name && <p className="mt-1 text-sm text-red-600">{errors.name}</p>}
+                {errors.name && <p className="mt-1 text-sm text-red-400">{errors.name}</p>}
               </div>
 
               {/* Email */}
               <div>
-                <label className="mb-2 block text-sm font-medium text-slate-700">Email *</label>
+                <label className="mb-2 block text-sm font-medium text-white/90">Email *</label>
                 <div className="relative">
-                  <Mail className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                  <Mail className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/40" />
                   <input 
                     type="email" 
                     value={formData.email}
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                     placeholder="moussa@entreprise.bf" 
-                    className={`w-full rounded-xl border ${errors.email ? 'border-red-300' : 'border-slate-200'} bg-white px-11 py-3 text-[15px] text-slate-900 placeholder:text-slate-400 outline-none transition focus:border-slate-300 focus:ring-4 focus:ring-slate-100`}
+                    className={`w-full rounded-xl border ${errors.email ? 'border-red-400' : 'border-white/10'} bg-white/5 px-11 py-3 text-[15px] text-white placeholder:text-white/40 outline-none transition focus:border-orange-400 focus:ring-4 focus:ring-orange-400/20`}
                     required
                   />
                 </div>
-                {errors.email && <p className="mt-1 text-sm text-red-600">{errors.email}</p>}
+                {errors.email && <p className="mt-1 text-sm text-red-400">{errors.email}</p>}
               </div>
 
               {/* Téléphone */}
               <div>
-                <label className="mb-2 block text-sm font-medium text-slate-700">Téléphone *</label>
+                <label className="mb-2 block text-sm font-medium text-white/90">Téléphone *</label>
                 <div className="relative">
-                  <Phone className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                  <Phone className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/40" />
                   <input 
                     type="tel" 
                     value={formData.phone}
                     onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                     placeholder="+226 70 12 34 56" 
-                    className={`w-full rounded-xl border ${errors.phone ? 'border-red-300' : 'border-slate-200'} bg-white px-11 py-3 text-[15px] text-slate-900 placeholder:text-slate-400 outline-none transition focus:border-slate-300 focus:ring-4 focus:ring-slate-100`}
+                    className={`w-full rounded-xl border ${errors.phone ? 'border-red-400' : 'border-white/10'} bg-white/5 px-11 py-3 text-[15px] text-white placeholder:text-white/40 outline-none transition focus:border-orange-400 focus:ring-4 focus:ring-orange-400/20`}
                     required
                   />
                 </div>
-                {errors.phone && <p className="mt-1 text-sm text-red-600">{errors.phone}</p>}
+                {errors.phone && <p className="mt-1 text-sm text-red-400">{errors.phone}</p>}
               </div>
 
               {/* Entreprise */}
               <div>
-                <label className="mb-2 block text-sm font-medium text-slate-700">Entreprise *</label>
+                <label className="mb-2 block text-sm font-medium text-white/90">Entreprise *</label>
                 <div className="relative">
-                  <Building2 className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                  <Building2 className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/40" />
                   <select
                     value={formData.company_id}
                     onChange={(e) => setFormData({ ...formData, company_id: e.target.value })}
-                    className={`w-full rounded-xl border ${errors.company_id ? 'border-red-300' : 'border-slate-200'} bg-white px-11 py-3 text-[15px] text-slate-900 outline-none transition focus:border-slate-300 focus:ring-4 focus:ring-slate-100`}
+                    className={`w-full rounded-xl border ${errors.company_id ? 'border-red-400' : 'border-white/10'} bg-white/5 px-11 py-3 text-[15px] text-white outline-none transition focus:border-orange-400 focus:ring-4 focus:ring-orange-400/20`}
                     required
                   >
-                    <option value="">Sélectionner une entreprise</option>
+                    <option value="" className="bg-slate-800">Sélectionner une entreprise</option>
                     {companies.map((company) => (
-                      <option key={company.id} value={company.id}>{company.name}</option>
+                      <option key={company.id} value={company.id} className="bg-slate-800">{company.name}</option>
                     ))}
                   </select>
                 </div>
-                {errors.company_id && <p className="mt-1 text-sm text-red-600">{errors.company_id}</p>}
+                {errors.company_id && <p className="mt-1 text-sm text-red-400">{errors.company_id}</p>}
               </div>
 
               {/* Département */}
               <div>
-                <label className="mb-2 block text-sm font-medium text-slate-700">Département</label>
+                <label className="mb-2 block text-sm font-medium text-white/90">Département</label>
                 <div className="relative">
-                  <Briefcase className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                  <Briefcase className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/40" />
                   <input 
                     type="text" 
                     value={formData.department}
                     onChange={(e) => setFormData({ ...formData, department: e.target.value })}
                     placeholder="Ex: IT, RH, Finance" 
-                    className="w-full rounded-xl border border-slate-200 bg-white px-11 py-3 text-[15px] text-slate-900 placeholder:text-slate-400 outline-none transition focus:border-slate-300 focus:ring-4 focus:ring-slate-100"
+                    className="w-full rounded-xl border border-white/10 bg-white/5 px-11 py-3 text-[15px] text-white placeholder:text-white/40 outline-none transition focus:border-orange-400 focus:ring-4 focus:ring-orange-400/20"
                   />
                 </div>
               </div>
 
               {/* Poste */}
               <div>
-                <label className="mb-2 block text-sm font-medium text-slate-700">Poste</label>
+                <label className="mb-2 block text-sm font-medium text-white/90">Poste</label>
                 <div className="relative">
-                  <User className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                  <User className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/40" />
                   <input 
                     type="text" 
                     value={formData.position}
                     onChange={(e) => setFormData({ ...formData, position: e.target.value })}
                     placeholder="Ex: Développeur, Manager" 
-                    className="w-full rounded-xl border border-slate-200 bg-white px-11 py-3 text-[15px] text-slate-900 placeholder:text-slate-400 outline-none transition focus:border-slate-300 focus:ring-4 focus:ring-slate-100"
+                    className="w-full rounded-xl border border-white/10 bg-white/5 px-11 py-3 text-[15px] text-white placeholder:text-white/40 outline-none transition focus:border-orange-400 focus:ring-4 focus:ring-orange-400/20"
                   />
                 </div>
               </div>
 
               {/* Numéro d'employé */}
               <div>
-                <label className="mb-2 block text-sm font-medium text-slate-700">Numéro d'employé</label>
+                <label className="mb-2 block text-sm font-medium text-white/90">Numéro d'employé</label>
                 <input 
                   type="text" 
                   value={formData.employee_number}
                   onChange={(e) => setFormData({ ...formData, employee_number: e.target.value })}
                   placeholder="Ex: EMP001" 
-                  className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-[15px] text-slate-900 placeholder:text-slate-400 outline-none transition focus:border-slate-300 focus:ring-4 focus:ring-slate-100"
+                  className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-[15px] text-white placeholder:text-white/40 outline-none transition focus:border-orange-400 focus:ring-4 focus:ring-orange-400/20"
                 />
               </div>
 
               {/* Date d'embauche */}
               <div>
-                <label className="mb-2 block text-sm font-medium text-slate-700">Date d'embauche</label>
+                <label className="mb-2 block text-sm font-medium text-white/90">Date d'embauche</label>
                 <div className="relative">
-                  <Calendar className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                  <Calendar className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/40" />
                   <input 
                     type="date" 
                     value={formData.hire_date}
                     onChange={(e) => setFormData({ ...formData, hire_date: e.target.value })}
-                    className="w-full rounded-xl border border-slate-200 bg-white px-11 py-3 text-[15px] text-slate-900 outline-none transition focus:border-slate-300 focus:ring-4 focus:ring-slate-100"
+                    className="w-full rounded-xl border border-white/10 bg-white/5 px-11 py-3 text-[15px] text-white outline-none transition focus:border-orange-400 focus:ring-4 focus:ring-orange-400/20"
                   />
                 </div>
               </div>
 
               {/* Mot de passe */}
               <div>
-                <label className="mb-2 block text-sm font-medium text-slate-700">Mot de passe *</label>
+                <label className="mb-2 block text-sm font-medium text-white/90">Mot de passe *</label>
                 <div className="relative">
-                  <Lock className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                  <Lock className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/40" />
                   <input 
                     type={showPassword ? 'text' : 'password'}
                     value={formData.password}
                     onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                     placeholder="••••••••" 
-                    className={`w-full rounded-xl border ${errors.password ? 'border-red-300' : 'border-slate-200'} bg-white px-11 py-3 text-[15px] text-slate-900 placeholder:text-slate-400 outline-none transition focus:border-slate-300 focus:ring-4 focus:ring-slate-100`}
+                    className={`w-full rounded-xl border ${errors.password ? 'border-red-400' : 'border-white/10'} bg-white/5 px-11 py-3 text-[15px] text-white placeholder:text-white/40 outline-none transition focus:border-orange-400 focus:ring-4 focus:ring-orange-400/20`}
                     required
                   />
                   <button 
                     type="button" 
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 hover:text-white/70 transition-colors"
                   >
                     {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
                 </div>
-                {errors.password && <p className="mt-1 text-sm text-red-600">{errors.password}</p>}
+                {errors.password && <p className="mt-1 text-sm text-red-400">{errors.password}</p>}
               </div>
 
               {/* Confirmation mot de passe */}
               <div>
-                <label className="mb-2 block text-sm font-medium text-slate-700">Confirmer le mot de passe *</label>
+                <label className="mb-2 block text-sm font-medium text-white/90">Confirmer le mot de passe *</label>
                 <div className="relative">
-                  <Lock className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                  <Lock className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/40" />
                   <input 
                     type={showConfirmPassword ? 'text' : 'password'}
                     value={formData.confirmPassword}
                     onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
                     placeholder="••••••••" 
-                    className={`w-full rounded-xl border ${errors.confirmPassword ? 'border-red-300' : 'border-slate-200'} bg-white px-11 py-3 text-[15px] text-slate-900 placeholder:text-slate-400 outline-none transition focus:border-slate-300 focus:ring-4 focus:ring-slate-100`}
+                    className={`w-full rounded-xl border ${errors.confirmPassword ? 'border-red-400' : 'border-white/10'} bg-white/5 px-11 py-3 text-[15px] text-white placeholder:text-white/40 outline-none transition focus:border-orange-400 focus:ring-4 focus:ring-orange-400/20`}
                     required
                   />
                   <button 
                     type="button" 
                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 hover:text-white/70 transition-colors"
                   >
                     {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
                 </div>
-                {errors.confirmPassword && <p className="mt-1 text-sm text-red-600">{errors.confirmPassword}</p>}
+                {errors.confirmPassword && <p className="mt-1 text-sm text-red-400">{errors.confirmPassword}</p>}
               </div>
             </div>
 
@@ -391,38 +406,111 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onBackToLogin }) => {
                 id="acceptTerms"
                 checked={formData.acceptTerms}
                 onChange={(e) => setFormData({ ...formData, acceptTerms: e.target.checked })}
-                className="mt-1 h-4 w-4 text-orange-600 focus:ring-orange-500 border-gray-300 rounded"
+                className="mt-1 h-4 w-4 text-orange-500 focus:ring-orange-500 border-white/20 rounded bg-white/5"
                 required
               />
-              <label htmlFor="acceptTerms" className="text-sm text-slate-600">
+              <label htmlFor="acceptTerms" className="text-sm text-white/80">
                 J'accepte les{' '}
-                <button type="button" className="text-orange-600 hover:text-orange-700 font-medium">
+                <button type="button" className="text-orange-400 hover:text-orange-300 font-medium transition-colors">
                   conditions d'utilisation
                 </button>
                 {' '}et la{' '}
-                <button type="button" className="text-orange-600 hover:text-orange-700 font-medium">
+                <button type="button" className="text-orange-400 hover:text-orange-300 font-medium transition-colors">
                   politique de confidentialité
                 </button>
               </label>
             </div>
-            {errors.acceptTerms && <p className="text-sm text-red-600">Vous devez accepter les conditions d'utilisation</p>}
+            {errors.acceptTerms && <p className="text-sm text-red-400">Vous devez accepter les conditions d'utilisation</p>}
 
             {/* Bouton de soumission */}
             <button 
               type="submit" 
               disabled={isLoading}
-              className="w-full rounded-xl bg-orange-400 px-4 py-3 text-center text-sm font-medium text-slate-900 shadow-sm transition hover:bg-orange-300 active:bg-orange-400 disabled:opacity-50"
+              className="w-full rounded-xl bg-gradient-to-r from-orange-400 to-orange-500 px-4 py-3 text-center text-sm font-semibold text-white shadow-lg hover:shadow-xl hover:from-orange-500 hover:to-orange-600 active:scale-[0.98] disabled:opacity-50 transition-all flex items-center justify-center gap-2 group"
             >
               {isLoading ? (
-                <div className="flex items-center justify-center">
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-slate-900 mr-2"></div>
-                  Création du compte...
-                </div>
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                  <span>Création en cours...</span>
+                </>
               ) : (
-                'Créer mon compte employé'
+                <>
+                  <UserPlus className="h-5 w-5 group-hover:scale-110 transition-transform" />
+                  <span>Créer mon compte</span>
+                  <Zap className="h-4 w-4 opacity-0 group-hover:opacity-100 transition-opacity" />
+                </>
               )}
             </button>
           </form>
+          </section>
+
+          {/* Section droite - Avantages */}
+          <section className="relative hidden lg:flex flex-col">
+            <div className="relative overflow-hidden rounded-3xl border-2 border-white/10 backdrop-blur-sm flex-1 flex flex-col" style={{
+              boxShadow: `
+                0 25px 50px -12px rgba(0, 0, 0, 0.5),
+                inset 0 1px 0 0 rgba(255, 255, 255, 0.05)
+              `,
+              background: 'linear-gradient(135deg, rgba(51, 65, 85, 0.4) 0%, rgba(30, 41, 59, 0.4) 100%)',
+            }}>
+              {/* Overlay dégradé */}
+              <div className="absolute inset-0 bg-gradient-to-br from-orange-500/20 via-purple-500/10 to-blue-500/20"></div>
+
+              {/* Contenu */}
+              <div className="relative p-10 flex-1 flex flex-col justify-center z-10">
+                {/* Message principal */}
+                <div className="text-center mb-12">
+                  <h2 className="text-4xl font-bold text-white mb-4 leading-tight">
+                    Rejoignez
+                    <span className="block bg-gradient-to-r from-orange-400 to-orange-600 bg-clip-text text-transparent">votre équipe</span>
+                  </h2>
+                  <p className="text-lg text-white/70 max-w-md mx-auto">
+                    Créez votre compte et accédez à tous les avantages de votre entreprise.
+                  </p>
+                </div>
+
+                {/* Avantages */}
+                <div className="space-y-6">
+                  <div className="flex items-start gap-4 bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10 hover:bg-white/10 transition-all">
+                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center flex-shrink-0">
+                      <Zap className="h-6 w-6 text-white" />
+                    </div>
+                    <div>
+                      <h3 className="text-white font-semibold mb-1">Commandes rapides</h3>
+                      <p className="text-white/60 text-sm">Commandez vos repas en quelques clics avec vos tickets</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-4 bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10 hover:bg-white/10 transition-all">
+                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center flex-shrink-0">
+                      <Shield className="h-6 w-6 text-white" />
+                    </div>
+                    <div>
+                      <h3 className="text-white font-semibold mb-1">Sécurisé & Fiable</h3>
+                      <p className="text-white/60 text-sm">Vos données personnelles sont protégées et sécurisées</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-4 bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10 hover:bg-white/10 transition-all">
+                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-400 to-purple-600 flex items-center justify-center flex-shrink-0">
+                      <UserPlus className="h-6 w-6 text-white" />
+                    </div>
+                    <div>
+                      <h3 className="text-white font-semibold mb-1">Validation rapide</h3>
+                      <p className="text-white/60 text-sm">Votre gestionnaire validera votre compte sous 24h</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Note de sécurité */}
+                <div className="mt-12 text-center">
+                  <p className="text-white/50 text-sm">
+                    🔒 Vos informations sont protégées et ne seront jamais partagées
+                  </p>
+                </div>
+              </div>
+            </div>
+          </section>
         </div>
       </div>
     </div>
