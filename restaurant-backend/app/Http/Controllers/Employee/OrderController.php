@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Employee;
 
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\Admin\NotificationController;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
@@ -167,8 +168,36 @@ class OrderController extends Controller
                 Log::error("Erreur envoi email confirmation commande: " . $e->getMessage());
             }
             
-            // Envoyer email au restaurant (TODO: récupérer email du gestionnaire restaurant)
-            Log::info("Email à envoyer au restaurant $restaurantName pour nouvelle commande");
+            // Envoyer email au gestionnaire du restaurant
+            try {
+                // Récupérer le gestionnaire du restaurant depuis la BD
+                $manager = User::where('restaurant_id', $validated['restaurant_id'])
+                              ->whereHas('role', function($query) {
+                                  $query->where('name', 'Gestionnaire Restaurant');
+                              })
+                              ->first();
+                
+                if ($manager && $manager->email) {
+                    $orderItemsForEmail = array_map(function($item) {
+                        return [
+                            'name' => $item['name'] ?? 'Article',
+                            'quantity' => $item['quantity']
+                        ];
+                    }, $validated['items']);
+                    
+                    Mail::to($manager->email)->send(new NewOrderReceived(
+                        $userName,
+                        $restaurantName,
+                        $totalAmount,
+                        $orderItemsForEmail
+                    ));
+                    Log::info("Email de nouvelle commande envoyé au restaurant: {$manager->email}");
+                } else {
+                    Log::warning("Aucun gestionnaire trouvé pour le restaurant {$validated['restaurant_id']}");
+                }
+            } catch (\Exception $e) {
+                Log::error("Erreur envoi email au gestionnaire restaurant: " . $e->getMessage());
+            }
 
             return response()->json([
                 'success' => true,

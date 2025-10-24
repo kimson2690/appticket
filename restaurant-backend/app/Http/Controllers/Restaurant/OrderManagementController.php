@@ -7,6 +7,9 @@ use App\Http\Controllers\Admin\NotificationController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Mail;
+use App\Mail\OrderValidated;
+use App\Mail\OrderRejected;
 
 class OrderManagementController extends Controller
 {
@@ -140,6 +143,24 @@ class OrderManagementController extends Controller
                     'confirmed_at' => $orders[$orderIndex]['confirmed_at']
                 ]
             ]);
+            
+            // Envoyer email de validation à l'employé
+            try {
+                $employeeName = $order['employee_name'];
+                $employees = $this->loadEmployees();
+                $employee = collect($employees)->firstWhere('id', $order['employee_id']);
+                
+                if ($employee && isset($employee['email'])) {
+                    Mail::to($employee['email'])->send(new OrderValidated(
+                        $employeeName,
+                        $restaurantName,
+                        $order['total_amount']
+                    ));
+                    Log::info("Email de validation commande envoyé à: {$employee['email']}");
+                }
+            } catch (\Exception $e) {
+                Log::error("Erreur envoi email validation commande: " . $e->getMessage());
+            }
 
             return response()->json([
                 'success' => true,
@@ -231,6 +252,25 @@ class OrderManagementController extends Controller
                     'refunded' => true
                 ]
             ]);
+            
+            // Envoyer email de rejet à l'employé
+            try {
+                $employeeName = $order['employee_name'];
+                $employees = $this->loadEmployees();
+                $employee = collect($employees)->firstWhere('id', $order['employee_id']);
+                
+                if ($employee && isset($employee['email'])) {
+                    Mail::to($employee['email'])->send(new OrderRejected(
+                        $employeeName,
+                        $restaurantName,
+                        $order['total_amount'],
+                        $rejectionReason
+                    ));
+                    Log::info("Email de rejet commande envoyé à: {$employee['email']}");
+                }
+            } catch (\Exception $e) {
+                Log::error("Erreur envoi email rejet commande: " . $e->getMessage());
+            }
 
             return response()->json([
                 'success' => true,
