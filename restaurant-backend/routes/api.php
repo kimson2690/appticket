@@ -21,6 +21,7 @@ use App\Http\Controllers\Admin\WeeklyMenuController;
 use App\Http\Controllers\Admin\NotificationController;
 use App\Http\Controllers\Employee\EmployeeDashboardController;
 use App\Http\Controllers\Employee\OrderController;
+use App\Http\Controllers\Employee\EmployeeRestaurantController;
 use App\Http\Controllers\Company\ReportingController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\PasswordResetController;
@@ -154,6 +155,9 @@ Route::prefix('employee')->group(function () {
     Route::get('/ticket-balance', [EmployeeDashboardController::class, 'getTicketBalance']);
     Route::get('/ticket-history', [EmployeeDashboardController::class, 'getTicketHistory']);
     Route::get('/my-batches', [EmployeeDashboardController::class, 'getMyBatches']);
+    
+    // Restaurants partenaires
+    Route::get('/restaurants', [EmployeeRestaurantController::class, 'getAvailableRestaurants']);
     
     // Commandes
     Route::get('/orders', [OrderController::class, 'index']);

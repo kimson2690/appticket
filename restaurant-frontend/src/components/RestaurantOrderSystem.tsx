@@ -34,15 +34,17 @@ const RestaurantOrderSystem: React.FC = () => {
       setLoading(true);
       const userId = localStorage.getItem('userId');
       const userName = localStorage.getItem('userName');
+      const companyId = localStorage.getItem('userCompanyId');
 
       const headers = {
         'Content-Type': 'application/json',
         'X-User-Id': userId || '',
         'X-User-Name': userName || '',
+        'X-User-Company-Id': companyId || '',
       };
 
-      // Charger restaurants
-      const restaurantsRes = await fetch(`${baseUrl}/admin/restaurants`, { headers });
+      // Charger restaurants partenaires de l'entreprise de l'employé
+      const restaurantsRes = await fetch(`${baseUrl}/employee/restaurants`, { headers });
       const restaurantsData = await restaurantsRes.json();
       if (restaurantsData.success) {
         // Filtrer les restaurants actifs (status = 'active' OU is_active = true)
