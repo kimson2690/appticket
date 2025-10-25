@@ -198,15 +198,33 @@ class DashboardStatsController extends Controller
         try {
             $restaurantId = $request->header('X-User-Restaurant-Id');
             
+            \Log::info('🍽️ [getRestaurantStats] Début', [
+                'restaurant_id' => $restaurantId,
+            ]);
+            
             if (!$restaurantId) {
+                \Log::error('🍽️ [getRestaurantStats] Restaurant ID manquant');
                 return response()->json(['error' => 'Restaurant ID manquant'], 401);
             }
 
             $orders = $this->loadFile($this->ordersFile);
             $restaurants = $this->loadFile($this->restaurantsFile);
+            
+            \Log::info('🍽️ [getRestaurantStats] Fichiers chargés', [
+                'orders_count' => count($orders),
+                'restaurants_count' => count($restaurants),
+            ]);
 
-            // Filtrer les commandes du restaurant
-            $restaurantOrders = array_filter($orders, fn($o) => ($o['restaurant_id'] ?? '') === $restaurantId);
+            // Filtrer les commandes du restaurant (seulement les validées)
+            $restaurantOrders = array_filter($orders, function($o) use ($restaurantId) {
+                return ($o['restaurant_id'] ?? '') === $restaurantId 
+                    && ($o['status'] ?? '') === 'confirmed';
+            });
+            
+            \Log::info('🍽️ [getRestaurantStats] Commandes filtrées', [
+                'total_orders' => count($restaurantOrders),
+                'restaurant_id' => $restaurantId,
+            ]);
 
             // Commandes par mois
             $ordersByMonth = $this->getOrdersByMonth($restaurantOrders, 6);
@@ -215,9 +233,21 @@ class DashboardStatsController extends Controller
             $revenueByCompany = $this->getRevenueByCompany($restaurantOrders);
 
             // Plats les plus commandés
-            $topDishes = $this->getTopDishes($restaurantOrders);
+            try {
+                \Log::info('🍽️ [getRestaurantStats] Chargement des plats...');
+                $topDishes = $this->getTopDishes($restaurantOrders);
+                \Log::info('🍽️ [getRestaurantStats] Plats chargés', [
+                    'count' => count($topDishes),
+                ]);
+            } catch (\Exception $e) {
+                \Log::error('🍽️ [getRestaurantStats] Erreur getTopDishes', [
+                    'error' => $e->getMessage(),
+                ]);
+                // En cas d'erreur, renvoyer un tableau vide au lieu de crasher
+                $topDishes = [];
+            }
 
-            // Statistiques générales
+            // Statistiques générales (seulement commandes confirmées)
             $totalRevenue = array_sum(array_column($restaurantOrders, 'total_amount'));
             $avgOrderValue = count($restaurantOrders) > 0 ? $totalRevenue / count($restaurantOrders) : 0;
 
@@ -584,19 +614,60 @@ class DashboardStatsController extends Controller
 
     private function getTopDishes($orders)
     {
-        $dishes = [];
-        foreach ($orders as $order) {
-            foreach ($order['items'] ?? [] as $item) {
-                $name = $item['name'] ?? 'Inconnu';
-                if (!isset($dishes[$name])) {
-                    $dishes[$name] = ['name' => $name, 'quantity' => 0, 'revenue' => 0];
-                }
-                $dishes[$name]['quantity'] += $item['quantity'] ?? 0;
-                $dishes[$name]['revenue'] += ($item['price'] ?? 0) * ($item['quantity'] ?? 0);
+        // Charger les plats depuis menu_items.json pour récupérer les noms
+        $menuItemsPath = storage_path('app/private/menu_items.json');
+        $menuItems = [];
+        if (file_exists($menuItemsPath)) {
+            $menuItems = json_decode(file_get_contents($menuItemsPath), true) ?? [];
+            // Indexer par item_id pour accès rapide
+            $menuItemsById = [];
+            foreach ($menuItems as $menuItem) {
+                $menuItemsById[$menuItem['id']] = $menuItem;
             }
         }
+        
+        $dishes = [];
+        
+        foreach ($orders as $order) {
+            foreach ($order['items'] ?? [] as $item) {
+                // Priorité 1: Nom depuis l'item (nouvelles commandes)
+                $name = $item['name'] ?? null;
+                
+                // Priorité 2: Chercher dans menu_items.json via item_id (anciennes commandes)
+                if (!$name && isset($item['item_id']) && isset($menuItemsById[$item['item_id']])) {
+                    $name = $menuItemsById[$item['item_id']]['name'] ?? null;
+                }
+                
+                // Fallback: Plat inconnu
+                if (!$name) {
+                    $name = 'Plat inconnu';
+                }
+                
+                $quantity = $item['quantity'] ?? 0;
+                $price = $item['price'] ?? 0;
+                
+                // Initialiser le plat s'il n'existe pas encore
+                if (!isset($dishes[$name])) {
+                    $dishes[$name] = [
+                        'name' => $name,
+                        'quantity' => 0,
+                        'revenue' => 0,
+                        'orders_count' => 0
+                    ];
+                }
+                
+                // Incrémenter les statistiques
+                $dishes[$name]['quantity'] += $quantity;
+                $dishes[$name]['revenue'] += $price * $quantity;
+                $dishes[$name]['orders_count'] += 1; // Nombre de commandes contenant ce plat
+            }
+        }
+        
+        // Trier par quantité décroissante
         usort($dishes, fn($a, $b) => $b['quantity'] - $a['quantity']);
-        return array_values($dishes);
+        
+        // Limiter aux 10 premiers
+        return array_slice(array_values($dishes), 0, 10);
     }
 
     private function getFavoriteRestaurants($orders)
