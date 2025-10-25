@@ -63,27 +63,38 @@ class EmployeeDashboardController extends Controller
                 return response()->json(['error' => 'Employé non trouvé'], 404);
             }
 
-            // Récupérer les souches assignées à cet employé
+            // Utiliser le ticket_balance de l'employé (source de vérité pour le montant en F)
+            $ticketBalanceAmount = $employee['ticket_balance'] ?? 0;
+            
+            // Récupérer toutes les affectations de l'employé pour calculer le total
+            $assignments = $this->loadAssignments();
+            $employeeAssignments = collect($assignments)->where('employee_id', $userId);
+            
+            $totalTicketsAssigned = $employeeAssignments->sum('tickets_count');
+            
+            // Calculer la valeur unitaire moyenne des tickets
+            $totalValue = 0;
+            $totalTickets = 0;
+            foreach ($employeeAssignments as $assignment) {
+                $totalValue += ($assignment['tickets_count'] * $assignment['ticket_value']);
+                $totalTickets += $assignment['tickets_count'];
+            }
+            $averageTicketValue = $totalTickets > 0 ? ($totalValue / $totalTickets) : 500;
+
+            // Convertir le solde en nombre de tickets disponibles
+            $availableTickets = $averageTicketValue > 0 ? floor($ticketBalanceAmount / $averageTicketValue) : 0;
+            
+            // Calculer les tickets utilisés = total - disponibles
+            $usedTickets = $totalTicketsAssigned - $availableTickets;
+
+            // Récupérer les souches pour calculer les expirés
             $batches = $this->loadBatches();
             $employeeBatches = collect($batches)->where('employee_id', $userId);
-
-            // Calculer les tickets disponibles, utilisés et expirés
-            $totalTickets = 0;
-            $availableTickets = 0;
-            $usedTickets = 0;
             $expiredTickets = 0;
 
             foreach ($employeeBatches as $batch) {
-                $totalTickets += $batch['total_tickets'];
-                
-                if ($batch['status'] === 'active') {
-                    $availableTickets += $batch['remaining_tickets'];
-                    $usedTickets += $batch['used_tickets'];
-                } elseif ($batch['status'] === 'expired') {
-                    $expiredTickets += $batch['remaining_tickets'];
-                    $usedTickets += $batch['used_tickets'];
-                } elseif ($batch['status'] === 'depleted') {
-                    $usedTickets += $batch['total_tickets'];
+                if ($batch['status'] === 'expired') {
+                    $expiredTickets += $batch['remaining_tickets'] ?? 0;
                 }
             }
 
@@ -91,11 +102,11 @@ class EmployeeDashboardController extends Controller
                 'success' => true,
                 'data' => [
                     'employee_name' => $employee['name'],
-                    'ticket_balance' => $employee['ticket_balance'] ?? 0,
+                    'ticket_balance' => $ticketBalanceAmount,  // Montant en F
                     'tickets_count' => [
-                        'total' => $totalTickets,
-                        'available' => $availableTickets,
-                        'used' => $usedTickets,
+                        'total' => $totalTicketsAssigned,      // Total basé sur les affectations
+                        'available' => $availableTickets,       // Nombre de tickets disponibles
+                        'used' => $usedTickets,                 // Calculé : total - disponibles
                         'expired' => $expiredTickets
                     ],
                     'batches_count' => $employeeBatches->count()
