@@ -22,6 +22,7 @@ use App\Http\Controllers\Admin\NotificationController;
 use App\Http\Controllers\Employee\EmployeeDashboardController;
 use App\Http\Controllers\Employee\OrderController;
 use App\Http\Controllers\Employee\EmployeeRestaurantController;
+use App\Http\Controllers\Employee\EmployeeMenuController;
 use App\Http\Controllers\Company\ReportingController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\PasswordResetController;
@@ -158,6 +159,9 @@ Route::prefix('employee')->group(function () {
     
     // Restaurants partenaires
     Route::get('/restaurants', [EmployeeRestaurantController::class, 'getAvailableRestaurants']);
+    
+    // Plats disponibles pour le jour actuel
+    Route::get('/menu-items', [EmployeeMenuController::class, 'getAvailableMenuItems']);
     
     // Commandes
     Route::get('/orders', [OrderController::class, 'index']);

@@ -53,11 +53,12 @@ const RestaurantOrderSystem: React.FC = () => {
         ));
       }
 
-      // Charger plats
-      const itemsRes = await fetch(`${baseUrl}/admin/menu-items`, { headers });
+      // Charger plats disponibles pour le jour actuel (filtrés par planification hebdomadaire)
+      const itemsRes = await fetch(`${baseUrl}/employee/menu-items`, { headers });
       const itemsData = await itemsRes.json();
       if (itemsData.success) {
-        setMenuItems(itemsData.data.filter((item: MenuItem) => item.is_available));
+        console.log(`📅 Plats disponibles pour ${itemsData.current_day}:`, itemsData.data);
+        setMenuItems(itemsData.data); // Déjà filtrés côté backend
       }
 
       // Charger solde
