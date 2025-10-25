@@ -957,4 +957,55 @@ export const getEmployeeExpenses = async (params?: {
   return result.data;
 };
 
+// Dashboard Statistics
+export interface DashboardStatsData {
+  overview: Record<string, number>;
+  [key: string]: any;
+}
+
+export const getDashboardStats = async (): Promise<DashboardStatsData> => {
+  const userRole = localStorage.getItem('userRole') || '';
+  const userId = localStorage.getItem('userId') || '';
+  const companyId = localStorage.getItem('userCompanyId') || '';
+  const restaurantId = localStorage.getItem('userRestaurantId') || '';
+  
+  console.log('🔍 [getDashboardStats] Début - Role:', userRole);
+  
+  let url = '';
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    'X-User-Role': userRole,
+  };
+  
+  // Déterminer l'endpoint selon le rôle
+  if (userRole === 'Administrateur') {
+    url = `${API_BASE_URL}/admin/dashboard/stats`;
+  } else if (userRole === 'Gestionnaire Entreprise') {
+    url = `${API_BASE_URL}/company/dashboard/stats`;
+    headers['X-User-Company-Id'] = companyId;
+  } else if (userRole === 'Gestionnaire Restaurant') {
+    url = `${API_BASE_URL}/restaurant/dashboard/stats`;
+    headers['X-User-Restaurant-Id'] = restaurantId;
+  } else {
+    // Employé/Utilisateur
+    url = `${API_BASE_URL}/employee/dashboard/stats`;
+    headers['X-User-Id'] = userId;
+  }
+  
+  console.log('🔍 [getDashboardStats] URL:', url);
+  console.log('🔍 [getDashboardStats] Headers:', headers);
+  
+  const response = await fetch(url, { headers });
+  
+  console.log('🔍 [getDashboardStats] Response status:', response.status);
+  
+  if (!response.ok) {
+    throw new Error('Erreur lors du chargement des statistiques');
+  }
+  
+  const result = await response.json();
+  console.log('🔍 [getDashboardStats] Result:', result);
+  return result.data;
+};
+
 export type { Role, Permission, Company, Restaurant, User, Employee, Statistics, CompanyStats, DepartmentStats, MonthlyStats, TicketDistribution };

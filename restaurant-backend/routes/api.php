@@ -19,6 +19,7 @@ use App\Http\Controllers\Admin\MenuItemController;
 use App\Http\Controllers\Admin\DailyMenuController;
 use App\Http\Controllers\Admin\WeeklyMenuController;
 use App\Http\Controllers\Admin\NotificationController;
+use App\Http\Controllers\Admin\DashboardStatsController;
 use App\Http\Controllers\Employee\EmployeeDashboardController;
 use App\Http\Controllers\Employee\OrderController;
 use App\Http\Controllers\Employee\EmployeeRestaurantController;
@@ -126,6 +127,9 @@ Route::prefix('admin')->group(function () {
     Route::put('/notifications/mark-all-read', [NotificationController::class, 'markAllAsRead']);
     Route::delete('/notifications/{id}', [NotificationController::class, 'destroy']);
     
+    // Statistiques du dashboard
+    Route::get('/dashboard/stats', [DashboardStatsController::class, 'getAdminStats']);
+    
     // Statistiques globales
     Route::get('/statistics', [StatisticsController::class, 'index']);
 });
@@ -135,6 +139,9 @@ Route::prefix('company')->group(function () {
     // Statistiques de dépenses
     Route::get('/reports/restaurant-expenses', [ReportingController::class, 'getRestaurantExpenses']);
     Route::get('/reports/employee-expenses', [ReportingController::class, 'getEmployeeExpenses']);
+    
+    // Statistiques du dashboard
+    Route::get('/dashboard/stats', [DashboardStatsController::class, 'getCompanyStats']);
 });
 
 // Routes pour les gestionnaires de restaurant
@@ -147,6 +154,9 @@ Route::prefix('restaurant')->group(function () {
     // Statistiques et rapports
     Route::get('/reports/company-orders', [\App\Http\Controllers\Restaurant\RestaurantReportingController::class, 'getCompanyOrders']);
     Route::get('/reports/employee-orders', [\App\Http\Controllers\Restaurant\RestaurantReportingController::class, 'getEmployeeOrders']);
+    
+    // Statistiques du dashboard
+    Route::get('/dashboard/stats', [DashboardStatsController::class, 'getRestaurantStats']);
 });
 
 // Routes pour les employés
@@ -167,6 +177,9 @@ Route::prefix('employee')->group(function () {
     Route::get('/orders', [OrderController::class, 'index']);
     Route::post('/orders', [OrderController::class, 'store']);
     Route::get('/orders/{id}', [OrderController::class, 'show']);
+    
+    // Statistiques du dashboard
+    Route::get('/dashboard/stats', [DashboardStatsController::class, 'getEmployeeStats']);
 });
 
 // Routes publiques pour l'authentification

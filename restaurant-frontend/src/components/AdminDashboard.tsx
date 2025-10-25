@@ -18,7 +18,7 @@ import MyHistory from './MyHistory';
 import RestaurantOrderSystem from './RestaurantOrderSystem';
 import OrderManagement from './OrderManagement';
 import NotificationCenter from './NotificationCenter';
-import { apiService, type Statistics } from '../services/api';
+import DashboardStats from './DashboardStats';
 import { 
   LayoutDashboard, 
   Users, 
@@ -50,8 +50,6 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [activeMenu, setActiveMenu] = useState('dashboard');
   const [userMenuOpen, setUserMenuOpen] = useState(false);
-  const [statistics, setStatistics] = useState<Statistics | null>(null);
-  const [loading, setLoading] = useState(true);
 
   // Récupération des informations de l'utilisateur connecté
   const currentUser = {
@@ -118,11 +116,6 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
     }
   }, [location, menuItems]);
 
-  // Charger les statistiques une seule fois au montage du composant
-  useEffect(() => {
-    loadStatistics();
-  }, []);
-
   // Vérifier l'accès au menu séparément
   useEffect(() => {
     const hasAccessToCurrentMenu = menuItems.some(item => item.id === activeMenu);
@@ -132,18 +125,6 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
       setActiveMenu(defaultMenu);
     }
   }, [activeMenu, currentUser.role]); // Dépendre du rôle plutôt que de menuItems
-
-  const loadStatistics = async () => {
-    try {
-      setLoading(true);
-      const data = await apiService.getStatistics();
-      setStatistics(data);
-    } catch (error) {
-      console.error('Error loading statistics:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
@@ -272,187 +253,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
         {/* Dashboard Content */}
         <main className="flex-1 p-6 bg-gray-50">
           {activeMenu === 'dashboard' && (
-            <div className="space-y-6">
-              {/* Header Section */}
-              <div className="flex items-center justify-between">
-                <div>
-                  <h1 className="text-3xl font-bold text-gray-900 mb-2">Dashboard</h1>
-                  <p className="text-gray-600">Vue d'ensemble de votre plateforme AppTicket</p>
-                </div>
-                <div className="flex items-center space-x-3">
-                  <button 
-                    onClick={loadStatistics}
-                    className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors"
-                  >
-                    <span className="text-lg">🔄</span>
-                    <span>Actualiser</span>
-                  </button>
-                  <button className="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50 transition-colors">
-                    Exporter Données
-                  </button>
-                </div>
-              </div>
-
-              {loading ? (
-                <div className="flex items-center justify-center py-12">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"></div>
-                  <span className="ml-2 text-gray-600">Chargement des statistiques...</span>
-                </div>
-              ) : (
-                <>
-                  {/* Stats Cards */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                    {/* Total Utilisateurs */}
-                    <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl p-6 text-white relative overflow-hidden">
-                      <div className="absolute top-4 right-4">
-                        <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
-                          <Users className="w-4 h-4" />
-                        </div>
-                      </div>
-                      <div className="mb-4">
-                        <p className="text-blue-100 text-sm font-medium">Total Utilisateurs</p>
-                        <p className="text-4xl font-bold">{statistics?.overview.total_users || 0}</p>
-                      </div>
-                      <div className="flex items-center text-blue-100 text-sm">
-                        <span className="bg-white/20 px-2 py-1 rounded text-xs mr-2">
-                          {statistics?.overview.active_users || 0} actifs
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Total Entreprises */}
-                    <div className="bg-gradient-to-br from-orange-500 to-orange-600 rounded-2xl p-6 text-white relative overflow-hidden">
-                      <div className="absolute top-4 right-4">
-                        <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
-                          <Building2 className="w-4 h-4" />
-                        </div>
-                      </div>
-                      <div className="mb-4">
-                        <p className="text-orange-100 text-sm font-medium">Total Entreprises</p>
-                        <p className="text-4xl font-bold">{statistics?.overview.total_companies || 0}</p>
-                      </div>
-                      <div className="flex items-center text-orange-100 text-sm">
-                        <span className="bg-white/20 px-2 py-1 rounded text-xs mr-2">
-                          {statistics?.overview.active_companies || 0} actives
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Total Restaurants */}
-                    <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-200">
-                      <div className="flex items-center justify-between mb-4">
-                        <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
-                          <Utensils className="w-4 h-4 text-purple-600" />
-                        </div>
-                        <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center">
-                          <span className="text-xs">🍽️</span>
-                        </div>
-                      </div>
-                      <div>
-                        <p className="text-gray-600 text-sm font-medium">Restaurants</p>
-                        <p className="text-3xl font-bold text-gray-900 mb-2">{statistics?.overview.total_restaurants || 0}</p>
-                        <div className="flex items-center text-sm">
-                          <span className="text-green-600 font-medium">{statistics?.overview.active_restaurants || 0} actifs</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Total Tickets */}
-                    <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-200">
-                      <div className="flex items-center justify-between mb-4">
-                        <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
-                          <Ticket className="w-4 h-4 text-green-600" />
-                        </div>
-                        <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center">
-                          <span className="text-xs">🎫</span>
-                        </div>
-                      </div>
-                      <div>
-                        <p className="text-gray-600 text-sm font-medium">Total Tickets</p>
-                        <p className="text-3xl font-bold text-gray-900 mb-2">{statistics?.overview.total_ticket_balance?.toLocaleString() || 0}</p>
-                        <div className="flex items-center text-sm">
-                          <span className="text-blue-600 font-medium">{statistics?.overview.total_employees || 0} employés</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Charts and Tables */}
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    {/* Users by Role */}
-                    <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
-                      <h3 className="text-lg font-semibold text-gray-900 mb-4">Utilisateurs par Rôle</h3>
-                      <div className="space-y-4">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center space-x-3">
-                            <div className="w-3 h-3 bg-red-500 rounded-full"></div>
-                            <span className="text-sm font-medium text-gray-700">Administrateurs</span>
-                          </div>
-                          <span className="text-sm font-bold text-gray-900">{statistics?.users_by_role.administrators || 0}</span>
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center space-x-3">
-                            <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
-                            <span className="text-sm font-medium text-gray-700">Gestionnaires</span>
-                          </div>
-                          <span className="text-sm font-bold text-gray-900">{statistics?.users_by_role.managers || 0}</span>
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center space-x-3">
-                            <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                            <span className="text-sm font-medium text-gray-700">Employés</span>
-                          </div>
-                          <span className="text-sm font-bold text-gray-900">{statistics?.users_by_role.employees || 0}</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Companies Stats */}
-                    <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
-                      <h3 className="text-lg font-semibold text-gray-900 mb-4">Entreprises</h3>
-                      <div className="space-y-3">
-                        {statistics?.companies_stats.map((company, index) => (
-                          <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                            <div>
-                              <p className="font-medium text-gray-900">{company.company_name}</p>
-                              <p className="text-sm text-gray-600">{company.employee_count} employés</p>
-                            </div>
-                            <div className="text-right">
-                              <p className="text-sm font-medium text-orange-600">{company.total_tickets} tickets</p>
-                              <p className="text-xs text-green-600">{company.active_employees} actifs</p>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Department Stats */}
-                  {statistics?.department_stats && statistics.department_stats.length > 0 && (
-                    <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
-                      <h3 className="text-lg font-semibold text-gray-900 mb-4">Départements</h3>
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {statistics.department_stats.map((dept, index) => (
-                          <div key={index} className="bg-gray-50 rounded-lg p-4">
-                            <h4 className="font-medium text-gray-900 mb-2">{dept.department}</h4>
-                            <div className="space-y-1">
-                              <div className="flex justify-between text-sm">
-                                <span className="text-gray-600">Employés:</span>
-                                <span className="font-medium">{dept.employee_count}</span>
-                              </div>
-                              <div className="flex justify-between text-sm">
-                                <span className="text-gray-600">Tickets:</span>
-                                <span className="font-medium text-orange-600">{dept.total_tickets}</span>
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </>
-              )}
-            </div>
+            <DashboardStats />
           )}
 
           {activeMenu === 'roles' && (
