@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Company;
 use App\Models\Restaurant;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
@@ -42,14 +43,26 @@ class DashboardStatsController extends Controller
                 'assignments' => count($assignments),
             ]);
 
+            // Charger les utilisateurs de la BDD (admins, gestionnaires)
+            $usersFromDB = User::all();
+            
             // Statistiques générales
-            $totalUsers = count($employees);
+            $totalUsers = count($employees) + count($usersFromDB);
             $totalCompanies = count($companies);
             $totalRestaurants = count($restaurants);
             $totalOrders = count($orders);
 
-            // Répartition par rôle
+            // Répartition par rôle - Combiner BDD + JSON
             $usersByRole = [];
+            
+            // Compter les utilisateurs de la BDD (gestionnaires, admins)
+            foreach ($usersFromDB as $user) {
+                // $user->role est une relation, on doit accéder à ->name
+                $role = $user->role->name ?? 'Utilisateur';
+                $usersByRole[$role] = ($usersByRole[$role] ?? 0) + 1;
+            }
+            
+            // Compter les employés du JSON
             foreach ($employees as $emp) {
                 $role = $emp['role'] ?? 'Utilisateur';
                 $usersByRole[$role] = ($usersByRole[$role] ?? 0) + 1;
@@ -67,6 +80,12 @@ class DashboardStatsController extends Controller
 
             // Restaurants les plus actifs
             $restaurantStats = $this->getTopRestaurantsByRevenue($orders, $restaurants);
+            
+            // Commandes par entreprise
+            $ordersByCompany = $this->getOrdersByCompany($orders, $companies);
+            
+            // Tickets affectés par mois et par entreprise
+            $ticketsByMonthAndCompany = $this->getTicketsByMonthAndCompany($assignments, $companies);
 
             return response()->json([
                 'success' => true,
@@ -82,6 +101,8 @@ class DashboardStatsController extends Controller
                     'users_by_role' => $usersByRole,
                     'orders_by_month' => $ordersByMonth,
                     'top_restaurants' => array_slice($restaurantStats, 0, 5),
+                    'orders_by_company' => $ordersByCompany,
+                    'tickets_by_month_company' => $ticketsByMonthAndCompany,
                 ]
             ]);
         } catch (\Exception $e) {
@@ -105,10 +126,17 @@ class DashboardStatsController extends Controller
             $orders = $this->loadFile($this->ordersFile);
             $assignments = $this->loadFile($this->assignmentsFile);
 
-            // Filtrer les données de l'entreprise
+            // Filtrer les employés de l'entreprise
             $companyEmployees = array_filter($employees, fn($e) => ($e['company_id'] ?? '') === $companyId);
-            $companyOrders = array_filter($orders, fn($o) => ($o['company_id'] ?? '') === $companyId);
-            $companyAssignments = array_filter($assignments, fn($a) => ($a['company_id'] ?? '') === $companyId);
+            
+            // Créer un index des IDs d'employés de l'entreprise
+            $companyEmployeeIds = array_column($companyEmployees, 'id');
+            
+            // Filtrer les commandes des employés de l'entreprise (via employee_id)
+            $companyOrders = array_filter($orders, fn($o) => in_array($o['employee_id'] ?? '', $companyEmployeeIds));
+            
+            // Filtrer les affectations des employés de l'entreprise (via employee_id)
+            $companyAssignments = array_filter($assignments, fn($a) => in_array($a['employee_id'] ?? '', $companyEmployeeIds));
 
             // Dépenses par restaurant
             $expensesByRestaurant = $this->getExpensesByRestaurant($companyOrders);
@@ -121,11 +149,26 @@ class DashboardStatsController extends Controller
 
             // Taux d'utilisation des tickets
             $totalAssigned = array_sum(array_column($companyAssignments, 'tickets_count'));
-            $totalUsed = 0;
-            foreach ($companyEmployees as $emp) {
-                $balance = $emp['ticket_balance'] ?? 0;
-                $totalUsed += $totalAssigned - $balance;
+            
+            // Obtenir la valeur d'un ticket (depuis la première affectation)
+            $ticketValue = 500; // Valeur par défaut
+            if (!empty($companyAssignments)) {
+                $ticketValue = $companyAssignments[0]['ticket_value'] ?? 500;
             }
+            
+            // Calculer le solde total restant de tous les employés (en valeur monétaire)
+            $totalBalanceAmount = 0;
+            foreach ($companyEmployees as $emp) {
+                $totalBalanceAmount += $emp['ticket_balance'] ?? 0;
+            }
+            
+            // Convertir le solde en nombre de tickets
+            $totalBalanceTickets = $ticketValue > 0 ? round($totalBalanceAmount / $ticketValue) : 0;
+            
+            // Tickets utilisés = Affectés - Tickets restants
+            $totalUsed = $totalAssigned - $totalBalanceTickets;
+            
+            // Taux d'utilisation en %
             $usageRate = $totalAssigned > 0 ? round(($totalUsed / $totalAssigned) * 100) : 0;
 
             return response()->json([
@@ -311,12 +354,172 @@ class DashboardStatsController extends Controller
         return array_values($stats);
     }
 
+    private function getOrdersByCompany($orders, $companies)
+    {
+        // Charger les employés pour obtenir le company_id
+        $employees = $this->loadFile($this->employeesFile);
+        $employeesById = [];
+        foreach ($employees as $emp) {
+            $employeesById[$emp['id']] = $emp;
+        }
+        
+        $stats = [];
+        foreach ($orders as $order) {
+            // Récupérer le company_id depuis l'employé
+            $employeeId = $order['employee_id'] ?? '';
+            $employee = $employeesById[$employeeId] ?? null;
+            $cid = $employee['company_id'] ?? '';
+            
+            if (!$cid) continue; // Ignorer les commandes sans entreprise
+            
+            if (!isset($stats[$cid])) {
+                $company = collect($companies)->firstWhere('id', (string)$cid);
+                $stats[$cid] = [
+                    'company_id' => $cid,
+                    'company_name' => $company['name'] ?? 'Inconnue',
+                    'orders' => 0,
+                    'amount' => 0,
+                ];
+            }
+            $stats[$cid]['orders']++;
+            $stats[$cid]['amount'] += $order['total_amount'] ?? 0;
+        }
+        usort($stats, fn($a, $b) => $b['orders'] - $a['orders']);
+        return array_values($stats);
+    }
+
+    private function getTicketsByMonthAndCompany($assignments, $companies)
+    {
+        \Log::info('🎫 [getTicketsByMonthAndCompany] Début', [
+            'assignments_count' => count($assignments),
+            'companies_count' => count($companies),
+        ]);
+        
+        // Charger les employés pour obtenir le company_id
+        $employees = $this->loadFile($this->employeesFile);
+        $employeesById = [];
+        foreach ($employees as $emp) {
+            $employeesById[$emp['id']] = $emp;
+        }
+        
+        \Log::info('🎫 [getTicketsByMonthAndCompany] Employés chargés', [
+            'employees_count' => count($employees),
+        ]);
+        
+        // Créer un tableau des mois (6 derniers mois)
+        $monthsData = [];
+        for ($i = 5; $i >= 0; $i--) {
+            $month = date('Y-m', strtotime("-$i months"));
+            $monthName = date('M y', strtotime("-$i months"));
+            $monthsData[] = [
+                'month' => $monthName,
+                'month_key' => $month,
+            ];
+        }
+        
+        \Log::info('🎫 [getTicketsByMonthAndCompany] Mois générés', [
+            'months' => array_column($monthsData, 'month_key'),
+        ]);
+
+        // Index des entreprises
+        $companiesById = [];
+        foreach ($companies as $company) {
+            $companiesById[$company['id']] = $company['name'];
+        }
+
+        // Grouper les affectations par mois et par entreprise
+        $ticketsByMonth = [];
+        foreach ($assignments as $assignment) {
+            $createdAt = $assignment['created_at'] ?? '';
+            $employeeId = $assignment['employee_id'] ?? '';
+            $ticketsCount = $assignment['tickets_count'] ?? 0;
+
+            if (!$createdAt || !$employeeId) continue;
+
+            // Récupérer le company_id depuis l'employé
+            $employee = $employeesById[$employeeId] ?? null;
+            $companyId = $employee['company_id'] ?? '';
+            
+            if (!$companyId) continue;
+
+            $month = date('Y-m', strtotime($createdAt));
+            $monthName = date('M y', strtotime($createdAt));
+
+            if (!isset($ticketsByMonth[$month])) {
+                $ticketsByMonth[$month] = [
+                    'month' => $monthName,
+                ];
+            }
+
+            $companyName = $companiesById[$companyId] ?? 'Inconnue';
+            if (!isset($ticketsByMonth[$month][$companyName])) {
+                $ticketsByMonth[$month][$companyName] = 0;
+            }
+            $ticketsByMonth[$month][$companyName] += $ticketsCount;
+        }
+
+        \Log::info('🎫 [getTicketsByMonthAndCompany] Données groupées par mois', [
+            'ticketsByMonth_keys' => array_keys($ticketsByMonth),
+            'ticketsByMonth' => $ticketsByMonth,
+        ]);
+        
+        // Construire le résultat final avec tous les mois
+        $result = [];
+        foreach ($monthsData as $monthData) {
+            $monthKey = $monthData['month_key'];
+            $monthName = $monthData['month'];
+            
+            $row = ['month' => $monthName];
+            
+            // Ajouter les tickets de chaque entreprise pour ce mois
+            if (isset($ticketsByMonth[$monthKey])) {
+                foreach ($ticketsByMonth[$monthKey] as $key => $value) {
+                    if ($key !== 'month') {
+                        $row[$key] = $value;
+                    }
+                }
+            }
+            
+            $result[] = $row;
+        }
+
+        \Log::info('🎫 [getTicketsByMonthAndCompany] Résultat final', [
+            'result_count' => count($result),
+            'result' => $result,
+        ]);
+
+        return $result;
+    }
+
     private function getExpensesByRestaurant($orders)
     {
+        // Charger les restaurants depuis la BDD (plus fiable que le JSON)
+        $restaurants = \App\Models\Restaurant::all()->toArray();
+        
         $expenses = [];
         foreach ($orders as $order) {
             $rid = $order['restaurant_id'] ?? 'unknown';
-            $rname = $order['restaurant_name'] ?? 'Inconnu';
+            
+            // Priorité 1: Utiliser restaurant_name des items de la commande
+            $rname = 'Inconnu';
+            if (!empty($order['items'][0]['restaurant_name'])) {
+                $rname = $order['items'][0]['restaurant_name'];
+            } else {
+                // Priorité 2: Chercher dans restaurants.json
+                $restaurant = collect($restaurants)->firstWhere('id', $rid);
+                
+                // Si pas trouvé, essayer avec le préfixe rest_*_
+                if (!$restaurant) {
+                    $restaurant = collect($restaurants)->first(function($r) use ($rid) {
+                        return str_ends_with($r['id'], '_' . $rid);
+                    });
+                }
+                
+                if ($restaurant && !empty($restaurant['name'])) {
+                    $rname = $restaurant['name'];
+                }
+            }
+            
             if (!isset($expenses[$rid])) {
                 $expenses[$rid] = ['name' => $rname, 'amount' => 0, 'orders' => 0];
             }
