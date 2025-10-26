@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Wallet, TrendingUp, Clock, CheckCircle, XCircle, Package } from 'lucide-react';
+import { Wallet, Clock, CheckCircle, XCircle, Package, ArrowUpRight, Sparkles, Activity, AlertCircle } from 'lucide-react';
 
 interface TicketBalance {
   employee_name: string;
@@ -65,116 +65,244 @@ const MyTickets: React.FC = () => {
   }
 
   return (
-    <div>
-      {/* Header */}
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Mes Tickets</h1>
-          <p className="text-gray-600 mt-1">Consultez votre solde et vos statistiques de tickets</p>
+    <div className="max-w-7xl mx-auto">
+      {/* Header avec nom d'utilisateur */}
+      <div className="mb-8">
+        <div className="flex items-center space-x-2 mb-2">
+          <Sparkles className="w-5 h-5 text-orange-500" />
+          <span className="text-sm font-medium text-orange-600">Bonjour, {balance?.employee_name || 'Utilisateur'}</span>
+        </div>
+        <h1 className="text-4xl font-bold text-gray-900 mb-2">Mes Tickets Restaurant</h1>
+        <p className="text-gray-600 text-lg">Suivez votre solde et gérez vos tickets en temps réel</p>
+      </div>
+
+      {/* Carte principale - Solde avec glassmorphism */}
+      <div className="relative bg-gradient-to-br from-orange-500 via-orange-600 to-orange-700 rounded-3xl p-8 md:p-10 text-white mb-8 shadow-2xl overflow-hidden group hover:shadow-orange-200/50 transition-all duration-300">
+        {/* Décoration arrière-plan */}
+        <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
+        <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/5 rounded-full blur-2xl translate-y-1/2 -translate-x-1/2"></div>
+        
+        <div className="relative z-10">
+          <div className="flex items-start justify-between mb-8">
+            <div className="flex-1">
+              <div className="flex items-center space-x-3 mb-4">
+                <div className="w-16 h-16 bg-white/20 backdrop-blur-xl rounded-2xl flex items-center justify-center ring-4 ring-white/10 group-hover:scale-110 transition-transform duration-300">
+                  <Wallet className="w-9 h-9 text-white" />
+                </div>
+                <div>
+                  <p className="text-orange-100 text-sm font-medium mb-1">💰 Solde Disponible</p>
+                  <h2 className="text-5xl font-bold tracking-tight">{formatCurrency(balance?.ticket_balance || 0)}</h2>
+                </div>
+              </div>
+              <div className="flex items-center space-x-2 text-orange-100 text-sm">
+                <ArrowUpRight className="w-4 h-4" />
+                <span>Prêt à être utilisé</span>
+              </div>
+            </div>
+            <div className="hidden md:block">
+              <Activity className="w-20 h-20 text-orange-200/30" />
+            </div>
+          </div>
+
+          {/* Statistiques en grille améliorée */}
+          <div className="grid grid-cols-3 gap-4 md:gap-6">
+            <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-4 border border-white/20 hover:bg-white/15 transition-colors duration-200">
+              <p className="text-orange-100 text-xs font-medium mb-2">📋 Total Tickets</p>
+              <p className="text-3xl font-bold mb-1">{balance?.tickets_count.total || 0}</p>
+              <div className="h-1 w-full bg-white/20 rounded-full mt-2">
+                <div className="h-full bg-white rounded-full" style={{width: '100%'}}></div>
+              </div>
+            </div>
+            <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-4 border border-white/20 hover:bg-white/15 transition-colors duration-200">
+              <p className="text-orange-100 text-xs font-medium mb-2">✅ Disponibles</p>
+              <p className="text-3xl font-bold text-green-300 mb-1">{balance?.tickets_count.available || 0}</p>
+              <div className="h-1 w-full bg-white/20 rounded-full mt-2">
+                <div className="h-full bg-green-300 rounded-full" style={{width: balance && balance.tickets_count.total > 0 ? `${(balance.tickets_count.available / balance.tickets_count.total) * 100}%` : '0%'}}></div>
+              </div>
+            </div>
+            <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-4 border border-white/20 hover:bg-white/15 transition-colors duration-200">
+              <p className="text-orange-100 text-xs font-medium mb-2">🔄 Utilisés</p>
+              <p className="text-3xl font-bold text-blue-300 mb-1">{balance?.tickets_count.used || 0}</p>
+              <div className="h-1 w-full bg-white/20 rounded-full mt-2">
+                <div className="h-full bg-blue-300 rounded-full" style={{width: balance && balance.tickets_count.total > 0 ? `${(balance.tickets_count.used / balance.tickets_count.total) * 100}%` : '0%'}}></div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* Carte principale - Solde de tickets */}
-      <div className="bg-gradient-to-br from-orange-500 to-orange-600 rounded-3xl p-8 text-white mb-8 shadow-xl">
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center space-x-3">
-            <div className="w-14 h-14 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center">
-              <Wallet className="w-8 h-8 text-white" />
-            </div>
-            <div>
-              <p className="text-orange-100 text-sm font-medium">Solde Disponible</p>
-              <h2 className="text-4xl font-bold">{formatCurrency(balance?.ticket_balance || 0)}</h2>
-            </div>
-          </div>
-          <TrendingUp className="w-12 h-12 text-orange-200 opacity-50" />
-        </div>
-
-        <div className="grid grid-cols-3 gap-4 mt-8 pt-6 border-t border-white/20">
-          <div className="text-center">
-            <p className="text-orange-100 text-xs mb-1">Total Tickets</p>
-            <p className="text-2xl font-bold">{balance?.tickets_count.total || 0}</p>
-          </div>
-          <div className="text-center">
-            <p className="text-orange-100 text-xs mb-1">Disponibles</p>
-            <p className="text-2xl font-bold text-green-300">{balance?.tickets_count.available || 0}</p>
-          </div>
-          <div className="text-center">
-            <p className="text-orange-100 text-xs mb-1">Utilisés</p>
-            <p className="text-2xl font-bold text-blue-300">{balance?.tickets_count.used || 0}</p>
-          </div>
-        </div>
-      </div>
-
-      {/* Statistiques rapides */}
+      {/* Statistiques rapides avec indicateurs circulaires */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         {/* Tickets expirés */}
-        <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Tickets Expirés</p>
-              <p className="text-3xl font-bold text-gray-900 mt-2">{balance?.tickets_count.expired || 0}</p>
+        <div className="group bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-xl hover:border-red-200 transition-all duration-300">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex-1">
+              <div className="flex items-center space-x-2 mb-2">
+                <Clock className="w-4 h-4 text-red-600" />
+                <p className="text-sm font-semibold text-gray-600">Tickets Expirés</p>
+              </div>
+              <p className="text-4xl font-bold text-gray-900">{balance?.tickets_count.expired || 0}</p>
+              <p className="text-xs text-gray-500 mt-1">Non utilisables</p>
             </div>
-            <div className="w-12 h-12 bg-red-100 rounded-xl flex items-center justify-center">
-              <Clock className="w-6 h-6 text-red-600" />
+            <div className="relative">
+              <svg className="w-16 h-16 transform -rotate-90">
+                <circle cx="32" cy="32" r="28" fill="none" stroke="#fee2e2" strokeWidth="6" />
+                <circle 
+                  cx="32" 
+                  cy="32" 
+                  r="28" 
+                  fill="none" 
+                  stroke="#dc2626" 
+                  strokeWidth="6"
+                  strokeDasharray={`${2 * Math.PI * 28}`}
+                  strokeDashoffset={`${2 * Math.PI * 28 * (1 - (balance && balance.tickets_count.total > 0 ? balance.tickets_count.expired / balance.tickets_count.total : 0))}`}
+                  className="transition-all duration-1000"
+                />
+              </svg>
+              <div className="absolute inset-0 flex items-center justify-center">
+                <span className="text-xs font-bold text-red-600">
+                  {balance && balance.tickets_count.total > 0 ? Math.round((balance.tickets_count.expired / balance.tickets_count.total) * 100) : 0}%
+                </span>
+              </div>
             </div>
           </div>
         </div>
 
         {/* Souches actives */}
-        <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Souches Actives</p>
-              <p className="text-3xl font-bold text-gray-900 mt-2">{balance?.batches_count || 0}</p>
+        <div className="group bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-xl hover:border-blue-200 transition-all duration-300">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex-1">
+              <div className="flex items-center space-x-2 mb-2">
+                <Package className="w-4 h-4 text-blue-600" />
+                <p className="text-sm font-semibold text-gray-600">Souches Actives</p>
+              </div>
+              <p className="text-4xl font-bold text-gray-900">{balance?.batches_count || 0}</p>
+              <p className="text-xs text-gray-500 mt-1">En cours</p>
             </div>
-            <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
-              <Package className="w-6 h-6 text-blue-600" />
+            <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center shadow-lg shadow-blue-200 group-hover:scale-110 transition-transform duration-300">
+              <Package className="w-8 h-8 text-white" />
             </div>
           </div>
         </div>
 
-        {/* Taux d'utilisation */}
-        <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Taux d'Utilisation</p>
-              <p className="text-3xl font-bold text-gray-900 mt-2">
-                {balance && balance.tickets_count.total > 0
-                  ? Math.round((balance.tickets_count.used / balance.tickets_count.total) * 100)
-                  : 0}%
-              </p>
+        {/* Taux d'utilisation avec barre de progression */}
+        <div className="group bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-xl hover:border-green-200 transition-all duration-300">
+          <div className="mb-4">
+            <div className="flex items-center space-x-2 mb-2">
+              <CheckCircle className="w-4 h-4 text-green-600" />
+              <p className="text-sm font-semibold text-gray-600">Taux d'Utilisation</p>
             </div>
-            <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
-              <CheckCircle className="w-6 h-6 text-green-600" />
+            <p className="text-4xl font-bold text-gray-900">
+              {balance && balance.tickets_count.total > 0
+                ? Math.round((balance.tickets_count.used / balance.tickets_count.total) * 100)
+                : 0}%
+            </p>
+            <p className="text-xs text-gray-500 mt-1">
+              {balance?.tickets_count.used || 0} sur {balance?.tickets_count.total || 0} utilisés
+            </p>
+          </div>
+          {/* Barre de progression moderne */}
+          <div className="relative h-3 bg-gray-100 rounded-full overflow-hidden">
+            <div 
+              className="absolute top-0 left-0 h-full bg-gradient-to-r from-green-500 to-green-600 rounded-full transition-all duration-1000 ease-out"
+              style={{
+                width: balance && balance.tickets_count.total > 0 
+                  ? `${(balance.tickets_count.used / balance.tickets_count.total) * 100}%` 
+                  : '0%'
+              }}
+            >
+              <div className="absolute inset-0 bg-white/30 animate-pulse"></div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Vue détaillée */}
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-        <h3 className="text-lg font-bold text-gray-900 mb-4">Vue d'ensemble de vos tickets</h3>
-        <div className="space-y-4">
-          <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
-            <div className="flex items-center space-x-3">
-              <CheckCircle className="w-5 h-5 text-green-600" />
-              <span className="text-sm font-medium text-gray-700">Tickets disponibles</span>
-            </div>
-            <span className="text-lg font-bold text-green-600">{balance?.tickets_count.available || 0}</span>
+      {/* Vue détaillée améliorée avec conseils */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Détails des tickets */}
+        <div className="lg:col-span-2 bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-xl font-bold text-gray-900">📊 Répartition Détaillée</h3>
+            <span className="text-xs font-medium text-gray-500 bg-gray-100 px-3 py-1 rounded-full">
+              {balance?.tickets_count.total || 0} tickets au total
+            </span>
           </div>
-          <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
-            <div className="flex items-center space-x-3">
-              <XCircle className="w-5 h-5 text-blue-600" />
-              <span className="text-sm font-medium text-gray-700">Tickets utilisés</span>
+          <div className="space-y-3">
+            <div className="group flex items-center justify-between p-5 bg-gradient-to-r from-green-50 to-transparent rounded-xl border border-green-100 hover:shadow-md transition-all duration-200">
+              <div className="flex items-center space-x-4">
+                <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-200">
+                  <CheckCircle className="w-6 h-6 text-green-600" />
+                </div>
+                <div>
+                  <span className="text-sm font-semibold text-gray-700 block">Tickets disponibles</span>
+                  <span className="text-xs text-gray-500">Prêts à utiliser</span>
+                </div>
+              </div>
+              <div className="text-right">
+                <span className="text-2xl font-bold text-green-600">{balance?.tickets_count.available || 0}</span>
+                <p className="text-xs text-gray-500">
+                  {balance && balance.tickets_count.total > 0 ? Math.round((balance.tickets_count.available / balance.tickets_count.total) * 100) : 0}% du total
+                </p>
+              </div>
             </div>
-            <span className="text-lg font-bold text-blue-600">{balance?.tickets_count.used || 0}</span>
+            <div className="group flex items-center justify-between p-5 bg-gradient-to-r from-blue-50 to-transparent rounded-xl border border-blue-100 hover:shadow-md transition-all duration-200">
+              <div className="flex items-center space-x-4">
+                <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-200">
+                  <XCircle className="w-6 h-6 text-blue-600" />
+                </div>
+                <div>
+                  <span className="text-sm font-semibold text-gray-700 block">Tickets utilisés</span>
+                  <span className="text-xs text-gray-500">Déjà consommés</span>
+                </div>
+              </div>
+              <div className="text-right">
+                <span className="text-2xl font-bold text-blue-600">{balance?.tickets_count.used || 0}</span>
+                <p className="text-xs text-gray-500">
+                  {balance && balance.tickets_count.total > 0 ? Math.round((balance.tickets_count.used / balance.tickets_count.total) * 100) : 0}% du total
+                </p>
+              </div>
+            </div>
+            <div className="group flex items-center justify-between p-5 bg-gradient-to-r from-red-50 to-transparent rounded-xl border border-red-100 hover:shadow-md transition-all duration-200">
+              <div className="flex items-center space-x-4">
+                <div className="w-12 h-12 bg-red-100 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-200">
+                  <Clock className="w-6 h-6 text-red-600" />
+                </div>
+                <div>
+                  <span className="text-sm font-semibold text-gray-700 block">Tickets expirés</span>
+                  <span className="text-xs text-gray-500">Périmés</span>
+                </div>
+              </div>
+              <div className="text-right">
+                <span className="text-2xl font-bold text-red-600">{balance?.tickets_count.expired || 0}</span>
+                <p className="text-xs text-gray-500">
+                  {balance && balance.tickets_count.total > 0 ? Math.round((balance.tickets_count.expired / balance.tickets_count.total) * 100) : 0}% du total
+                </p>
+              </div>
+            </div>
           </div>
-          <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
-            <div className="flex items-center space-x-3">
-              <Clock className="w-5 h-5 text-red-600" />
-              <span className="text-sm font-medium text-gray-700">Tickets expirés</span>
+        </div>
+
+        {/* Conseils et astuces */}
+        <div className="bg-gradient-to-br from-orange-50 to-orange-100/50 rounded-2xl p-6 border border-orange-200">
+          <div className="flex items-center space-x-2 mb-4">
+            <div className="w-8 h-8 bg-orange-500 rounded-lg flex items-center justify-center">
+              <AlertCircle className="w-5 h-5 text-white" />
             </div>
-            <span className="text-lg font-bold text-red-600">{balance?.tickets_count.expired || 0}</span>
+            <h3 className="text-lg font-bold text-gray-900">💡 Conseils</h3>
+          </div>
+          <div className="space-y-4">
+            <div className="bg-white/60 backdrop-blur-sm rounded-xl p-4 border border-orange-200/50">
+              <p className="text-sm font-medium text-gray-800 mb-1">✨ Utilisez vos tickets</p>
+              <p className="text-xs text-gray-600">N'oubliez pas d'utiliser vos tickets avant leur expiration pour ne rien perdre.</p>
+            </div>
+            <div className="bg-white/60 backdrop-blur-sm rounded-xl p-4 border border-orange-200/50">
+              <p className="text-sm font-medium text-gray-800 mb-1">📅 Vérifiez les dates</p>
+              <p className="text-xs text-gray-600">Consultez régulièrement vos souches pour connaître les dates d'expiration.</p>
+            </div>
+            <div className="bg-white/60 backdrop-blur-sm rounded-xl p-4 border border-orange-200/50">
+              <p className="text-sm font-medium text-gray-800 mb-1">🍽️ Commandez facilement</p>
+              <p className="text-xs text-gray-600">Utilisez la section "Commander" pour utiliser vos tickets en ligne.</p>
+            </div>
           </div>
         </div>
       </div>
