@@ -106,10 +106,6 @@ const ModernLogin: React.FC<ModernLoginProps> = ({ onShowRegister }) => {
           0% { transform: translateY(0); }
           100% { transform: translateY(50px); }
         }
-        @keyframes float {
-          0%, 100% { transform: translateY(0px) rotate(0deg); }
-          50% { transform: translateY(-20px) rotate(5deg); }
-        }
         @keyframes glow {
           0%, 100% { box-shadow: 0 0 20px rgba(249, 115, 22, 0.3); }
           50% { box-shadow: 0 0 40px rgba(249, 115, 22, 0.6); }
@@ -123,8 +119,7 @@ const ModernLogin: React.FC<ModernLoginProps> = ({ onShowRegister }) => {
             boxShadow: `
               0 25px 50px -12px rgba(0, 0, 0, 0.5),
               inset 0 1px 0 0 rgba(255, 255, 255, 0.1)
-            `,
-            animation: 'float 6s ease-in-out infinite'
+            `
           }}>
             {/* Logo animé */}
             <div className="mb-10 flex items-center gap-4">

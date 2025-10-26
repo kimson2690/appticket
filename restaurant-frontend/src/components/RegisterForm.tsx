@@ -122,32 +122,45 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onBackToLogin }) => {
   };
 
   return (
-    <div className="min-h-screen relative overflow-hidden" style={{
-      background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%)'
-    }}>
-      {/* Les notifications sont gérées par NotificationContext */}
+    <div className="min-h-screen relative overflow-hidden">
+      {/* Fond dégradé animé - IDENTIQUE à la page de connexion */}
+      <div className="absolute inset-0 bg-gradient-to-br from-slate-950 via-indigo-950 to-slate-900">
+        {/* Orbes lumineux animés - IDENTIQUE à la page de connexion */}
+        <div className="absolute top-0 -left-40 w-96 h-96 bg-orange-500/20 rounded-full blur-3xl animate-pulse" style={{ animationDuration: '4s' }}></div>
+        <div className="absolute top-1/4 -right-40 w-96 h-96 bg-purple-500/20 rounded-full blur-3xl animate-pulse" style={{ animationDuration: '5s', animationDelay: '1s' }}></div>
+        <div className="absolute bottom-0 left-1/4 w-96 h-96 bg-blue-500/20 rounded-full blur-3xl animate-pulse" style={{ animationDuration: '6s', animationDelay: '2s' }}></div>
+      </div>
 
-      {/* Orbes lumineux animés */}
-      <div className="absolute top-20 left-10 w-96 h-96 bg-orange-500/20 rounded-full blur-3xl animate-pulse" style={{ animationDuration: '4s' }}></div>
-      <div className="absolute bottom-20 right-10 w-96 h-96 bg-purple-500/20 rounded-full blur-3xl animate-pulse" style={{ animationDuration: '6s', animationDelay: '1s' }}></div>
-      <div className="absolute top-1/2 left-1/2 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl animate-pulse" style={{ animationDuration: '5s', animationDelay: '2s' }}></div>
-
-      {/* Grille animée */}
-      <div className="absolute inset-0 opacity-20">
+      {/* Grille animée - IDENTIQUE à la page de connexion */}
+      <div className="absolute inset-0 opacity-10">
         <div className="absolute inset-0" style={{
           backgroundImage: `
-            linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px)
+            linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px)
           `,
           backgroundSize: '50px 50px',
           animation: 'gridMove 20s linear infinite'
         }}></div>
       </div>
 
-      {/* Particules flottantes */}
-      <div className="absolute top-1/4 left-1/4 w-2 h-2 bg-orange-400/60 rounded-full animate-ping" style={{ animationDuration: '3s' }}></div>
-      <div className="absolute top-1/3 right-1/3 w-2 h-2 bg-purple-400/60 rounded-full animate-ping" style={{ animationDuration: '4s', animationDelay: '1s' }}></div>
-      <div className="absolute bottom-1/4 left-1/3 w-2 h-2 bg-blue-400/60 rounded-full animate-ping" style={{ animationDuration: '5s', animationDelay: '2s' }}></div>
+      {/* Particules flottantes - IDENTIQUE à la page de connexion */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-1/4 left-1/4 w-2 h-2 bg-white/30 rounded-full animate-ping" style={{ animationDuration: '3s' }}></div>
+        <div className="absolute top-1/2 right-1/3 w-1 h-1 bg-orange-400/40 rounded-full animate-ping" style={{ animationDuration: '4s', animationDelay: '1s' }}></div>
+        <div className="absolute bottom-1/3 left-1/2 w-1.5 h-1.5 bg-purple-400/30 rounded-full animate-ping" style={{ animationDuration: '5s', animationDelay: '2s' }}></div>
+      </div>
+
+      {/* Style global pour animations */}
+      <style>{`
+        @keyframes gridMove {
+          0% { transform: translateY(0); }
+          100% { transform: translateY(50px); }
+        }
+        @keyframes glow {
+          0%, 100% { box-shadow: 0 0 20px rgba(249, 115, 22, 0.3); }
+          50% { box-shadow: 0 0 40px rgba(249, 115, 22, 0.6); }
+        }
+      `}</style>
 
       <div className="relative mx-auto max-w-7xl px-6 py-10">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-start">
@@ -156,8 +169,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onBackToLogin }) => {
             boxShadow: `
               0 25px 50px -12px rgba(0, 0, 0, 0.5),
               inset 0 1px 0 0 rgba(255, 255, 255, 0.05)
-            `,
-            animation: 'float 6s ease-in-out infinite'
+            `
           }}>
           {/* Header */}
           <div className="mb-8 flex items-center justify-between">
