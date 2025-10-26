@@ -329,43 +329,6 @@ const ModernLogin: React.FC<ModernLoginProps> = ({ onShowRegister }) => {
                   </div>
                 </div>
 
-                {/* Statistiques en temps réel */}
-                <div className="relative">
-                  <div className="absolute inset-0 bg-gradient-to-r from-orange-500/20 to-purple-500/20 blur-3xl"></div>
-                  <div className="relative bg-white/5 backdrop-blur-xl rounded-2xl p-6 border border-white/10">
-                    <div className="grid grid-cols-3 gap-6">
-
-                      <div className="text-center">
-                        <div className="flex items-center justify-center gap-2 mb-2">
-                          <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-                          <p className="text-white/60 text-xs font-medium uppercase tracking-wider">Tickets vendus</p>
-                        </div>
-                        <p className="text-3xl font-bold text-white">2,847</p>
-                        <p className="text-sm text-green-400 mt-1">↗ +12%</p>
-                      </div>
-                      
-                      <div className="text-center border-x border-white/10">
-                        <div className="flex items-center justify-center gap-2 mb-2">
-                          <div className="w-2 h-2 bg-orange-400 rounded-full animate-pulse" style={{ animationDelay: '0.5s' }}></div>
-                          <p className="text-white/60 text-xs font-medium uppercase tracking-wider">Utilisateurs</p>
-                        </div>
-                        <p className="text-3xl font-bold text-white">1,245</p>
-                        <p className="text-sm text-orange-400 mt-1">↗ +24%</p>
-                      </div>
-                      
-                      <div className="text-center">
-                        <div className="flex items-center justify-center gap-2 mb-2">
-                          <div className="w-2 h-2 bg-purple-400 rounded-full animate-pulse" style={{ animationDelay: '1s' }}></div>
-                          <p className="text-white/60 text-xs font-medium uppercase tracking-wider">Satisfaction</p>
-                        </div>
-                        <p className="text-3xl font-bold text-white">98%</p>
-                        <p className="text-sm text-purple-400 mt-1">★ Excellent</p>
-                      </div>
-
-                    </div>
-                  </div>
-                </div>
-
               </div>
             </div>
 

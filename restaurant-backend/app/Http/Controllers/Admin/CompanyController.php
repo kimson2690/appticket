@@ -16,10 +16,28 @@ class CompanyController extends Controller
     public function index(): JsonResponse
     {
         try {
+            // Charger les employés du fichier JSON
+            $employeesFile = storage_path('app/employees.json');
+            $jsonEmployees = [];
+            if (file_exists($employeesFile)) {
+                $jsonEmployees = json_decode(file_get_contents($employeesFile), true) ?? [];
+            }
+
             $companies = Company::withCount('users')
                 ->orderBy('created_at', 'desc')
                 ->get()
-                ->map(function ($company) {
+                ->map(function ($company) use ($jsonEmployees) {
+                    // Compter les employés dans la base de données
+                    $dbCount = $company->users_count;
+                    
+                    // Compter les employés dans le fichier JSON pour cette entreprise
+                    $jsonCount = collect($jsonEmployees)->filter(function ($emp) use ($company) {
+                        return isset($emp['company_id']) && $emp['company_id'] == $company->id;
+                    })->count();
+                    
+                    // Total des employés
+                    $totalEmployees = $dbCount + $jsonCount;
+
                     return [
                         'id' => (string) $company->id,
                         'name' => $company->name,
@@ -32,7 +50,7 @@ class CompanyController extends Controller
                         'website' => $company->website,
                         'description' => $company->description,
                         'status' => $company->status,
-                        'employee_count' => $company->users_count,
+                        'employee_count' => $totalEmployees,
                         'ticket_balance' => $company->ticket_balance ?? 0,
                         'created_at' => $company->created_at->format('Y-m-d'),
                         'updated_at' => $company->updated_at->format('Y-m-d'),
@@ -122,6 +140,24 @@ class CompanyController extends Controller
         try {
             $company = Company::withCount('users')->findOrFail($id);
 
+            // Charger les employés du fichier JSON
+            $employeesFile = storage_path('app/employees.json');
+            $jsonEmployees = [];
+            if (file_exists($employeesFile)) {
+                $jsonEmployees = json_decode(file_get_contents($employeesFile), true) ?? [];
+            }
+
+            // Compter les employés dans la base de données
+            $dbCount = $company->users_count;
+            
+            // Compter les employés dans le fichier JSON pour cette entreprise
+            $jsonCount = collect($jsonEmployees)->filter(function ($emp) use ($company) {
+                return isset($emp['company_id']) && $emp['company_id'] == $company->id;
+            })->count();
+            
+            // Total des employés
+            $totalEmployees = $dbCount + $jsonCount;
+
             return response()->json([
                 'success' => true,
                 'data' => [
@@ -136,7 +172,7 @@ class CompanyController extends Controller
                     'website' => $company->website,
                     'description' => $company->description,
                     'status' => $company->status,
-                    'employee_count' => $company->users_count,
+                    'employee_count' => $totalEmployees,
                     'ticket_balance' => $company->ticket_balance ?? 0,
                     'created_at' => $company->created_at->format('Y-m-d'),
                     'updated_at' => $company->updated_at->format('Y-m-d'),
@@ -179,6 +215,24 @@ class CompanyController extends Controller
 
             $company->update($validated);
 
+            // Charger les employés du fichier JSON
+            $employeesFile = storage_path('app/employees.json');
+            $jsonEmployees = [];
+            if (file_exists($employeesFile)) {
+                $jsonEmployees = json_decode(file_get_contents($employeesFile), true) ?? [];
+            }
+
+            // Compter les employés dans la base de données
+            $dbCount = $company->users()->count();
+            
+            // Compter les employés dans le fichier JSON pour cette entreprise
+            $jsonCount = collect($jsonEmployees)->filter(function ($emp) use ($company) {
+                return isset($emp['company_id']) && $emp['company_id'] == $company->id;
+            })->count();
+            
+            // Total des employés
+            $totalEmployees = $dbCount + $jsonCount;
+
             return response()->json([
                 'success' => true,
                 'data' => [
@@ -193,7 +247,7 @@ class CompanyController extends Controller
                     'website' => $company->website,
                     'description' => $company->description,
                     'status' => $company->status,
-                    'employee_count' => $company->users()->count(),
+                    'employee_count' => $totalEmployees,
                     'ticket_balance' => $company->ticket_balance ?? 0,
                     'created_at' => $company->created_at->format('Y-m-d'),
                     'updated_at' => $company->updated_at->format('Y-m-d'),
@@ -228,8 +282,26 @@ class CompanyController extends Controller
         try {
             $company = Company::findOrFail($id);
             
-            // Vérifier s'il y a des utilisateurs associés
-            if ($company->users()->count() > 0) {
+            // Charger les employés du fichier JSON
+            $employeesFile = storage_path('app/employees.json');
+            $jsonEmployees = [];
+            if (file_exists($employeesFile)) {
+                $jsonEmployees = json_decode(file_get_contents($employeesFile), true) ?? [];
+            }
+
+            // Compter les employés dans la base de données
+            $dbCount = $company->users()->count();
+            
+            // Compter les employés dans le fichier JSON pour cette entreprise
+            $jsonCount = collect($jsonEmployees)->filter(function ($emp) use ($company) {
+                return isset($emp['company_id']) && $emp['company_id'] == $company->id;
+            })->count();
+            
+            // Total des employés
+            $totalEmployees = $dbCount + $jsonCount;
+            
+            // Vérifier s'il y a des employés associés (DB ou JSON)
+            if ($totalEmployees > 0) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Impossible de supprimer une entreprise qui a des employés associés'
