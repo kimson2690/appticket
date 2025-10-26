@@ -124,11 +124,12 @@ const ModernLogin: React.FC<ModernLoginProps> = ({ onShowRegister }) => {
             {/* Logo animé */}
             <div className="mb-10 flex items-center gap-4">
               <div className="relative">
-                <span className="inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-orange-400 to-orange-600 shadow-lg" style={{ animation: 'glow 3s ease-in-out infinite' }}>
-                  <svg className="h-7 w-7 text-white" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M3 7C3 5.89543 3.89543 5 5 5H19C20.1046 5 21 5.89543 21 7V9.5C20.1716 9.5 19.5 10.1716 19.5 11C19.5 11.8284 20.1716 12.5 21 12.5V17C21 18.1046 20.1046 19 19 19H5C3.89543 19 3 18.1046 3 17V12.5C3.82843 12.5 4.5 11.8284 4.5 11C4.5 10.1716 3.82843 9.5 3 9.5V7Z"/>
-                  </svg>
-                </span>
+                <img 
+                  src="/AppTicket.png" 
+                  alt="AppTicket Logo" 
+                  className="h-16 w-16 object-contain"
+                  style={{ filter: 'drop-shadow(0 0 20px rgba(249, 115, 22, 0.3))' }}
+                />
                 <Sparkles className="absolute -top-1 -right-1 h-4 w-4 text-yellow-400 animate-pulse" />
               </div>
               <div>
@@ -373,6 +374,16 @@ const ModernLogin: React.FC<ModernLoginProps> = ({ onShowRegister }) => {
               <div className="h-full w-full rounded-full bg-gradient-to-tr from-orange-400/10 via-sky-400/10 to-fuchsia-400/10"></div>
             </div>
           </section>
+        </div>
+
+        {/* Footer - Développeur */}
+        <div className="relative mt-8 text-center">
+          <p className="text-white/40 text-sm">
+            Développé avec{' '}
+            <span className="text-orange-400 animate-pulse">❤️</span>
+            {' '}par{' '}
+            <span className="text-white/70 font-semibold">KIMA T ARMEL</span>
+          </p>
         </div>
       </div>
     </div>
