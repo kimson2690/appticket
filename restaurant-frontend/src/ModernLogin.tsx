@@ -43,6 +43,7 @@ const ModernLogin: React.FC<ModernLoginProps> = ({ onShowRegister }) => {
       localStorage.setItem('userCompanyId', response.user.company_id?.toString() || '');
       localStorage.setItem('userCompanyName', response.user.company_name || '');
       localStorage.setItem('userRestaurantId', response.user.restaurant_id?.toString() || '');
+      localStorage.setItem('restaurantId', response.user.restaurant_id?.toString() || ''); // FIX: Ajout restaurantId pour les gestionnaires
       localStorage.setItem('restaurantName', response.user.restaurant_name || '');
       localStorage.setItem('authToken', response.token);
       
