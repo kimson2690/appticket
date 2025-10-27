@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Mail;
 use App\Mail\OrderValidated;
 use App\Mail\OrderRejected;
+use App\Models\DeliveryLocation;
 
 class OrderManagementController extends Controller
 {
@@ -36,6 +37,9 @@ class OrderManagementController extends Controller
             $orders = $this->loadOrders();
             $employees = $this->loadEmployees();
             $menuItems = $this->loadMenuItems();
+            
+            // Charger les lieux de livraison depuis la base de données
+            $deliveryLocations = DeliveryLocation::all()->keyBy('id')->toArray();
 
             // Créer des index
             $employeesById = collect($employees)->keyBy('id')->toArray();
@@ -49,10 +53,23 @@ class OrderManagementController extends Controller
             }
 
             // Enrichir les commandes
-            $enrichedOrders = $restaurantOrders->map(function ($order) use ($employeesById, $menuItemsById) {
+            $enrichedOrders = $restaurantOrders->map(function ($order) use ($employeesById, $menuItemsById, $deliveryLocations) {
                 // Ajouter les infos de l'employé
                 if (isset($employeesById[$order['employee_id']])) {
                     $order['employee'] = $employeesById[$order['employee_id']];
+                }
+
+                // Ajouter les infos du lieu de livraison
+                if (isset($order['delivery_location_id']) && isset($deliveryLocations[$order['delivery_location_id']])) {
+                    $location = $deliveryLocations[$order['delivery_location_id']];
+                    $order['delivery_location'] = [
+                        'id' => $location['id'],
+                        'name' => $location['name'],
+                        'address' => $location['address'] ?? null,
+                        'building' => $location['building'] ?? null,
+                        'floor' => $location['floor'] ?? null,
+                        'instructions' => $location['instructions'] ?? null,
+                    ];
                 }
 
                 // Enrichir les items avec les détails des plats
@@ -154,6 +171,21 @@ class OrderManagementController extends Controller
                 ]
             ]);
             
+            // Charger les informations du lieu de livraison si spécifié
+            $deliveryLocation = null;
+            if (isset($order['delivery_location_id'])) {
+                $location = DeliveryLocation::find($order['delivery_location_id']);
+                if ($location) {
+                    $deliveryLocation = [
+                        'name' => $location->name,
+                        'address' => $location->address,
+                        'building' => $location->building,
+                        'floor' => $location->floor,
+                        'instructions' => $location->instructions,
+                    ];
+                }
+            }
+            
             // Envoyer email de validation à l'employé
             try {
                 $employeeName = $order['employee_name'];
@@ -164,7 +196,8 @@ class OrderManagementController extends Controller
                     Mail::to($employee['email'])->send(new OrderValidated(
                         $employeeName,
                         $restaurantName,
-                        $order['total_amount']
+                        $order['total_amount'],
+                        $deliveryLocation
                     ));
                     Log::info("Email de validation commande envoyé à: {$employee['email']}");
                 }
@@ -273,6 +306,21 @@ class OrderManagementController extends Controller
                 ]
             ]);
             
+            // Charger les informations du lieu de livraison si spécifié
+            $deliveryLocation = null;
+            if (isset($order['delivery_location_id'])) {
+                $location = DeliveryLocation::find($order['delivery_location_id']);
+                if ($location) {
+                    $deliveryLocation = [
+                        'name' => $location->name,
+                        'address' => $location->address,
+                        'building' => $location->building,
+                        'floor' => $location->floor,
+                        'instructions' => $location->instructions,
+                    ];
+                }
+            }
+            
             // Envoyer email de rejet à l'employé
             try {
                 $employeeName = $order['employee_name'];
@@ -284,7 +332,8 @@ class OrderManagementController extends Controller
                         $employeeName,
                         $restaurantName,
                         $order['total_amount'],
-                        $rejectionReason
+                        $rejectionReason,
+                        $deliveryLocation
                     ));
                     Log::info("Email de rejet commande envoyé à: {$employee['email']}");
                 }

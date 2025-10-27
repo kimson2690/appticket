@@ -13,6 +13,7 @@ import CompanyReporting from './CompanyReporting';
 import RestaurantReporting from './RestaurantReporting';
 import MenuManagement from './MenuManagement';
 import WeeklyMenuPlanning from './WeeklyMenuPlanning';
+import DeliveryLocationManagement from './DeliveryLocationManagement';
 import MyTickets from './MyTickets';
 import MyHistory from './MyHistory';
 import RestaurantOrderSystem from './RestaurantOrderSystem';
@@ -37,7 +38,8 @@ import {
   Store,
   ChefHat,
   Calendar,
-  ShoppingCart
+  ShoppingCart,
+  MapPin
 } from 'lucide-react';
 
 interface AdminDashboardProps {
@@ -92,6 +94,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
     { id: 'batches', label: 'Souches', icon: Package, roles: ['Gestionnaire Entreprise'] },
     { id: 'user-tickets', label: 'Affecter Tickets', icon: Wallet, roles: ['Gestionnaire Entreprise'] },
     { id: 'reports', label: 'Rapports Dépenses', icon: BarChart3, roles: ['Gestionnaire Entreprise'] },
+    { id: 'delivery-locations', label: 'Lieux de Livraison', icon: MapPin, roles: ['Gestionnaire Entreprise'] },
     { id: 'analytics', label: 'Analyses', icon: BarChart3, roles: ['Gestionnaire Entreprise', 'Gestionnaire Restaurant'] },
     { id: 'roles', label: 'Rôles', icon: Ticket, roles: ['Administrateur'] },
     
@@ -310,6 +313,10 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
 
           {activeMenu === 'reports' && (
             <CompanyReporting />
+          )}
+
+          {activeMenu === 'delivery-locations' && (
+            <DeliveryLocationManagement />
           )}
 
           {activeMenu === 'analytics' && (

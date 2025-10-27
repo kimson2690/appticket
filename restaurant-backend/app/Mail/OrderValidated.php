@@ -16,12 +16,14 @@ class OrderValidated extends Mailable
     public $employeeName;
     public $restaurantName;
     public $totalAmount;
+    public $deliveryLocation;
 
-    public function __construct($employeeName, $restaurantName, $totalAmount)
+    public function __construct($employeeName, $restaurantName, $totalAmount, $deliveryLocation = null)
     {
         $this->employeeName = $employeeName;
         $this->restaurantName = $restaurantName;
         $this->totalAmount = $totalAmount;
+        $this->deliveryLocation = $deliveryLocation;
     }
 
     /**
@@ -44,7 +46,8 @@ class OrderValidated extends Mailable
             with: [
                 'employeeName' => $this->employeeName,
                 'restaurantName' => $this->restaurantName,
-                'totalAmount' => $this->totalAmount
+                'totalAmount' => $this->totalAmount,
+                'deliveryLocation' => $this->deliveryLocation
             ]
         );
     }

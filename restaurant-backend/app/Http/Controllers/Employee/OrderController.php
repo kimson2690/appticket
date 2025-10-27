@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use App\Mail\OrderConfirmation;
 use App\Mail\NewOrderReceived;
+use App\Models\DeliveryLocation;
 
 class OrderController extends Controller
 {
@@ -36,6 +37,7 @@ class OrderController extends Controller
                 'items.*.price' => 'required|numeric|min:0',
                 'items.*.name' => 'nullable|string',
                 'items.*.restaurant_name' => 'nullable|string',
+                'delivery_location_id' => 'nullable|integer',
                 'delivery_address' => 'nullable|string',
                 'notes' => 'nullable|string',
             ]);
@@ -87,6 +89,7 @@ class OrderController extends Controller
                 'total_amount' => $totalAmount,
                 'ticket_amount_used' => $totalAmount,
                 'status' => 'pending',
+                'delivery_location_id' => $validated['delivery_location_id'] ?? null,
                 'delivery_address' => $validated['delivery_address'] ?? null,
                 'notes' => $validated['notes'] ?? null,
                 'created_at' => now()->toDateTimeString(),
@@ -157,6 +160,21 @@ class OrderController extends Controller
                 ]
             ]);
             
+            // Charger les informations du lieu de livraison si spécifié
+            $deliveryLocation = null;
+            if (isset($validated['delivery_location_id'])) {
+                $location = DeliveryLocation::find($validated['delivery_location_id']);
+                if ($location) {
+                    $deliveryLocation = [
+                        'name' => $location->name,
+                        'address' => $location->address,
+                        'building' => $location->building,
+                        'floor' => $location->floor,
+                        'instructions' => $location->instructions,
+                    ];
+                }
+            }
+            
             // Envoyer email de confirmation à l'employé
             try {
                 $orderItemsForEmail = array_map(function($item) {
@@ -171,7 +189,8 @@ class OrderController extends Controller
                     $userName, 
                     $restaurantName, 
                     $totalAmount,
-                    $orderItemsForEmail
+                    $orderItemsForEmail,
+                    $deliveryLocation
                 ));
                 Log::info("Email de confirmation commande envoyé à: {$employee['email']}");
             } catch (\Exception $e) {
@@ -199,7 +218,8 @@ class OrderController extends Controller
                         $userName,
                         $restaurantName,
                         $totalAmount,
-                        $orderItemsForEmail
+                        $orderItemsForEmail,
+                        $deliveryLocation
                     ));
                     Log::info("Email de nouvelle commande envoyé au restaurant: {$manager->email}");
                 } else {

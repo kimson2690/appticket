@@ -106,6 +106,19 @@ interface Employee {
   updated_at: string;
 }
 
+interface DeliveryLocation {
+  id: number;
+  company_id: number;
+  name: string;
+  address?: string;
+  building?: string;
+  floor?: string;
+  instructions?: string;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
 class ApiService {
   private async request<T>(endpoint: string, options: RequestInit = {}): Promise<ApiResponse<T>> {
     const url = `${API_BASE_URL}${endpoint}`;
@@ -611,6 +624,44 @@ class ApiService {
       method: 'DELETE',
     });
   }
+
+  // Delivery Locations API
+  async getDeliveryLocations(): Promise<ApiResponse<DeliveryLocation[]>> {
+    return await this.request<DeliveryLocation[]>('/company/delivery-locations');
+  }
+
+  async getActiveDeliveryLocations(): Promise<ApiResponse<DeliveryLocation[]>> {
+    return await this.request<DeliveryLocation[]>('/company/delivery-locations/active');
+  }
+
+  async createDeliveryLocation(locationData: Omit<DeliveryLocation, 'id' | 'company_id' | 'created_at' | 'updated_at'>): Promise<DeliveryLocation> {
+    const response = await this.request<DeliveryLocation>('/company/delivery-locations', {
+      method: 'POST',
+      body: JSON.stringify(locationData),
+    });
+    return response.data;
+  }
+
+  async updateDeliveryLocation(id: number, locationData: Partial<Omit<DeliveryLocation, 'id' | 'company_id' | 'created_at' | 'updated_at'>>): Promise<DeliveryLocation> {
+    const response = await this.request<DeliveryLocation>(`/company/delivery-locations/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(locationData),
+    });
+    return response.data;
+  }
+
+  async deleteDeliveryLocation(id: number): Promise<void> {
+    await this.request(`/company/delivery-locations/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async toggleDeliveryLocation(id: number): Promise<DeliveryLocation> {
+    const response = await this.request<DeliveryLocation>(`/company/delivery-locations/${id}/toggle`, {
+      method: 'PATCH',
+    });
+    return response.data;
+  }
 }
 
 export const apiService = new ApiService();
@@ -1008,4 +1059,4 @@ export const getDashboardStats = async (): Promise<DashboardStatsData> => {
   return result.data;
 };
 
-export type { Role, Permission, Company, Restaurant, User, Employee, Statistics, CompanyStats, DepartmentStats, MonthlyStats, TicketDistribution };
+export type { Role, Permission, Company, Restaurant, User, Employee, DeliveryLocation, Statistics, CompanyStats, DepartmentStats, MonthlyStats, TicketDistribution };

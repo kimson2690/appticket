@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Package, CheckCircle, XCircle, Clock, User, 
-  DollarSign, Calendar, AlertCircle, RefreshCw, Search
+  DollarSign, Calendar, AlertCircle, RefreshCw, Search, MapPin
 } from 'lucide-react';
 
 interface OrderItem {
@@ -25,6 +25,15 @@ interface Order {
   total_amount: number;
   ticket_amount_used: number;
   status: 'pending' | 'confirmed' | 'rejected';
+  delivery_location_id?: number;
+  delivery_location?: {
+    id: number;
+    name: string;
+    address?: string;
+    building?: string;
+    floor?: string;
+    instructions?: string;
+  };
   delivery_address?: string;
   notes?: string;
   confirmed_by?: string;
@@ -450,12 +459,30 @@ const OrderManagement: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* Notes et adresse */}
-                  {(order.notes || order.delivery_address) && (
-                    <div className="mb-4 p-3 bg-blue-50 rounded-lg">
+                  {/* Lieu de livraison, Notes et adresse */}
+                  {(order.delivery_location || order.notes || order.delivery_address) && (
+                    <div className="mb-4 p-3 bg-blue-50 rounded-lg space-y-2">
+                      {order.delivery_location && (
+                        <div className="flex items-start space-x-2">
+                          <MapPin className="w-4 h-4 text-orange-500 mt-0.5 flex-shrink-0" />
+                          <div>
+                            <p className="text-sm text-gray-700">
+                              <span className="font-medium">{order.delivery_location.name}</span>
+                              {order.delivery_location.building && <span className="text-gray-600"> - {order.delivery_location.building}</span>}
+                              {order.delivery_location.floor && <span className="text-gray-600"> - Étage {order.delivery_location.floor}</span>}
+                            </p>
+                            {order.delivery_location.address && (
+                              <p className="text-xs text-gray-600 mt-0.5">{order.delivery_location.address}</p>
+                            )}
+                            {order.delivery_location.instructions && (
+                              <p className="text-xs text-gray-500 mt-1 italic">{order.delivery_location.instructions}</p>
+                            )}
+                          </div>
+                        </div>
+                      )}
                       {order.delivery_address && (
-                        <p className="text-sm text-gray-700 mb-1">
-                          <span className="font-medium">Adresse: </span>
+                        <p className="text-sm text-gray-700">
+                          <span className="font-medium">Adresse complémentaire: </span>
                           {order.delivery_address}
                         </p>
                       )}

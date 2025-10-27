@@ -72,6 +72,35 @@
                                 </tr>
                             </table>
                             
+                            <!-- Lieu de livraison -->
+                            @if(isset($deliveryLocation))
+                            <table width="100%" cellpadding="0" cellspacing="0" style="background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); border-radius: 16px; border: 2px solid #86efac; margin-bottom: 28px;">
+                                <tr>
+                                    <td style="padding: 24px;">
+                                        <h3 style="margin: 0 0 14px 0; color: #166534; font-size: 17px; font-weight: 700;">📍 Lieu de livraison</h3>
+                                        <p style="margin: 0 0 10px 0; color: #15803d; font-size: 16px; font-weight: 800;">{{ $deliveryLocation['name'] }}</p>
+                                        @if(isset($deliveryLocation['building']) || isset($deliveryLocation['floor']))
+                                        <p style="margin: 0 0 10px 0; color: #16a34a; font-size: 14px; font-weight: 600;">
+                                            @if(isset($deliveryLocation['building']))<strong>Bâtiment:</strong> {{ $deliveryLocation['building'] }}@endif
+                                            @if(isset($deliveryLocation['building']) && isset($deliveryLocation['floor'])) - @endif
+                                            @if(isset($deliveryLocation['floor']))<strong>Étage:</strong> {{ $deliveryLocation['floor'] }}@endif
+                                        </p>
+                                        @endif
+                                        @if(isset($deliveryLocation['address']))
+                                        <p style="margin: 0 0 10px 0; color: #16a34a; font-size: 14px;">📌 {{ $deliveryLocation['address'] }}</p>
+                                        @endif
+                                        @if(isset($deliveryLocation['instructions']))
+                                        <div style="margin: 10px 0 0 0; padding: 12px; background: rgba(255,255,255,0.7); border-radius: 8px; border: 1px dashed #86efac;">
+                                            <p style="margin: 0; color: #166534; font-size: 13px; font-weight: 600;">
+                                                <strong>Instructions:</strong> {{ $deliveryLocation['instructions'] }}
+                                            </p>
+                                        </div>
+                                        @endif
+                                    </td>
+                                </tr>
+                            </table>
+                            @endif
+                            
                             <!-- Message final -->
                             <div style="text-align: center; padding: 32px 0;">
                                 <p style="margin: 0 0 16px 0; color: #1f2937; font-size: 28px; font-weight: 700;">Bon appétit ! 🍽️</p>

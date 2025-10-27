@@ -17,13 +17,15 @@ class OrderConfirmation extends Mailable
     public $restaurantName;
     public $totalAmount;
     public $orderItems;
+    public $deliveryLocation;
 
-    public function __construct($employeeName, $restaurantName, $totalAmount, $orderItems)
+    public function __construct($employeeName, $restaurantName, $totalAmount, $orderItems, $deliveryLocation = null)
     {
         $this->employeeName = $employeeName;
         $this->restaurantName = $restaurantName;
         $this->totalAmount = $totalAmount;
         $this->orderItems = $orderItems;
+        $this->deliveryLocation = $deliveryLocation;
     }
 
     /**
@@ -47,7 +49,8 @@ class OrderConfirmation extends Mailable
                 'employeeName' => $this->employeeName,
                 'restaurantName' => $this->restaurantName,
                 'orderItems' => $this->orderItems,
-                'totalAmount' => $this->totalAmount
+                'totalAmount' => $this->totalAmount,
+                'deliveryLocation' => $this->deliveryLocation
             ]
         );
     }

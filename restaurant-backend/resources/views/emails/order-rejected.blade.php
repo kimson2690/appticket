@@ -80,6 +80,25 @@
                                 </tr>
                             </table>
                             
+                            <!-- Lieu de livraison -->
+                            @if(isset($deliveryLocation))
+                            <table width="100%" cellpadding="0" cellspacing="0" style="background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); border-radius: 16px; border: 2px solid #86efac; margin-bottom: 24px;">
+                                <tr>
+                                    <td style="padding: 24px;">
+                                        <h3 style="margin: 0 0 14px 0; color: #166534; font-size: 17px; font-weight: 700;">📍 Lieu de livraison initialement sélectionné</h3>
+                                        <p style="margin: 0 0 10px 0; color: #15803d; font-size: 16px; font-weight: 800;">{{ $deliveryLocation['name'] }}</p>
+                                        @if(isset($deliveryLocation['building']) || isset($deliveryLocation['floor']))
+                                        <p style="margin: 0 0 10px 0; color: #16a34a; font-size: 14px; font-weight: 600;">
+                                            @if(isset($deliveryLocation['building']))<strong>Bâtiment:</strong> {{ $deliveryLocation['building'] }}@endif
+                                            @if(isset($deliveryLocation['building']) && isset($deliveryLocation['floor'])) - @endif
+                                            @if(isset($deliveryLocation['floor']))<strong>Étage:</strong> {{ $deliveryLocation['floor'] }}@endif
+                                        </p>
+                                        @endif
+                                    </td>
+                                </tr>
+                            </table>
+                            @endif
+                            
                             <!-- Card Remboursement -->
                             <table width="100%" cellpadding="0" cellspacing="0" style="background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%); border-radius: 16px; margin-bottom: 32px; border: 2px solid #10b981;">
                                 <tr>

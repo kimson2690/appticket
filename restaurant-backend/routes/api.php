@@ -25,6 +25,7 @@ use App\Http\Controllers\Employee\OrderController;
 use App\Http\Controllers\Employee\EmployeeRestaurantController;
 use App\Http\Controllers\Employee\EmployeeMenuController;
 use App\Http\Controllers\Company\ReportingController;
+use App\Http\Controllers\Company\DeliveryLocationController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\PasswordResetController;
 
@@ -142,6 +143,15 @@ Route::prefix('company')->group(function () {
     
     // Statistiques du dashboard
     Route::get('/dashboard/stats', [DashboardStatsController::class, 'getCompanyStats']);
+    
+    // Gestion des lieux de livraison
+    Route::get('/delivery-locations', [DeliveryLocationController::class, 'index']); // Liste tous les lieux
+    Route::get('/delivery-locations/active', [DeliveryLocationController::class, 'active']); // Lieux actifs pour employés
+    Route::post('/delivery-locations', [DeliveryLocationController::class, 'store']); // Créer un lieu
+    Route::get('/delivery-locations/{id}', [DeliveryLocationController::class, 'show']); // Détails d'un lieu
+    Route::put('/delivery-locations/{id}', [DeliveryLocationController::class, 'update']); // Modifier un lieu
+    Route::delete('/delivery-locations/{id}', [DeliveryLocationController::class, 'destroy']); // Supprimer un lieu
+    Route::patch('/delivery-locations/{id}/toggle', [DeliveryLocationController::class, 'toggleActive']); // Activer/Désactiver
 });
 
 // Routes pour les gestionnaires de restaurant

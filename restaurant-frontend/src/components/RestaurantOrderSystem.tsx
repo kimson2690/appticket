@@ -3,7 +3,7 @@ import {
   Store, ShoppingCart, Plus, Minus, Trash2, Check,
   ChefHat, MapPin, Star, Wallet, AlertCircle, CheckCircle, Search, Filter
 } from 'lucide-react';
-import { apiService, type Restaurant, type MenuItem, type OrderItem } from '../services/api';
+import { apiService, type Restaurant, type MenuItem, type OrderItem, type DeliveryLocation } from '../services/api';
 
 interface CartItem extends OrderItem {
   name: string;
@@ -18,7 +18,8 @@ const RestaurantOrderSystem: React.FC = () => {
   const [selectedRestaurant, setSelectedRestaurant] = useState<Restaurant | null>(null);
   const [loading, setLoading] = useState(true);
   const [ticketBalance, setTicketBalance] = useState(0);
-  const [showCheckout, setShowCheckout] = useState(false);
+  const [deliveryLocations, setDeliveryLocations] = useState<DeliveryLocation[]>([]);
+  const [selectedLocation, setSelectedLocation] = useState<number | null>(null);
   const [deliveryAddress, setDeliveryAddress] = useState('');
   const [notes, setNotes] = useState('');
   const [notification, setNotification] = useState<{type: 'success' | 'error'; message: string} | null>(null);
@@ -64,6 +65,13 @@ const RestaurantOrderSystem: React.FC = () => {
       const balanceData = await balanceRes.json();
       if (balanceData.success) {
         setTicketBalance(balanceData.data.ticket_balance);
+      }
+
+      // Charger les lieux de livraison actifs
+      const locationsRes = await fetch(`${baseUrl}/company/delivery-locations/active`, { headers });
+      const locationsData = await locationsRes.json();
+      if (locationsData.success) {
+        setDeliveryLocations(locationsData.data);
       }
     } catch (error) {
       console.error('Erreur:', error);
@@ -148,6 +156,12 @@ const RestaurantOrderSystem: React.FC = () => {
   const handleCheckout = async () => {
     if (cart.length === 0) return;
 
+    // Vérifier qu'un lieu de livraison est sélectionné
+    if (!selectedLocation) {
+      showNotification('error', 'Veuillez sélectionner un lieu de livraison avant de confirmer votre commande.');
+      return;
+    }
+
     const total = getTotalAmount();
     if (total > ticketBalance) {
       showNotification('error', `Solde insuffisant. Il vous faut ${formatCurrency(total)} mais vous n'avez que ${formatCurrency(ticketBalance)}.`);
@@ -167,6 +181,7 @@ const RestaurantOrderSystem: React.FC = () => {
           name, 
           restaurant_name 
         })),
+        delivery_location_id: selectedLocation || undefined,
         delivery_address: deliveryAddress || undefined,
         notes: notes || undefined
       };
@@ -188,7 +203,7 @@ const RestaurantOrderSystem: React.FC = () => {
       if (data.success) {
         showNotification('success', `Commande passée avec succès ! Montant: ${formatCurrency(total)}`);
         setCart([]);
-        setShowCheckout(false);
+        setSelectedLocation(null);
         setDeliveryAddress('');
         setNotes('');
         loadData();
@@ -264,17 +279,14 @@ const RestaurantOrderSystem: React.FC = () => {
                   </div>
                 </div>
               </div>
-              <button
-                onClick={() => setShowCheckout(!showCheckout)}
-                className="relative bg-white text-orange-600 p-3 rounded-xl hover:bg-orange-50 transition-all shadow-lg"
-              >
+              <div className="relative bg-white text-orange-600 p-3 rounded-xl shadow-lg">
                 <ShoppingCart className="w-6 h-6" />
                 {cart.length > 0 && (
                   <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center">
                     {cart.length}
                   </span>
                 )}
-              </button>
+              </div>
             </div>
           </div>
         </div>
@@ -442,24 +454,56 @@ const RestaurantOrderSystem: React.FC = () => {
                     ))}
                   </div>
 
-                  {showCheckout && (
-                    <div className="space-y-4 mb-6">
-                      <input
-                        type="text"
-                        value={deliveryAddress}
-                        onChange={(e) => setDeliveryAddress(e.target.value)}
-                        className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500"
-                        placeholder="Adresse (optionnel)"
-                      />
-                      <textarea
-                        value={notes}
-                        onChange={(e) => setNotes(e.target.value)}
-                        rows={3}
-                        className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500"
-                        placeholder="Notes (optionnel)"
-                      />
+                  <div className="space-y-4 mb-6 border-t pt-4">
+                    {/* Sélection du lieu de livraison */}
+                    <div>
+                      <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
+                        <MapPin className="w-4 h-4 text-orange-500" />
+                        Lieu de livraison <span className="text-red-500">*</span>
+                      </label>
+                      <select
+                        value={selectedLocation || ''}
+                        onChange={(e) => setSelectedLocation(e.target.value ? Number(e.target.value) : null)}
+                        className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 ${
+                          !selectedLocation && deliveryLocations.length > 0 ? 'border-red-300' : ''
+                        }`}
+                        required
+                      >
+                        <option value="">Sélectionnez un lieu *</option>
+                        {deliveryLocations.map((location) => (
+                          <option key={location.id} value={location.id}>
+                            {location.name}
+                            {location.building && ` - ${location.building}`}
+                            {location.floor && ` - Étage ${location.floor}`}
+                          </option>
+                        ))}
+                      </select>
+                      {deliveryLocations.length === 0 ? (
+                        <p className="text-sm text-red-600 mt-1 font-medium">
+                          ⚠️ Aucun lieu de livraison configuré. Contactez votre gestionnaire.
+                        </p>
+                      ) : !selectedLocation && (
+                        <p className="text-sm text-orange-600 mt-1 font-medium">
+                          ⚠️ Veuillez sélectionner un lieu de livraison pour continuer
+                        </p>
+                      )}
                     </div>
-                  )}
+
+                    <input
+                      type="text"
+                      value={deliveryAddress}
+                      onChange={(e) => setDeliveryAddress(e.target.value)}
+                      className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500"
+                      placeholder="Adresse complémentaire (optionnel)"
+                    />
+                    <textarea
+                      value={notes}
+                      onChange={(e) => setNotes(e.target.value)}
+                      rows={3}
+                      className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500"
+                      placeholder="Notes (optionnel)"
+                    />
+                  </div>
 
                   <div className="border-t pt-4">
                     <div className="flex justify-between mb-4 text-lg font-bold">
@@ -475,10 +519,18 @@ const RestaurantOrderSystem: React.FC = () => {
                       </div>
                     )}
 
+                    {!selectedLocation && deliveryLocations.length > 0 && (
+                      <div className="bg-orange-50 border border-orange-200 rounded-lg p-3 mb-4">
+                        <p className="text-sm text-orange-800 font-medium">
+                          📍 Veuillez sélectionner un lieu de livraison
+                        </p>
+                      </div>
+                    )}
+
                     <button
                       onClick={handleCheckout}
-                      disabled={getTotalAmount() > ticketBalance}
-                      className="w-full bg-orange-500 text-white py-3 rounded-lg hover:bg-orange-600 transition-colors font-medium disabled:bg-gray-300 flex items-center justify-center space-x-2"
+                      disabled={getTotalAmount() > ticketBalance || !selectedLocation}
+                      className="w-full bg-orange-500 text-white py-3 rounded-lg hover:bg-orange-600 transition-colors font-medium disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
                     >
                       <Check className="w-5 h-5" />
                       <span>Confirmer</span>
