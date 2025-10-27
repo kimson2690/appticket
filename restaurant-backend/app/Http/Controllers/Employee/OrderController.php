@@ -197,7 +197,7 @@ class OrderController extends Controller
                 Log::error("Erreur envoi email confirmation commande: " . $e->getMessage());
             }
             
-            // Envoyer email au gestionnaire du restaurant
+            // Envoyer email et WhatsApp au gestionnaire du restaurant
             try {
                 // Récupérer le gestionnaire du restaurant depuis la BD
                 $manager = User::where('restaurant_id', $validated['restaurant_id'])
@@ -214,6 +214,7 @@ class OrderController extends Controller
                         ];
                     }, $validated['items']);
                     
+                    // Envoyer email
                     Mail::to($manager->email)->send(new NewOrderReceived(
                         $userName,
                         $restaurantName,
@@ -222,11 +223,46 @@ class OrderController extends Controller
                         $deliveryLocation
                     ));
                     Log::info("Email de nouvelle commande envoyé au restaurant: {$manager->email}");
+                    
+                    // Envoyer notification WhatsApp au gestionnaire
+                    if (env('WHATSAPP_ENABLED', false) && $manager->phone) {
+                        try {
+                            $whatsappService = new \App\Services\WhatsAppService();
+                            
+                            // Préparer les données pour le template
+                            $whatsappData = [
+                                'restaurant_name' => $restaurantName,
+                                'employee_name' => $userName,
+                                'company_name' => $employee['company_name'] ?? 'Entreprise',
+                                'items' => array_map(function($item) {
+                                    return [
+                                        'name' => $item['name'] ?? 'Article',
+                                        'quantity' => $item['quantity']
+                                    ];
+                                }, $validated['items']),
+                                'total_amount' => number_format($totalAmount, 0, '', ' '),
+                                'delivery_location' => $deliveryLocation['name'] ?? 'Sur place',
+                                'notes' => $validated['notes'] ?? null,
+                                'order_id' => $orderId
+                            ];
+                            
+                            // Créer un objet manager compatible
+                            $managerData = [
+                                'phone' => $manager->phone,
+                                'name' => $manager->name
+                            ];
+                            
+                            $whatsappService->sendTemplate($manager->phone, 'new_order_restaurant', $whatsappData);
+                            Log::info("Notification WhatsApp envoyée au gestionnaire du restaurant: {$manager->phone}");
+                        } catch (\Exception $e) {
+                            Log::error("Erreur envoi WhatsApp au gestionnaire restaurant: " . $e->getMessage());
+                        }
+                    }
                 } else {
                     Log::warning("Aucun gestionnaire trouvé pour le restaurant {$validated['restaurant_id']}");
                 }
             } catch (\Exception $e) {
-                Log::error("Erreur envoi email au gestionnaire restaurant: " . $e->getMessage());
+                Log::error("Erreur envoi notifications au gestionnaire restaurant: " . $e->getMessage());
             }
 
             return response()->json([
