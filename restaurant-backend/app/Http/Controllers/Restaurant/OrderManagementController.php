@@ -400,7 +400,11 @@ class OrderManagementController extends Controller
         if (is_array($data)) {
             $cleaned = [];
             foreach ($data as $key => $value) {
-                $cleanedKey = is_string($key) ? mb_convert_encoding($key, 'UTF-8', 'UTF-8') : $key;
+                // Ne pas altérer les clés UTF-8 valides
+                $cleanedKey = $key;
+                if (is_string($key) && !mb_check_encoding($key, 'UTF-8')) {
+                    $cleanedKey = mb_convert_encoding($key, 'UTF-8', 'ISO-8859-1');
+                }
                 $cleaned[$cleanedKey] = $this->cleanUtf8Recursively($value);
             }
             return $cleaned;
@@ -409,14 +413,12 @@ class OrderManagementController extends Controller
         if (is_string($data)) {
             // Vérifier si déjà en UTF-8 valide
             if (mb_check_encoding($data, 'UTF-8')) {
-                // Si déjà UTF-8 valide, juste supprimer les caractères de contrôle invisibles
-                return preg_replace('/[\x00-\x1F\x7F]/u', '', $data);
+                // Si déjà UTF-8 valide, retourner tel quel (pas de nettoyage qui pourrait corrompre)
+                return $data;
             }
             
-            // Sinon, convertir en UTF-8
-            $cleaned = mb_convert_encoding($data, 'UTF-8', 'UTF-8');
-            // Supprimer les caractères de contrôle invisibles
-            $cleaned = preg_replace('/[\x00-\x1F\x7F]/u', '', $cleaned);
+            // Sinon, essayer de convertir en UTF-8 depuis ISO-8859-1 (Latin-1)
+            $cleaned = mb_convert_encoding($data, 'UTF-8', 'ISO-8859-1');
             return $cleaned;
         }
         
