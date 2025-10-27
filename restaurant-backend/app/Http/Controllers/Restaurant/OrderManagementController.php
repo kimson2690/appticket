@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Mail;
 use App\Mail\OrderValidated;
 use App\Mail\OrderRejected;
 use App\Models\DeliveryLocation;
+use App\Services\WhatsAppService;
 
 class OrderManagementController extends Controller
 {
@@ -201,6 +202,16 @@ class OrderManagementController extends Controller
                     ));
                     Log::info("Email de validation commande envoyé à: {$employee['email']}");
                 }
+                
+                // Envoyer notification WhatsApp (GRATUIT)
+                if ($employee) {
+                    // Enrichir l'order avec les infos complètes pour WhatsApp
+                    $order['restaurant_name'] = $restaurantName;
+                    $order['delivery_location'] = $deliveryLocation;
+                    
+                    $whatsapp = new WhatsAppService();
+                    $whatsapp->notifyOrderValidated($order, $employee);
+                }
             } catch (\Exception $e) {
                 Log::error("Erreur envoi email validation commande: " . $e->getMessage());
             }
@@ -336,6 +347,16 @@ class OrderManagementController extends Controller
                         $deliveryLocation
                     ));
                     Log::info("Email de rejet commande envoyé à: {$employee['email']}");
+                }
+                
+                // Envoyer notification WhatsApp (GRATUIT)
+                if ($employee) {
+                    // Enrichir l'order avec les infos complètes pour WhatsApp
+                    $orders[$orderIndex]['restaurant_name'] = $restaurantName;
+                    $orders[$orderIndex]['delivery_location'] = $deliveryLocation;
+                    
+                    $whatsapp = new WhatsAppService();
+                    $whatsapp->notifyOrderRejected($orders[$orderIndex], $employee);
                 }
             } catch (\Exception $e) {
                 Log::error("Erreur envoi email rejet commande: " . $e->getMessage());
