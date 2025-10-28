@@ -431,7 +431,7 @@ class ApiService {
   }
 
   // User Ticket Management API
-  async assignTicketsToEmployee(employeeId: string, data: { tickets_count: number; batch_id?: string; notes?: string }): Promise<Employee> {
+  async assignTicketsToEmployee(employeeId: string, data: { tickets_count: number; batch_id?: string; ticket_value?: number; validity_days?: number; notes?: string }): Promise<Employee> {
     const response = await this.request<Employee>(`/admin/employees/${employeeId}/assign-tickets`, {
       method: 'POST',
       body: JSON.stringify(data),

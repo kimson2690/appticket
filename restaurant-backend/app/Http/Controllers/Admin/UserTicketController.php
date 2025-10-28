@@ -24,11 +24,15 @@ class UserTicketController extends Controller
             $request->validate([
                 'tickets_count' => 'required|integer|min:1',
                 'batch_id' => 'nullable|string',
+                'ticket_value' => 'nullable|integer|min:100',
+                'validity_days' => 'nullable|integer|min:1',
                 'notes' => 'nullable|string'
             ]);
 
             $ticketsCount = $request->input('tickets_count');
             $batchId = $request->input('batch_id');
+            $ticketValue = $request->input('ticket_value');
+            $validityDays = $request->input('validity_days');
             $notes = $request->input('notes', '');
 
             // Charger les employés
@@ -47,9 +51,11 @@ class UserTicketController extends Controller
                 ], 404);
             }
 
-            $ticketValue = 500; // Valeur par défaut
+            // Variables pour la validité
+            $validityStart = null;
+            $validityEnd = null;
 
-            // Si une souche est spécifiée, vérifier et déduire
+            // Si une souche est spécifiée, utiliser ses valeurs
             if ($batchId) {
                 $batchesFile = storage_path('app/ticket_batches.json');
                 if (file_exists($batchesFile)) {
@@ -62,16 +68,26 @@ class UserTicketController extends Controller
                     if ($batchIndex !== false) {
                         $batch = &$batches[$batchIndex];
                         
-                        // Note: Avec la nouvelle logique, assigned_tickets = total_tickets dès la création
-                        // remaining_tickets diminue lors de la consommation, pas lors de l'affectation
-                        // On garde juste la référence à la souche pour le tracking
-
+                        // Utiliser les valeurs de la souche
                         $ticketValue = $batch['ticket_value'];
+                        $validityStart = $batch['validity_start'];
+                        $validityEnd = $batch['validity_end'];
 
                         // Sauvegarder la souche mise à jour
                         file_put_contents($batchesFile, json_encode($batches, JSON_PRETTY_PRINT));
                     }
                 }
+            }
+            
+            // Pour affectation manuelle: valeur par défaut si non spécifiée
+            if (!$ticketValue) {
+                $ticketValue = 500; // Valeur par défaut
+            }
+            
+            // Pour affectation manuelle: calculer dates de validité si spécifiées
+            if (!$batchId && $validityDays) {
+                $validityStart = date('Y-m-d');
+                $validityEnd = date('Y-m-d', strtotime("+{$validityDays} days"));
             }
 
             // Mettre à jour le solde de l'employé
@@ -96,6 +112,8 @@ class UserTicketController extends Controller
                 'batch_id' => $batchId,
                 'tickets_count' => $ticketsCount,
                 'ticket_value' => $ticketValue,
+                'validity_start' => $validityStart,
+                'validity_end' => $validityEnd,
                 'type' => $batchId ? 'batch' : 'manual',
                 'assigned_by' => $request->header('X-User-Name', 'Système'),
                 'notes' => $notes,
@@ -142,21 +160,18 @@ class UserTicketController extends Controller
                 try {
                     $whatsappService = new \App\Services\WhatsAppService();
                     
-                    // Récupérer les infos de la souche si applicable
-                    $batchInfo = null;
+                    // Préparer les infos pour WhatsApp
+                    $batchNumber = 'Affectation manuelle';
+                    $validityStartFormatted = 'N/A';
+                    $validityEndFormatted = 'N/A';
+                    
                     if ($batchId) {
-                        $batchesFile = storage_path('app/ticket_batches.json');
-                        if (file_exists($batchesFile)) {
-                            $batches = json_decode(file_get_contents($batchesFile), true) ?? [];
-                            $batch = collect($batches)->firstWhere('id', $batchId);
-                            if ($batch) {
-                                $batchInfo = [
-                                    'batch_number' => substr($batchId, -8),
-                                    'validity_start' => date('d/m/Y', strtotime($batch['validity_start'])),
-                                    'validity_end' => date('d/m/Y', strtotime($batch['validity_end']))
-                                ];
-                            }
-                        }
+                        $batchNumber = substr($batchId, -8);
+                    }
+                    
+                    if ($validityStart && $validityEnd) {
+                        $validityStartFormatted = date('d/m/Y', strtotime($validityStart));
+                        $validityEndFormatted = date('d/m/Y', strtotime($validityEnd));
                     }
                     
                     // Préparer les données pour le template
@@ -164,9 +179,9 @@ class UserTicketController extends Controller
                         'employee_name' => $employeeName,
                         'tickets_count' => $ticketsCount,
                         'ticket_value' => number_format($ticketValue, 0, '', ' '),
-                        'batch_number' => $batchInfo['batch_number'] ?? 'Affectation manuelle',
-                        'validity_start' => $batchInfo['validity_start'] ?? 'N/A',
-                        'validity_end' => $batchInfo['validity_end'] ?? 'N/A',
+                        'batch_number' => $batchNumber,
+                        'validity_start' => $validityStartFormatted,
+                        'validity_end' => $validityEndFormatted,
                         'new_balance' => number_format($newBalance, 0, '', ' ')
                     ];
                     

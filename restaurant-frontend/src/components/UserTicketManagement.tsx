@@ -32,6 +32,7 @@ const UserTicketManagement: React.FC = () => {
     batch_id: '',
     config_id: '',
     ticket_value: 500,
+    validity_days: 30,
     amount: 0,
     notes: ''
   });
@@ -73,6 +74,7 @@ const UserTicketManagement: React.FC = () => {
       batch_id: '',
       config_id: '',
       ticket_value: 500,
+      validity_days: 30,
       amount: 0,
       notes: ''
     });
@@ -87,6 +89,7 @@ const UserTicketManagement: React.FC = () => {
       batch_id: '',
       config_id: '',
       ticket_value: 500,
+      validity_days: 30,
       amount: 500,
       notes: ''
     });
@@ -100,6 +103,7 @@ const UserTicketManagement: React.FC = () => {
       batch_id: '',
       config_id: defaultConfig?.id || '',
       ticket_value: defaultConfig?.ticket_value || 500,
+      validity_days: defaultConfig?.validity_duration_days || 30,
       amount: 0,
       notes: ''
     });
@@ -149,7 +153,8 @@ const UserTicketManagement: React.FC = () => {
       if (modalType === 'assign') {
         const updatedEmployee = await apiService.assignTicketsToEmployee(selectedEmployee.id, {
           tickets_count: formData.tickets_count,
-          batch_id: formData.batch_id || undefined,
+          ticket_value: formData.ticket_value,
+          validity_days: formData.validity_days,
           notes: formData.notes || undefined
         });
         
@@ -479,25 +484,6 @@ const UserTicketManagement: React.FC = () => {
 
               {modalType === 'assign' ? (
                 <>
-                  {/* Souche */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Souche (optionnel)
-                    </label>
-                    <select
-                      value={formData.batch_id}
-                      onChange={(e) => setFormData({ ...formData, batch_id: e.target.value })}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                    >
-                      <option value="">Affectation manuelle</option>
-                      {batches.map((batch) => (
-                        <option key={batch.id} value={batch.id}>
-                          {batch.batch_number || `Souche #${batch.id.split('_')[1]}`} - {batch.type} - {batch.remaining_tickets} restants
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
                   {/* Nombre de tickets */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -511,6 +497,51 @@ const UserTicketManagement: React.FC = () => {
                       min="1"
                       required
                     />
+                  </div>
+
+                  {/* Valeur du ticket */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Valeur du ticket (F CFA) *
+                    </label>
+                    <select
+                      value={formData.ticket_value}
+                      onChange={(e) => setFormData({ ...formData, ticket_value: Number(e.target.value) })}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                      required
+                    >
+                      {configurations.length > 0 ? (
+                        configurations.map((config) => (
+                          <option key={config.id} value={config.ticket_value}>
+                            {config.ticket_value}F - {config.type}
+                          </option>
+                        ))
+                      ) : (
+                        <option value="500">500F - standard</option>
+                      )}
+                    </select>
+                    <p className="mt-1 text-xs text-gray-500">
+                      Valeurs paramétrées par votre entreprise
+                    </p>
+                  </div>
+
+                  {/* Nombre de jours de validité */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Validité (jours) *
+                    </label>
+                    <input
+                      type="number"
+                      value={formData.validity_days}
+                      onChange={(e) => setFormData({ ...formData, validity_days: Number(e.target.value) })}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                      min="1"
+                      max="365"
+                      required
+                    />
+                    <p className="mt-1 text-xs text-gray-500">
+                      Les tickets seront valables {formData.validity_days} jour(s) à partir d'aujourd'hui
+                    </p>
                   </div>
                 </>
               ) : (
