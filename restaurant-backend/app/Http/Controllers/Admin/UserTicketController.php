@@ -136,6 +136,51 @@ class UserTicketController extends Controller
             } catch (\Exception $e) {
                 Log::error("Erreur envoi email affectation tickets: " . $e->getMessage());
             }
+            
+            // Envoyer notification WhatsApp à l'employé
+            if (env('WHATSAPP_ENABLED', false) && !empty($employees[$employeeIndex]['phone'])) {
+                try {
+                    $whatsappService = new \App\Services\WhatsAppService();
+                    
+                    // Récupérer les infos de la souche si applicable
+                    $batchInfo = null;
+                    if ($batchId) {
+                        $batchesFile = storage_path('app/ticket_batches.json');
+                        if (file_exists($batchesFile)) {
+                            $batches = json_decode(file_get_contents($batchesFile), true) ?? [];
+                            $batch = collect($batches)->firstWhere('id', $batchId);
+                            if ($batch) {
+                                $batchInfo = [
+                                    'batch_number' => substr($batchId, -8),
+                                    'validity_start' => date('d/m/Y', strtotime($batch['validity_start'])),
+                                    'validity_end' => date('d/m/Y', strtotime($batch['validity_end']))
+                                ];
+                            }
+                        }
+                    }
+                    
+                    // Préparer les données pour le template
+                    $whatsappData = [
+                        'employee_name' => $employeeName,
+                        'tickets_count' => $ticketsCount,
+                        'ticket_value' => number_format($ticketValue, 0, '', ' '),
+                        'batch_number' => $batchInfo['batch_number'] ?? 'Affectation manuelle',
+                        'validity_start' => $batchInfo['validity_start'] ?? 'N/A',
+                        'validity_end' => $batchInfo['validity_end'] ?? 'N/A',
+                        'new_balance' => number_format($newBalance, 0, '', ' ')
+                    ];
+                    
+                    $whatsappService->sendTemplate(
+                        $employees[$employeeIndex]['phone'], 
+                        'tickets_assigned', 
+                        $whatsappData
+                    );
+                    
+                    Log::info("Notification WhatsApp d'affectation tickets envoyée à: {$employees[$employeeIndex]['phone']}");
+                } catch (\Exception $e) {
+                    Log::error("Erreur envoi WhatsApp affectation tickets: " . $e->getMessage());
+                }
+            }
 
             return response()->json([
                 'success' => true,
@@ -413,6 +458,33 @@ class UserTicketController extends Controller
                             'assignment_id' => $assignment['id']
                         ]
                     ]);
+                    
+                    // Envoyer notification WhatsApp à cet employé
+                    if (env('WHATSAPP_ENABLED', false) && !empty($employee['phone'])) {
+                        try {
+                            $whatsappService = new \App\Services\WhatsAppService();
+                            
+                            $whatsappData = [
+                                'employee_name' => $employee['name'],
+                                'tickets_count' => $ticketsCount,
+                                'ticket_value' => number_format($ticketValue, 0, '', ' '),
+                                'batch_number' => $batchNumber,
+                                'validity_start' => date('d/m/Y', strtotime($validityStart)),
+                                'validity_end' => date('d/m/Y', strtotime($validityEnd)),
+                                'new_balance' => number_format($employee['ticket_balance'], 0, '', ' ')
+                            ];
+                            
+                            $whatsappService->sendTemplate(
+                                $employee['phone'], 
+                                'tickets_assigned', 
+                                $whatsappData
+                            );
+                            
+                            Log::info("WhatsApp affectation groupée envoyée à: {$employee['phone']} ({$employee['name']})");
+                        } catch (\Exception $e) {
+                            Log::error("Erreur envoi WhatsApp affectation groupée pour {$employee['name']}: " . $e->getMessage());
+                        }
+                    }
 
                     $updatedEmployees[] = $employee;
                     $successCount++;
