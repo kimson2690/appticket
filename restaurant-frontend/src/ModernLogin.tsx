@@ -42,7 +42,8 @@ const ModernLogin: React.FC<ModernLoginProps> = ({ onShowRegister }) => {
       localStorage.setItem('userId', response.user.id.toString());
       localStorage.setItem('userCompanyId', response.user.company_id?.toString() || '');
       localStorage.setItem('userCompanyName', response.user.company_name || '');
-      localStorage.setItem('restaurantId', response.user.restaurant_id?.toString() || '');
+      localStorage.setItem('userRestaurantId', response.user.restaurant_id?.toString() || '');
+      localStorage.setItem('restaurantId', response.user.restaurant_id?.toString() || ''); // FIX: Ajout restaurantId pour les gestionnaires
       localStorage.setItem('restaurantName', response.user.restaurant_name || '');
       localStorage.setItem('authToken', response.token);
       
@@ -105,10 +106,6 @@ const ModernLogin: React.FC<ModernLoginProps> = ({ onShowRegister }) => {
           0% { transform: translateY(0); }
           100% { transform: translateY(50px); }
         }
-        @keyframes float {
-          0%, 100% { transform: translateY(0px) rotate(0deg); }
-          50% { transform: translateY(-20px) rotate(5deg); }
-        }
         @keyframes glow {
           0%, 100% { box-shadow: 0 0 20px rgba(249, 115, 22, 0.3); }
           50% { box-shadow: 0 0 40px rgba(249, 115, 22, 0.6); }
@@ -122,17 +119,17 @@ const ModernLogin: React.FC<ModernLoginProps> = ({ onShowRegister }) => {
             boxShadow: `
               0 25px 50px -12px rgba(0, 0, 0, 0.5),
               inset 0 1px 0 0 rgba(255, 255, 255, 0.1)
-            `,
-            animation: 'float 6s ease-in-out infinite'
+            `
           }}>
             {/* Logo animé */}
             <div className="mb-10 flex items-center gap-4">
               <div className="relative">
-                <span className="inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-orange-400 to-orange-600 shadow-lg" style={{ animation: 'glow 3s ease-in-out infinite' }}>
-                  <svg className="h-7 w-7 text-white" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M3 7C3 5.89543 3.89543 5 5 5H19C20.1046 5 21 5.89543 21 7V9.5C20.1716 9.5 19.5 10.1716 19.5 11C19.5 11.8284 20.1716 12.5 21 12.5V17C21 18.1046 20.1046 19 19 19H5C3.89543 19 3 18.1046 3 17V12.5C3.82843 12.5 4.5 11.8284 4.5 11C4.5 10.1716 3.82843 9.5 3 9.5V7Z"/>
-                  </svg>
-                </span>
+                <img 
+                  src="/AppTicket.png" 
+                  alt="AppTicket Logo" 
+                  className="h-16 w-16 object-contain"
+                  style={{ filter: 'drop-shadow(0 0 20px rgba(249, 115, 22, 0.3))' }}
+                />
                 <Sparkles className="absolute -top-1 -right-1 h-4 w-4 text-yellow-400 animate-pulse" />
               </div>
               <div>
@@ -332,43 +329,6 @@ const ModernLogin: React.FC<ModernLoginProps> = ({ onShowRegister }) => {
                   </div>
                 </div>
 
-                {/* Statistiques en temps réel */}
-                <div className="relative">
-                  <div className="absolute inset-0 bg-gradient-to-r from-orange-500/20 to-purple-500/20 blur-3xl"></div>
-                  <div className="relative bg-white/5 backdrop-blur-xl rounded-2xl p-6 border border-white/10">
-                    <div className="grid grid-cols-3 gap-6">
-
-                      <div className="text-center">
-                        <div className="flex items-center justify-center gap-2 mb-2">
-                          <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-                          <p className="text-white/60 text-xs font-medium uppercase tracking-wider">Tickets vendus</p>
-                        </div>
-                        <p className="text-3xl font-bold text-white">2,847</p>
-                        <p className="text-sm text-green-400 mt-1">↗ +12%</p>
-                      </div>
-                      
-                      <div className="text-center border-x border-white/10">
-                        <div className="flex items-center justify-center gap-2 mb-2">
-                          <div className="w-2 h-2 bg-orange-400 rounded-full animate-pulse" style={{ animationDelay: '0.5s' }}></div>
-                          <p className="text-white/60 text-xs font-medium uppercase tracking-wider">Utilisateurs</p>
-                        </div>
-                        <p className="text-3xl font-bold text-white">1,245</p>
-                        <p className="text-sm text-orange-400 mt-1">↗ +24%</p>
-                      </div>
-                      
-                      <div className="text-center">
-                        <div className="flex items-center justify-center gap-2 mb-2">
-                          <div className="w-2 h-2 bg-purple-400 rounded-full animate-pulse" style={{ animationDelay: '1s' }}></div>
-                          <p className="text-white/60 text-xs font-medium uppercase tracking-wider">Satisfaction</p>
-                        </div>
-                        <p className="text-3xl font-bold text-white">98%</p>
-                        <p className="text-sm text-purple-400 mt-1">★ Excellent</p>
-                      </div>
-
-                    </div>
-                  </div>
-                </div>
-
               </div>
             </div>
 
@@ -377,6 +337,16 @@ const ModernLogin: React.FC<ModernLoginProps> = ({ onShowRegister }) => {
               <div className="h-full w-full rounded-full bg-gradient-to-tr from-orange-400/10 via-sky-400/10 to-fuchsia-400/10"></div>
             </div>
           </section>
+        </div>
+
+        {/* Footer - Développeur */}
+        <div className="relative mt-8 text-center">
+          <p className="text-white/40 text-sm">
+            Développé avec{' '}
+            <span className="text-orange-400 animate-pulse">❤️</span>
+            {' '}par{' '}
+            <span className="text-white/70 font-semibold">KIMA T ARMEL</span>
+          </p>
         </div>
       </div>
     </div>

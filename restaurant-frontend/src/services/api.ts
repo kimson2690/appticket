@@ -106,6 +106,19 @@ interface Employee {
   updated_at: string;
 }
 
+interface DeliveryLocation {
+  id: number;
+  company_id: number;
+  name: string;
+  address?: string;
+  building?: string;
+  floor?: string;
+  instructions?: string;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
 class ApiService {
   private async request<T>(endpoint: string, options: RequestInit = {}): Promise<ApiResponse<T>> {
     const url = `${API_BASE_URL}${endpoint}`;
@@ -418,7 +431,7 @@ class ApiService {
   }
 
   // User Ticket Management API
-  async assignTicketsToEmployee(employeeId: string, data: { tickets_count: number; batch_id?: string; notes?: string }): Promise<Employee> {
+  async assignTicketsToEmployee(employeeId: string, data: { tickets_count: number; batch_id?: string; ticket_value?: number; validity_days?: number; notes?: string }): Promise<Employee> {
     const response = await this.request<Employee>(`/admin/employees/${employeeId}/assign-tickets`, {
       method: 'POST',
       body: JSON.stringify(data),
@@ -610,6 +623,44 @@ class ApiService {
     await this.request(`/admin/notifications/${id}`, {
       method: 'DELETE',
     });
+  }
+
+  // Delivery Locations API
+  async getDeliveryLocations(): Promise<ApiResponse<DeliveryLocation[]>> {
+    return await this.request<DeliveryLocation[]>('/company/delivery-locations');
+  }
+
+  async getActiveDeliveryLocations(): Promise<ApiResponse<DeliveryLocation[]>> {
+    return await this.request<DeliveryLocation[]>('/company/delivery-locations/active');
+  }
+
+  async createDeliveryLocation(locationData: Omit<DeliveryLocation, 'id' | 'company_id' | 'created_at' | 'updated_at'>): Promise<DeliveryLocation> {
+    const response = await this.request<DeliveryLocation>('/company/delivery-locations', {
+      method: 'POST',
+      body: JSON.stringify(locationData),
+    });
+    return response.data;
+  }
+
+  async updateDeliveryLocation(id: number, locationData: Partial<Omit<DeliveryLocation, 'id' | 'company_id' | 'created_at' | 'updated_at'>>): Promise<DeliveryLocation> {
+    const response = await this.request<DeliveryLocation>(`/company/delivery-locations/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(locationData),
+    });
+    return response.data;
+  }
+
+  async deleteDeliveryLocation(id: number): Promise<void> {
+    await this.request(`/company/delivery-locations/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async toggleDeliveryLocation(id: number): Promise<DeliveryLocation> {
+    const response = await this.request<DeliveryLocation>(`/company/delivery-locations/${id}/toggle`, {
+      method: 'PATCH',
+    });
+    return response.data;
   }
 }
 
@@ -957,4 +1008,55 @@ export const getEmployeeExpenses = async (params?: {
   return result.data;
 };
 
-export type { Role, Permission, Company, Restaurant, User, Employee, Statistics, CompanyStats, DepartmentStats, MonthlyStats, TicketDistribution };
+// Dashboard Statistics
+export interface DashboardStatsData {
+  overview: Record<string, number>;
+  [key: string]: any;
+}
+
+export const getDashboardStats = async (): Promise<DashboardStatsData> => {
+  const userRole = localStorage.getItem('userRole') || '';
+  const userId = localStorage.getItem('userId') || '';
+  const companyId = localStorage.getItem('userCompanyId') || '';
+  const restaurantId = localStorage.getItem('userRestaurantId') || '';
+  
+  console.log('🔍 [getDashboardStats] Début - Role:', userRole);
+  
+  let url = '';
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    'X-User-Role': userRole,
+  };
+  
+  // Déterminer l'endpoint selon le rôle
+  if (userRole === 'Administrateur') {
+    url = `${API_BASE_URL}/admin/dashboard/stats`;
+  } else if (userRole === 'Gestionnaire Entreprise') {
+    url = `${API_BASE_URL}/company/dashboard/stats`;
+    headers['X-User-Company-Id'] = companyId;
+  } else if (userRole === 'Gestionnaire Restaurant') {
+    url = `${API_BASE_URL}/restaurant/dashboard/stats`;
+    headers['X-User-Restaurant-Id'] = restaurantId;
+  } else {
+    // Employé/Utilisateur
+    url = `${API_BASE_URL}/employee/dashboard/stats`;
+    headers['X-User-Id'] = userId;
+  }
+  
+  console.log('🔍 [getDashboardStats] URL:', url);
+  console.log('🔍 [getDashboardStats] Headers:', headers);
+  
+  const response = await fetch(url, { headers });
+  
+  console.log('🔍 [getDashboardStats] Response status:', response.status);
+  
+  if (!response.ok) {
+    throw new Error('Erreur lors du chargement des statistiques');
+  }
+  
+  const result = await response.json();
+  console.log('🔍 [getDashboardStats] Result:', result);
+  return result.data;
+};
+
+export type { Role, Permission, Company, Restaurant, User, Employee, DeliveryLocation, Statistics, CompanyStats, DepartmentStats, MonthlyStats, TicketDistribution };

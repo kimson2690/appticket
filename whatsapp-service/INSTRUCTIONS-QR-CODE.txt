@@ -1,0 +1,32 @@
+
+========================================
+   WHATSAPP QR CODE - APPTICKET
+========================================
+
+Le QR code s'affiche dans le terminal où vous avez exécuté 'npm start'
+
+INSTRUCTIONS POUR VOIR LE QR CODE:
+
+1. AGRANDIR LE TERMINAL:
+   - Appuyez sur Cmd + Ctrl + F (plein écran)
+   - OU agrandissez manuellement la fenêtre
+
+2. RÉDUIRE LE ZOOM:
+   - Appuyez sur Cmd + - (moins) 3-4 fois
+   - Le QR code deviendra plus petit et visible
+
+3. DÉFILER VERS LE HAUT:
+   - Utilisez le trackpad pour remonter
+   - OU Fn + Flèche Haut
+   - Cherchez le grand carré noir et blanc
+
+4. SCANNER LE QR CODE:
+   - Ouvrez WhatsApp sur votre téléphone
+   - Paramètres → Appareils connectés
+   - Connecter un appareil
+   - Scannez le QR code
+
+========================================
+STATUS DU SERVICE
+========================================
+

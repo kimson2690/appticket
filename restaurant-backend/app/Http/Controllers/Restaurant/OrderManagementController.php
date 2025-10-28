@@ -10,6 +10,8 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Mail;
 use App\Mail\OrderValidated;
 use App\Mail\OrderRejected;
+use App\Models\DeliveryLocation;
+use App\Services\WhatsAppService;
 
 class OrderManagementController extends Controller
 {
@@ -36,6 +38,9 @@ class OrderManagementController extends Controller
             $orders = $this->loadOrders();
             $employees = $this->loadEmployees();
             $menuItems = $this->loadMenuItems();
+            
+            // Charger les lieux de livraison depuis la base de données
+            $deliveryLocations = DeliveryLocation::all()->keyBy('id')->toArray();
 
             // Créer des index
             $employeesById = collect($employees)->keyBy('id')->toArray();
@@ -49,10 +54,23 @@ class OrderManagementController extends Controller
             }
 
             // Enrichir les commandes
-            $enrichedOrders = $restaurantOrders->map(function ($order) use ($employeesById, $menuItemsById) {
+            $enrichedOrders = $restaurantOrders->map(function ($order) use ($employeesById, $menuItemsById, $deliveryLocations) {
                 // Ajouter les infos de l'employé
                 if (isset($employeesById[$order['employee_id']])) {
                     $order['employee'] = $employeesById[$order['employee_id']];
+                }
+
+                // Ajouter les infos du lieu de livraison
+                if (isset($order['delivery_location_id']) && isset($deliveryLocations[$order['delivery_location_id']])) {
+                    $location = $deliveryLocations[$order['delivery_location_id']];
+                    $order['delivery_location'] = [
+                        'id' => $location['id'],
+                        'name' => $location['name'],
+                        'address' => $location['address'] ?? null,
+                        'building' => $location['building'] ?? null,
+                        'floor' => $location['floor'] ?? null,
+                        'instructions' => $location['instructions'] ?? null,
+                    ];
                 }
 
                 // Enrichir les items avec les détails des plats
@@ -154,6 +172,21 @@ class OrderManagementController extends Controller
                 ]
             ]);
             
+            // Charger les informations du lieu de livraison si spécifié
+            $deliveryLocation = null;
+            if (isset($order['delivery_location_id'])) {
+                $location = DeliveryLocation::find($order['delivery_location_id']);
+                if ($location) {
+                    $deliveryLocation = [
+                        'name' => $location->name,
+                        'address' => $location->address,
+                        'building' => $location->building,
+                        'floor' => $location->floor,
+                        'instructions' => $location->instructions,
+                    ];
+                }
+            }
+            
             // Envoyer email de validation à l'employé
             try {
                 $employeeName = $order['employee_name'];
@@ -164,9 +197,20 @@ class OrderManagementController extends Controller
                     Mail::to($employee['email'])->send(new OrderValidated(
                         $employeeName,
                         $restaurantName,
-                        $order['total_amount']
+                        $order['total_amount'],
+                        $deliveryLocation
                     ));
                     Log::info("Email de validation commande envoyé à: {$employee['email']}");
+                }
+                
+                // Envoyer notification WhatsApp (GRATUIT)
+                if ($employee) {
+                    // Enrichir l'order avec les infos complètes pour WhatsApp
+                    $order['restaurant_name'] = $restaurantName;
+                    $order['delivery_location'] = $deliveryLocation;
+                    
+                    $whatsapp = new WhatsAppService();
+                    $whatsapp->notifyOrderValidated($order, $employee);
                 }
             } catch (\Exception $e) {
                 Log::error("Erreur envoi email validation commande: " . $e->getMessage());
@@ -273,6 +317,21 @@ class OrderManagementController extends Controller
                 ]
             ]);
             
+            // Charger les informations du lieu de livraison si spécifié
+            $deliveryLocation = null;
+            if (isset($order['delivery_location_id'])) {
+                $location = DeliveryLocation::find($order['delivery_location_id']);
+                if ($location) {
+                    $deliveryLocation = [
+                        'name' => $location->name,
+                        'address' => $location->address,
+                        'building' => $location->building,
+                        'floor' => $location->floor,
+                        'instructions' => $location->instructions,
+                    ];
+                }
+            }
+            
             // Envoyer email de rejet à l'employé
             try {
                 $employeeName = $order['employee_name'];
@@ -284,9 +343,20 @@ class OrderManagementController extends Controller
                         $employeeName,
                         $restaurantName,
                         $order['total_amount'],
-                        $rejectionReason
+                        $rejectionReason,
+                        $deliveryLocation
                     ));
                     Log::info("Email de rejet commande envoyé à: {$employee['email']}");
+                }
+                
+                // Envoyer notification WhatsApp (GRATUIT)
+                if ($employee) {
+                    // Enrichir l'order avec les infos complètes pour WhatsApp
+                    $orders[$orderIndex]['restaurant_name'] = $restaurantName;
+                    $orders[$orderIndex]['delivery_location'] = $deliveryLocation;
+                    
+                    $whatsapp = new WhatsAppService();
+                    $whatsapp->notifyOrderRejected($orders[$orderIndex], $employee);
                 }
             } catch (\Exception $e) {
                 Log::error("Erreur envoi email rejet commande: " . $e->getMessage());
@@ -351,7 +421,11 @@ class OrderManagementController extends Controller
         if (is_array($data)) {
             $cleaned = [];
             foreach ($data as $key => $value) {
-                $cleanedKey = is_string($key) ? mb_convert_encoding($key, 'UTF-8', 'UTF-8') : $key;
+                // Ne pas altérer les clés UTF-8 valides
+                $cleanedKey = $key;
+                if (is_string($key) && !mb_check_encoding($key, 'UTF-8')) {
+                    $cleanedKey = mb_convert_encoding($key, 'UTF-8', 'ISO-8859-1');
+                }
                 $cleaned[$cleanedKey] = $this->cleanUtf8Recursively($value);
             }
             return $cleaned;
@@ -360,14 +434,12 @@ class OrderManagementController extends Controller
         if (is_string($data)) {
             // Vérifier si déjà en UTF-8 valide
             if (mb_check_encoding($data, 'UTF-8')) {
-                // Si déjà UTF-8 valide, juste supprimer les caractères de contrôle invisibles
-                return preg_replace('/[\x00-\x1F\x7F]/u', '', $data);
+                // Si déjà UTF-8 valide, retourner tel quel (pas de nettoyage qui pourrait corrompre)
+                return $data;
             }
             
-            // Sinon, convertir en UTF-8
-            $cleaned = mb_convert_encoding($data, 'UTF-8', 'UTF-8');
-            // Supprimer les caractères de contrôle invisibles
-            $cleaned = preg_replace('/[\x00-\x1F\x7F]/u', '', $cleaned);
+            // Sinon, essayer de convertir en UTF-8 depuis ISO-8859-1 (Latin-1)
+            $cleaned = mb_convert_encoding($data, 'UTF-8', 'ISO-8859-1');
             return $cleaned;
         }
         

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Package, CheckCircle, XCircle, Clock, User, 
-  DollarSign, Calendar, AlertCircle, RefreshCw, Search
+  DollarSign, Calendar, AlertCircle, RefreshCw, Search, MapPin
 } from 'lucide-react';
 
 interface OrderItem {
@@ -25,6 +25,15 @@ interface Order {
   total_amount: number;
   ticket_amount_used: number;
   status: 'pending' | 'confirmed' | 'rejected';
+  delivery_location_id?: number;
+  delivery_location?: {
+    id: number;
+    name: string;
+    address?: string;
+    building?: string;
+    floor?: string;
+    instructions?: string;
+  };
   delivery_address?: string;
   notes?: string;
   confirmed_by?: string;
@@ -399,104 +408,128 @@ const OrderManagement: React.FC = () => {
             </div>
           ) : (
             filteredOrders.map((order) => (
-              <div key={order.id} className="bg-white rounded-xl shadow hover:shadow-lg transition-shadow">
-                <div className="p-6">
-                  {/* En-tête de la commande */}
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center space-x-4">
-                      <div>
-                        <p className="text-sm text-gray-500">Commande</p>
-                        <p className="font-mono text-sm text-gray-900">{order.id}</p>
+              <div key={order.id} className="bg-white rounded-lg border border-gray-200 hover:border-orange-300 hover:shadow-md transition-all">
+                <div className="p-4">
+                  {/* En-tête compact */}
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="flex items-center gap-3 flex-1">
+                      <div className="flex-shrink-0">
+                        <p className="text-xs text-gray-500">Commande</p>
+                        <p className="font-mono text-xs font-medium text-gray-900">{order.id}</p>
                       </div>
                       {getStatusBadge(order.status)}
                     </div>
-                    <div className="text-right">
-                      <p className="text-sm text-gray-500">Montant</p>
-                      <p className="text-2xl font-bold text-orange-600">{formatCurrency(order.total_amount)}</p>
+                    <div className="flex items-center gap-2 bg-orange-50 px-3 py-1.5 rounded-lg border border-orange-200">
+                      <p className="text-xs text-gray-500">Montant</p>
+                      <p className="text-lg font-bold text-orange-600">{formatCurrency(order.total_amount)}</p>
                     </div>
                   </div>
 
-                  {/* Informations employé */}
-                  <div className="flex items-center space-x-3 mb-4 p-3 bg-gray-50 rounded-lg">
-                    <User className="w-5 h-5 text-gray-400" />
-                    <div>
-                      <p className="font-medium text-gray-900">{order.employee_name}</p>
-                      {order.employee?.email && (
-                        <p className="text-sm text-gray-500">{order.employee.email}</p>
-                      )}
-                    </div>
-                  </div>
+                  {/* Grid à 2 colonnes pour compacter */}
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 mb-3">
+                    {/* Colonne gauche: Employé + Articles */}
+                    <div className="space-y-3">
+                      {/* Employé inline compact */}
+                      <div className="flex items-center gap-2 text-sm">
+                        <User className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                        <div className="min-w-0 flex-1">
+                          <p className="font-medium text-gray-900 truncate">{order.employee_name}</p>
+                          {order.employee?.email && (
+                            <p className="text-xs text-gray-500 truncate">{order.employee.email}</p>
+                          )}
+                        </div>
+                      </div>
 
-                  {/* Articles commandés */}
-                  <div className="mb-4">
-                    <p className="text-sm font-medium text-gray-700 mb-2">Articles commandés:</p>
-                    <div className="space-y-2">
-                      {order.items.map((item, index) => (
-                        <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded">
-                          <div className="flex-1">
-                            <p className="font-medium text-gray-900">
-                              {item.details?.name || `Article ${item.item_id}`}
-                            </p>
-                            {item.details?.category && (
-                              <p className="text-xs text-gray-500">{item.details.category}</p>
+                      {/* Articles compacts */}
+                      <div>
+                        <p className="text-xs font-semibold text-gray-600 mb-1.5">Articles commandés:</p>
+                        <div className="space-y-1">
+                          {order.items.map((item, index) => (
+                            <div key={index} className="flex items-center justify-between text-sm py-1 px-2 bg-gray-50 rounded">
+                              <div className="flex-1 min-w-0">
+                                <p className="font-medium text-gray-900 truncate text-sm">
+                                  {item.details?.name || `Article ${item.item_id}`}
+                                </p>
+                                {item.details?.category && (
+                                  <p className="text-xs text-gray-500">{item.details.category}</p>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-2 ml-2 flex-shrink-0">
+                                <span className="text-xs text-gray-600">x{item.quantity}</span>
+                                <span className="text-sm font-semibold text-gray-900">{formatCurrency(item.price * item.quantity)}</span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Colonne droite: Lieu de livraison */}
+                    {(order.delivery_location || order.notes || order.delivery_address) && (
+                      <div className="bg-blue-50 rounded-lg p-3 border border-blue-100">
+                        {order.delivery_location && (
+                          <div className="mb-2">
+                            <div className="flex items-center gap-1.5 mb-1">
+                              <MapPin className="w-3.5 h-3.5 text-orange-500 flex-shrink-0" />
+                              <p className="text-xs font-semibold text-gray-700">
+                                {order.delivery_location.name}
+                                {order.delivery_location.building && <span className="text-gray-600"> • {order.delivery_location.building}</span>}
+                                {order.delivery_location.floor && <span className="text-gray-600"> • Étage {order.delivery_location.floor}</span>}
+                              </p>
+                            </div>
+                            {order.delivery_location.address && (
+                              <p className="text-xs text-gray-600 ml-5">{order.delivery_location.address}</p>
+                            )}
+                            {order.delivery_location.instructions && (
+                              <p className="text-xs text-gray-500 ml-5 mt-1 italic">📝 {order.delivery_location.instructions}</p>
                             )}
                           </div>
-                          <div className="text-right">
-                            <p className="text-sm text-gray-600">x{item.quantity}</p>
-                            <p className="text-sm font-medium text-gray-900">{formatCurrency(item.price * item.quantity)}</p>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
+                        )}
+                        {order.delivery_address && (
+                          <p className="text-xs text-gray-700 mb-1">
+                            <span className="font-medium">Complément: </span>
+                            {order.delivery_address}
+                          </p>
+                        )}
+                        {order.notes && (
+                          <p className="text-xs text-gray-700">
+                            <span className="font-medium">Note: </span>
+                            {order.notes}
+                          </p>
+                        )}
+                      </div>
+                    )}
                   </div>
 
-                  {/* Notes et adresse */}
-                  {(order.notes || order.delivery_address) && (
-                    <div className="mb-4 p-3 bg-blue-50 rounded-lg">
-                      {order.delivery_address && (
-                        <p className="text-sm text-gray-700 mb-1">
-                          <span className="font-medium">Adresse: </span>
-                          {order.delivery_address}
-                        </p>
-                      )}
-                      {order.notes && (
-                        <p className="text-sm text-gray-700">
-                          <span className="font-medium">Note: </span>
-                          {order.notes}
-                        </p>
-                      )}
-                    </div>
-                  )}
-
-                  {/* Date et actions */}
-                  <div className="flex items-center justify-between pt-4 border-t">
-                    <div className="flex items-center space-x-2 text-sm text-gray-500">
-                      <Calendar className="w-4 h-4" />
+                  {/* Footer compact */}
+                  <div className="flex items-center justify-between pt-3 border-t border-gray-100">
+                    <div className="flex items-center gap-1.5 text-xs text-gray-500">
+                      <Calendar className="w-3.5 h-3.5" />
                       <span>{formatDate(order.created_at)}</span>
                     </div>
 
                     {order.status === 'pending' && (
-                      <div className="flex space-x-3">
+                      <div className="flex gap-2">
                         <button
                           onClick={() => openRejectModal(order.id)}
-                          className="px-4 py-2 border border-red-300 text-red-700 rounded-lg hover:bg-red-50 transition-colors flex items-center space-x-2"
+                          className="px-3 py-1.5 border border-red-300 text-red-700 text-xs font-medium rounded-md hover:bg-red-50 transition-colors flex items-center gap-1.5"
                         >
-                          <XCircle className="w-4 h-4" />
+                          <XCircle className="w-3.5 h-3.5" />
                           <span>Rejeter</span>
                         </button>
                         <button
                           onClick={() => handleValidateOrder(order.id)}
-                          className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center space-x-2"
+                          className="px-3 py-1.5 bg-green-600 text-white text-xs font-medium rounded-md hover:bg-green-700 transition-colors flex items-center gap-1.5"
                         >
-                          <CheckCircle className="w-4 h-4" />
+                          <CheckCircle className="w-3.5 h-3.5" />
                           <span>Valider</span>
                         </button>
                       </div>
                     )}
 
                     {order.status === 'confirmed' && order.confirmed_by && (
-                      <p className="text-sm text-green-600">
-                        Validée par {order.confirmed_by}
+                      <p className="text-xs text-green-600 font-medium">
+                        ✓ Validée par {order.confirmed_by}
                       </p>
                     )}
 

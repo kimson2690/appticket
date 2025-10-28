@@ -17,13 +17,15 @@ class OrderRejected extends Mailable
     public $restaurantName;
     public $totalAmount;
     public $rejectionReason;
+    public $deliveryLocation;
 
-    public function __construct($employeeName, $restaurantName, $totalAmount, $rejectionReason)
+    public function __construct($employeeName, $restaurantName, $totalAmount, $rejectionReason, $deliveryLocation = null)
     {
         $this->employeeName = $employeeName;
         $this->restaurantName = $restaurantName;
         $this->totalAmount = $totalAmount;
         $this->rejectionReason = $rejectionReason;
+        $this->deliveryLocation = $deliveryLocation;
     }
 
     /**
@@ -47,7 +49,8 @@ class OrderRejected extends Mailable
                 'employeeName' => $this->employeeName,
                 'restaurantName' => $this->restaurantName,
                 'totalAmount' => $this->totalAmount,
-                'rejectionReason' => $this->rejectionReason
+                'rejectionReason' => $this->rejectionReason,
+                'deliveryLocation' => $this->deliveryLocation
             ]
         );
     }

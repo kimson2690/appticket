@@ -52,15 +52,15 @@ const CompanyManagement: React.FC = () => {
         setCompanies([
           {
             id: '1',
-            name: 'TechCorp Solutions',
-            email: 'contact@techcorp.sn',
-            phone: '+221 33 123 45 67',
-            address: '15 Avenue Bourguiba',
-            city: 'Dakar',
-            postal_code: '12500',
-            country: 'Sénégal',
-            website: 'https://techcorp.sn',
-            description: 'Société de développement logiciel',
+            name: 'SONABEL',
+            email: 'contact@sonabel.bf',
+            phone: '+226 25 30 60 70',
+            address: 'Avenue Kwame N\'Krumah',
+            city: 'Ouagadougou',
+            postal_code: '01',
+            country: 'Burkina Faso',
+            website: 'https://sonabel.bf',
+            description: 'Société Nationale Burkinabè d\'Électricité',
             status: 'active',
             employee_count: 45,
             ticket_balance: 2500,
@@ -473,7 +473,7 @@ const CompanyManagement: React.FC = () => {
                       value={formData.name}
                       onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                      placeholder="Ex: TechCorp Solutions"
+                      placeholder="Ex: SONABEL, Faso Coton, ONEA"
                     />
                   </div>
 
@@ -487,7 +487,7 @@ const CompanyManagement: React.FC = () => {
                       value={formData.email}
                       onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                      placeholder="contact@entreprise.com"
+                      placeholder="contact@entreprise.bf"
                     />
                   </div>
 
@@ -501,7 +501,7 @@ const CompanyManagement: React.FC = () => {
                       value={formData.phone}
                       onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                      placeholder="+221 33 123 45 67"
+                      placeholder="+226 25 30 XX XX"
                     />
                   </div>
 
@@ -514,7 +514,7 @@ const CompanyManagement: React.FC = () => {
                       value={formData.website}
                       onChange={(e) => setFormData({ ...formData, website: e.target.value })}
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                      placeholder="https://entreprise.com"
+                      placeholder="https://entreprise.bf"
                     />
                   </div>
 
@@ -528,7 +528,7 @@ const CompanyManagement: React.FC = () => {
                       value={formData.address}
                       onChange={(e) => setFormData({ ...formData, address: e.target.value })}
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                      placeholder="15 Avenue Bourguiba"
+                      placeholder="Avenue Kwame N'Krumah, Ouagadougou"
                     />
                   </div>
 
@@ -542,7 +542,7 @@ const CompanyManagement: React.FC = () => {
                       value={formData.city}
                       onChange={(e) => setFormData({ ...formData, city: e.target.value })}
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                      placeholder="Dakar"
+                      placeholder="Ouagadougou"
                     />
                   </div>
 
@@ -555,7 +555,7 @@ const CompanyManagement: React.FC = () => {
                       value={formData.postal_code}
                       onChange={(e) => setFormData({ ...formData, postal_code: e.target.value })}
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                      placeholder="12500"
+                      placeholder="01"
                     />
                   </div>
 
@@ -569,12 +569,14 @@ const CompanyManagement: React.FC = () => {
                       onChange={(e) => setFormData({ ...formData, country: e.target.value })}
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
                     >
-                      <option value="Sénégal">Sénégal</option>
-                      <option value="Mali">Mali</option>
                       <option value="Burkina Faso">Burkina Faso</option>
+                      <option value="Mali">Mali</option>
+                      <option value="Sénégal">Sénégal</option>
                       <option value="Côte d'Ivoire">Côte d'Ivoire</option>
                       <option value="Niger">Niger</option>
                       <option value="Guinée">Guinée</option>
+                      <option value="Togo">Togo</option>
+                      <option value="Bénin">Bénin</option>
                     </select>
                   </div>
 

@@ -1,0 +1,21 @@
+# WhatsApp Session (Important - Ne pas commit!)
+whatsapp-session/
+.wwebjs_auth/
+.wwebjs_cache/
+
+# Dependencies
+node_modules/
+
+# Environment
+.env
+
+# Logs
+*.log
+npm-debug.log*
+
+# PM2
+.pm2/
+
+# OS
+.DS_Store
+Thumbs.db

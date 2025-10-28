@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use App\Mail\OrderConfirmation;
 use App\Mail\NewOrderReceived;
+use App\Models\DeliveryLocation;
 
 class OrderController extends Controller
 {
@@ -36,6 +37,7 @@ class OrderController extends Controller
                 'items.*.price' => 'required|numeric|min:0',
                 'items.*.name' => 'nullable|string',
                 'items.*.restaurant_name' => 'nullable|string',
+                'delivery_location_id' => 'nullable|integer',
                 'delivery_address' => 'nullable|string',
                 'notes' => 'nullable|string',
             ]);
@@ -87,6 +89,7 @@ class OrderController extends Controller
                 'total_amount' => $totalAmount,
                 'ticket_amount_used' => $totalAmount,
                 'status' => 'pending',
+                'delivery_location_id' => $validated['delivery_location_id'] ?? null,
                 'delivery_address' => $validated['delivery_address'] ?? null,
                 'notes' => $validated['notes'] ?? null,
                 'created_at' => now()->toDateTimeString(),
@@ -157,6 +160,21 @@ class OrderController extends Controller
                 ]
             ]);
             
+            // Charger les informations du lieu de livraison si spécifié
+            $deliveryLocation = null;
+            if (isset($validated['delivery_location_id'])) {
+                $location = DeliveryLocation::find($validated['delivery_location_id']);
+                if ($location) {
+                    $deliveryLocation = [
+                        'name' => $location->name,
+                        'address' => $location->address,
+                        'building' => $location->building,
+                        'floor' => $location->floor,
+                        'instructions' => $location->instructions,
+                    ];
+                }
+            }
+            
             // Envoyer email de confirmation à l'employé
             try {
                 $orderItemsForEmail = array_map(function($item) {
@@ -171,14 +189,15 @@ class OrderController extends Controller
                     $userName, 
                     $restaurantName, 
                     $totalAmount,
-                    $orderItemsForEmail
+                    $orderItemsForEmail,
+                    $deliveryLocation
                 ));
                 Log::info("Email de confirmation commande envoyé à: {$employee['email']}");
             } catch (\Exception $e) {
                 Log::error("Erreur envoi email confirmation commande: " . $e->getMessage());
             }
             
-            // Envoyer email au gestionnaire du restaurant
+            // Envoyer email et WhatsApp au gestionnaire du restaurant
             try {
                 // Récupérer le gestionnaire du restaurant depuis la BD
                 $manager = User::where('restaurant_id', $validated['restaurant_id'])
@@ -195,18 +214,55 @@ class OrderController extends Controller
                         ];
                     }, $validated['items']);
                     
+                    // Envoyer email
                     Mail::to($manager->email)->send(new NewOrderReceived(
                         $userName,
                         $restaurantName,
                         $totalAmount,
-                        $orderItemsForEmail
+                        $orderItemsForEmail,
+                        $deliveryLocation
                     ));
                     Log::info("Email de nouvelle commande envoyé au restaurant: {$manager->email}");
+                    
+                    // Envoyer notification WhatsApp au gestionnaire
+                    if (env('WHATSAPP_ENABLED', false) && $manager->phone) {
+                        try {
+                            $whatsappService = new \App\Services\WhatsAppService();
+                            
+                            // Préparer les données pour le template
+                            $whatsappData = [
+                                'restaurant_name' => $restaurantName,
+                                'employee_name' => $userName,
+                                'company_name' => $employee['company_name'] ?? 'Entreprise',
+                                'items' => array_map(function($item) {
+                                    return [
+                                        'name' => $item['name'] ?? 'Article',
+                                        'quantity' => $item['quantity']
+                                    ];
+                                }, $validated['items']),
+                                'total_amount' => number_format($totalAmount, 0, '', ' '),
+                                'delivery_location' => $deliveryLocation['name'] ?? 'Sur place',
+                                'notes' => $validated['notes'] ?? null,
+                                'order_id' => $orderId
+                            ];
+                            
+                            // Créer un objet manager compatible
+                            $managerData = [
+                                'phone' => $manager->phone,
+                                'name' => $manager->name
+                            ];
+                            
+                            $whatsappService->sendTemplate($manager->phone, 'new_order_restaurant', $whatsappData);
+                            Log::info("Notification WhatsApp envoyée au gestionnaire du restaurant: {$manager->phone}");
+                        } catch (\Exception $e) {
+                            Log::error("Erreur envoi WhatsApp au gestionnaire restaurant: " . $e->getMessage());
+                        }
+                    }
                 } else {
                     Log::warning("Aucun gestionnaire trouvé pour le restaurant {$validated['restaurant_id']}");
                 }
             } catch (\Exception $e) {
-                Log::error("Erreur envoi email au gestionnaire restaurant: " . $e->getMessage());
+                Log::error("Erreur envoi notifications au gestionnaire restaurant: " . $e->getMessage());
             }
 
             return response()->json([

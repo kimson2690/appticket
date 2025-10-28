@@ -19,11 +19,13 @@ use App\Http\Controllers\Admin\MenuItemController;
 use App\Http\Controllers\Admin\DailyMenuController;
 use App\Http\Controllers\Admin\WeeklyMenuController;
 use App\Http\Controllers\Admin\NotificationController;
+use App\Http\Controllers\Admin\DashboardStatsController;
 use App\Http\Controllers\Employee\EmployeeDashboardController;
 use App\Http\Controllers\Employee\OrderController;
 use App\Http\Controllers\Employee\EmployeeRestaurantController;
 use App\Http\Controllers\Employee\EmployeeMenuController;
 use App\Http\Controllers\Company\ReportingController;
+use App\Http\Controllers\Company\DeliveryLocationController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\PasswordResetController;
 
@@ -126,6 +128,9 @@ Route::prefix('admin')->group(function () {
     Route::put('/notifications/mark-all-read', [NotificationController::class, 'markAllAsRead']);
     Route::delete('/notifications/{id}', [NotificationController::class, 'destroy']);
     
+    // Statistiques du dashboard
+    Route::get('/dashboard/stats', [DashboardStatsController::class, 'getAdminStats']);
+    
     // Statistiques globales
     Route::get('/statistics', [StatisticsController::class, 'index']);
 });
@@ -135,6 +140,18 @@ Route::prefix('company')->group(function () {
     // Statistiques de dépenses
     Route::get('/reports/restaurant-expenses', [ReportingController::class, 'getRestaurantExpenses']);
     Route::get('/reports/employee-expenses', [ReportingController::class, 'getEmployeeExpenses']);
+    
+    // Statistiques du dashboard
+    Route::get('/dashboard/stats', [DashboardStatsController::class, 'getCompanyStats']);
+    
+    // Gestion des lieux de livraison
+    Route::get('/delivery-locations', [DeliveryLocationController::class, 'index']); // Liste tous les lieux
+    Route::get('/delivery-locations/active', [DeliveryLocationController::class, 'active']); // Lieux actifs pour employés
+    Route::post('/delivery-locations', [DeliveryLocationController::class, 'store']); // Créer un lieu
+    Route::get('/delivery-locations/{id}', [DeliveryLocationController::class, 'show']); // Détails d'un lieu
+    Route::put('/delivery-locations/{id}', [DeliveryLocationController::class, 'update']); // Modifier un lieu
+    Route::delete('/delivery-locations/{id}', [DeliveryLocationController::class, 'destroy']); // Supprimer un lieu
+    Route::patch('/delivery-locations/{id}/toggle', [DeliveryLocationController::class, 'toggleActive']); // Activer/Désactiver
 });
 
 // Routes pour les gestionnaires de restaurant
@@ -147,6 +164,9 @@ Route::prefix('restaurant')->group(function () {
     // Statistiques et rapports
     Route::get('/reports/company-orders', [\App\Http\Controllers\Restaurant\RestaurantReportingController::class, 'getCompanyOrders']);
     Route::get('/reports/employee-orders', [\App\Http\Controllers\Restaurant\RestaurantReportingController::class, 'getEmployeeOrders']);
+    
+    // Statistiques du dashboard
+    Route::get('/dashboard/stats', [DashboardStatsController::class, 'getRestaurantStats']);
 });
 
 // Routes pour les employés
@@ -167,6 +187,9 @@ Route::prefix('employee')->group(function () {
     Route::get('/orders', [OrderController::class, 'index']);
     Route::post('/orders', [OrderController::class, 'store']);
     Route::get('/orders/{id}', [OrderController::class, 'show']);
+    
+    // Statistiques du dashboard
+    Route::get('/dashboard/stats', [DashboardStatsController::class, 'getEmployeeStats']);
 });
 
 // Routes publiques pour l'authentification
