@@ -73,8 +73,43 @@ class OrderManagementController extends Controller
                 // Enrichir les items avec les détails des plats
                 if (isset($order['items'])) {
                     $order['items'] = array_map(function ($item) use ($menuItemsById) {
-                        if (isset($menuItemsById[$item['item_id']])) {
-                            $item['details'] = $menuItemsById[$item['item_id']];
+                        // Priorité 1: Utiliser le nom stocké dans l'item (toujours présent maintenant)
+                        if (isset($item['name'])) {
+                            $item['details'] = [
+                                'name' => $item['name'],
+                                'category' => $item['category'] ?? null,
+                                'description' => $item['description'] ?? null,
+                                'image' => $item['image'] ?? null,
+                            ];
+                        }
+                        // Priorité 2: Chercher dans menu_items
+                        else if (isset($menuItemsById[$item['item_id']])) {
+                            $menuItem = $menuItemsById[$item['item_id']];
+                            $item['details'] = [
+                                'name' => $menuItem['name'],
+                                'category' => $menuItem['category'] ?? null,
+                                'description' => $menuItem['description'] ?? null,
+                                'image' => $menuItem['image'] ?? null,
+                            ];
+                        }
+                        // Priorité 3: Chercher directement dans la BDD
+                        else {
+                            $menuItem = MenuItem::find($item['item_id']);
+                            if ($menuItem) {
+                                $item['details'] = [
+                                    'name' => $menuItem->name,
+                                    'category' => $menuItem->category ?? null,
+                                    'description' => $menuItem->description ?? null,
+                                    'image' => $menuItem->image ?? null,
+                                ];
+                            } else {
+                                // Fallback final
+                                $item['details'] = [
+                                    'name' => 'Article ' . substr($item['item_id'], -4),
+                                    'category' => null,
+                                ];
+                                Log::warning('Menu item not found: ' . $item['item_id']);
+                            }
                         }
                         return $item;
                     }, $order['items']);
