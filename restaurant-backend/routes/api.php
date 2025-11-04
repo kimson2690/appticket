@@ -25,6 +25,7 @@ use App\Http\Controllers\Employee\OrderController;
 use App\Http\Controllers\Employee\EmployeeRestaurantController;
 use App\Http\Controllers\Employee\EmployeeMenuController;
 use App\Http\Controllers\Company\ReportingController;
+use App\Http\Controllers\Company\AccountingReportController;
 use App\Http\Controllers\Company\DeliveryLocationController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\PasswordResetController;
@@ -96,10 +97,13 @@ Route::prefix('admin')->group(function () {
     // Configuration des tickets
     Route::get('/ticket-configurations', [TicketConfigurationController::class, 'index']);
     Route::post('/ticket-configurations', [TicketConfigurationController::class, 'store']);
+    // Routes spécifiques AVANT les routes avec paramètres dynamiques
+    Route::get('/ticket-configurations/debug', [TicketConfigurationController::class, 'debug']);
+    Route::get('/ticket-configurations/active/config', [TicketConfigurationController::class, 'getActiveConfig']);
+    // Routes avec {id} en dernier
     Route::get('/ticket-configurations/{id}', [TicketConfigurationController::class, 'show']);
     Route::put('/ticket-configurations/{id}', [TicketConfigurationController::class, 'update']);
     Route::delete('/ticket-configurations/{id}', [TicketConfigurationController::class, 'destroy']);
-    Route::get('/ticket-configurations/active/config', [TicketConfigurationController::class, 'getActiveConfig']);
     
     // Souches de tickets
     Route::get('/ticket-batches', [TicketBatchController::class, 'index']);
@@ -140,6 +144,10 @@ Route::prefix('company')->group(function () {
     // Statistiques de dépenses
     Route::get('/reports/restaurant-expenses', [ReportingController::class, 'getRestaurantExpenses']);
     Route::get('/reports/employee-expenses', [ReportingController::class, 'getEmployeeExpenses']);
+    
+    // Rapport comptable mensuel
+    Route::get('/reports/accounting', [AccountingReportController::class, 'getAccountingReport']);
+    Route::post('/reports/accounting/export', [AccountingReportController::class, 'exportAccountingReport']);
     
     // Statistiques du dashboard
     Route::get('/dashboard/stats', [DashboardStatsController::class, 'getCompanyStats']);

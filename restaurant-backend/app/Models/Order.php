@@ -4,65 +4,47 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Order extends Model
 {
+    protected $table = 'orders';
+    protected $primaryKey = 'id';
+    public $incrementing = false;
+    protected $keyType = 'string';
+    
     protected $fillable = [
-        'user_id',
+        'id',
+        'employee_id',
+        'employee_name',
         'restaurant_id',
-        'company_id',
-        'delivery_location_id',
+        'items', // JSON
         'total_amount',
-        'total_tickets',
+        'ticket_amount_used',
         'status',
-        'validated_at',
-        'delivered_at',
+        'delivery_address',
+        'notes',
+        'confirmed_by',
+        'confirmed_at',
+        'rejected_by',
+        'rejected_at',
+        'rejection_reason'
     ];
 
     protected $casts = [
-        'validated_at' => 'datetime',
-        'delivered_at' => 'datetime',
+        'items' => 'array',
         'total_amount' => 'decimal:2',
+        'ticket_amount_used' => 'decimal:2',
+        'confirmed_at' => 'datetime',
+        'rejected_at' => 'datetime'
     ];
 
-    /**
-     * Relation avec User (employé qui passe la commande)
-     */
-    public function user(): BelongsTo
+    public function employee(): BelongsTo
     {
-        return $this->belongsTo(User::class);
+        return $this->belongsTo(Employee::class, 'employee_id', 'id');
     }
 
-    /**
-     * Relation avec Restaurant
-     */
     public function restaurant(): BelongsTo
     {
-        return $this->belongsTo(Restaurant::class);
-    }
-
-    /**
-     * Relation avec Company
-     */
-    public function company(): BelongsTo
-    {
-        return $this->belongsTo(Company::class);
-    }
-
-    /**
-     * Relation avec DeliveryLocation
-     */
-    public function deliveryLocation(): BelongsTo
-    {
-        return $this->belongsTo(DeliveryLocation::class);
-    }
-
-    /**
-     * Relation avec OrderItems
-     */
-    public function items(): HasMany
-    {
-        return $this->hasMany(OrderItem::class);
+        return $this->belongsTo(Restaurant::class, 'restaurant_id', 'id');
     }
 }

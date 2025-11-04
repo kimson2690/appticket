@@ -97,13 +97,13 @@ const UserTicketManagement: React.FC = () => {
   };
 
   const handleBulkAssign = () => {
-    const defaultConfig = configurations.find(c => c.is_active);
+    const defaultConfig = configurations.find(c => c.status === 'active');
     setFormData({
       tickets_count: 20,
       batch_id: '',
       config_id: defaultConfig?.id || '',
-      ticket_value: defaultConfig?.ticket_value || 500,
-      validity_days: defaultConfig?.validity_duration_days || 30,
+      ticket_value: parseFloat(defaultConfig?.ticket_value || '500'),
+      validity_days: defaultConfig?.validity_days || 30,
       amount: 0,
       notes: ''
     });
@@ -327,7 +327,7 @@ const UserTicketManagement: React.FC = () => {
             <div>
               <p className="text-sm font-medium text-gray-600">Solde Total</p>
               <p className="text-2xl font-bold text-gray-900">
-                {activeEmployees.reduce((sum, emp) => sum + emp.ticket_balance, 0)}F
+                {activeEmployees.reduce((sum, emp) => sum + Number(emp.ticket_balance || 0), 0).toLocaleString()}F
               </p>
             </div>
           </div>
@@ -513,7 +513,7 @@ const UserTicketManagement: React.FC = () => {
                       {configurations.length > 0 ? (
                         configurations.map((config) => (
                           <option key={config.id} value={config.ticket_value}>
-                            {config.ticket_value}F - {config.type}
+                            {config.ticket_value}F - {config.company_name}
                           </option>
                         ))
                       ) : (
@@ -650,16 +650,16 @@ const UserTicketManagement: React.FC = () => {
                     setFormData({ 
                       ...formData, 
                       config_id: e.target.value,
-                      ticket_value: selectedConfig?.ticket_value || 500
+                      ticket_value: parseFloat(selectedConfig?.ticket_value || '500')
                     });
                   }}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                   required
                 >
                   <option value="">Sélectionner une configuration</option>
-                  {configurations.filter(c => c.is_active).map((config) => (
+                  {configurations.filter(c => c.status === 'active').map((config) => (
                     <option key={config.id} value={config.id}>
-                      {config.type} - {config.ticket_value}F - {config.validity_duration_days} jours
+                      {config.company_name} - {config.ticket_value}F - {config.validity_days} jours
                     </option>
                   ))}
                 </select>

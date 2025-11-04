@@ -77,6 +77,11 @@ const TicketConfiguration: React.FC = () => {
     }
   };
 
+  // Filtrer les configurations par entreprise
+  const filteredConfigurations = isCompanyManager && currentUser.companyId
+    ? configurations.filter(config => String(config.company_id) === String(currentUser.companyId))
+    : configurations;
+
   const handleCreateConfig = () => {
     setSelectedConfig(null);
     setFormData({
@@ -339,7 +344,7 @@ const TicketConfiguration: React.FC = () => {
             </div>
             <div>
               <p className="text-sm font-medium text-gray-600">Configurations</p>
-              <p className="text-2xl font-bold text-gray-900">{configurations.length}</p>
+              <p className="text-2xl font-bold text-gray-900">{filteredConfigurations.length}</p>
             </div>
           </div>
         </div>
@@ -352,8 +357,8 @@ const TicketConfiguration: React.FC = () => {
             <div>
               <p className="text-sm font-medium text-gray-600">Valeur Moyenne</p>
               <p className="text-2xl font-bold text-gray-900">
-                {configurations.length > 0 
-                  ? Math.round(configurations.reduce((sum, config) => sum + config.ticket_value, 0) / configurations.length)
+                {filteredConfigurations.length > 0 
+                  ? Math.round(filteredConfigurations.reduce((sum, config) => sum + config.ticket_value, 0) / filteredConfigurations.length)
                   : 0
                 }F
               </p>
@@ -369,8 +374,8 @@ const TicketConfiguration: React.FC = () => {
             <div>
               <p className="text-sm font-medium text-gray-600">Durée Moyenne</p>
               <p className="text-2xl font-bold text-gray-900">
-                {configurations.length > 0 
-                  ? Math.round(configurations.reduce((sum, config) => sum + config.validity_duration_days, 0) / configurations.length)
+                {filteredConfigurations.length > 0 
+                  ? Math.round(filteredConfigurations.reduce((sum, config) => sum + config.validity_duration_days, 0) / filteredConfigurations.length)
                   : 0
                 } jours
               </p>
@@ -386,7 +391,7 @@ const TicketConfiguration: React.FC = () => {
             <div>
               <p className="text-sm font-medium text-gray-600">Auto-renouvellement</p>
               <p className="text-2xl font-bold text-gray-900">
-                {configurations.filter(config => config.auto_renewal).length}
+                {filteredConfigurations.filter(config => config.auto_renewal).length}
               </p>
             </div>
           </div>
@@ -400,7 +405,7 @@ const TicketConfiguration: React.FC = () => {
         </div>
         
         <div className="p-6">
-          {configurations.length === 0 ? (
+          {filteredConfigurations.length === 0 ? (
             <div className="text-center py-12">
               <CreditCard className="w-16 h-16 text-gray-300 mx-auto mb-4" />
               <h3 className="text-lg font-medium text-gray-900 mb-2">Aucune configuration</h3>
@@ -414,7 +419,7 @@ const TicketConfiguration: React.FC = () => {
             </div>
           ) : (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {configurations.map((config) => (
+              {filteredConfigurations.map((config) => (
                 <div key={config.id} className="border border-gray-200 rounded-xl p-6 hover:shadow-md transition-shadow">
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex items-center space-x-3">

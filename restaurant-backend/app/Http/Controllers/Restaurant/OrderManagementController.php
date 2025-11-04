@@ -6,19 +6,16 @@ use App\Http\Controllers\Controller;
 use App\Http\Controllers\Admin\NotificationController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Mail;
 use App\Mail\OrderValidated;
 use App\Mail\OrderRejected;
 use App\Models\DeliveryLocation;
+use App\Models\Restaurant;
+use App\Models\MenuItem;
 use App\Services\WhatsAppService;
 
 class OrderManagementController extends Controller
 {
-    private $ordersFile = 'orders.json';
-    private $restaurantsFile = 'restaurants.json';
-    private $employeesFile = 'employees.json';
-    private $menuItemsFile = 'private/menu_items.json';
 
     /**
      * Récupérer les commandes du restaurant
@@ -37,7 +34,7 @@ class OrderManagementController extends Controller
 
             $orders = $this->loadOrders();
             $employees = $this->loadEmployees();
-            $menuItems = $this->loadMenuItems();
+            $menuItems = MenuItem::all()->toArray();
             
             // Charger les lieux de livraison depuis la base de données
             $deliveryLocations = DeliveryLocation::all()->keyBy('id')->toArray();
@@ -107,10 +104,13 @@ class OrderManagementController extends Controller
     {
         try {
             $restaurantId = $request->header('X-User-Restaurant-Id');
-            $userNameRaw = $request->header('X-User-Name');
+            $userId = $request->header('X-User-Id', '0');
             
-            // Nettoyer le nom d'utilisateur dès réception
-            $userName = $this->cleanUtf8Recursively($userNameRaw);
+            // Récupérer le nom depuis la base de données pour éviter les problèmes d'encodage du header
+            $user = \App\Models\User::find($userId);
+            $confirmedBy = $user ? $user->name : 'Gestionnaire';
+            
+            Log::info('Validation commande - User ID: ' . $userId . ' -> Nom depuis BDD: ' . $confirmedBy);
 
             $orders = $this->loadOrders();
             $orderIndex = collect($orders)->search(function ($order) use ($id) {
@@ -130,7 +130,7 @@ class OrderManagementController extends Controller
 
             // Mettre à jour le statut
             $orders[$orderIndex]['status'] = 'confirmed';
-            $orders[$orderIndex]['confirmed_by'] = $userName;
+            $orders[$orderIndex]['confirmed_by'] = $confirmedBy;
             $orders[$orderIndex]['confirmed_at'] = now()->toDateTimeString();
             $orders[$orderIndex]['updated_at'] = now()->toDateTimeString();
 
@@ -139,7 +139,7 @@ class OrderManagementController extends Controller
             // Mettre à jour les souches de tickets pour refléter la consommation
             $this->updateTicketBatchUsage($order['employee_id'], $order['total_amount']);
 
-            Log::info('Commande validée: ' . $id . ' par ' . $userName);
+            Log::info('Commande validée: ' . $id . ' par ' . $confirmedBy);
 
             // Récupérer le nom du restaurant (priorité aux données de la commande)
             $restaurantName = 'Restaurant'; // Valeur par défaut
@@ -167,7 +167,7 @@ class OrderManagementController extends Controller
                     'order_id' => $id,
                     'restaurant_name' => $restaurantName,
                     'total_amount' => $order['total_amount'],
-                    'confirmed_by' => $userName,
+                    'confirmed_by' => $confirmedBy,
                     'confirmed_at' => $orders[$orderIndex]['confirmed_at']
                 ]
             ]);
@@ -239,10 +239,13 @@ class OrderManagementController extends Controller
             ]);
 
             $restaurantId = $request->header('X-User-Restaurant-Id');
-            $userNameRaw = $request->header('X-User-Name');
+            $userId = $request->header('X-User-Id', '0');
             
-            // Nettoyer le nom d'utilisateur dès réception
-            $userName = $this->cleanUtf8Recursively($userNameRaw);
+            // Récupérer le nom depuis la base de données pour éviter les problèmes d'encodage
+            $user = \App\Models\User::find($userId);
+            $rejectedBy = $user ? $user->name : 'Gestionnaire';
+            
+            Log::info('Rejet commande - User ID: ' . $userId . ' -> Nom depuis BDD: ' . $rejectedBy);
 
             $orders = $this->loadOrders();
             $orderIndex = collect($orders)->search(function ($order) use ($id) {
@@ -262,26 +265,24 @@ class OrderManagementController extends Controller
 
             // Mettre à jour le statut
             $orders[$orderIndex]['status'] = 'rejected';
-            $orders[$orderIndex]['rejected_by'] = $userName;
+            $orders[$orderIndex]['rejected_by'] = $rejectedBy;
             $orders[$orderIndex]['rejected_at'] = now()->toDateTimeString();
             $orders[$orderIndex]['rejection_reason'] = $validated['reason'] ?? 'Aucune raison spécifiée';
             $orders[$orderIndex]['updated_at'] = now()->toDateTimeString();
 
             $this->saveOrders($orders);
 
-            // Rembourser l'employé
-            $employees = $this->loadEmployees();
-            $employeeIndex = collect($employees)->search(function ($emp) use ($order) {
-                return $emp['id'] === $order['employee_id'];
-            });
-
-            if ($employeeIndex !== false) {
-                $employees[$employeeIndex]['ticket_balance'] += $order['total_amount'];
-                $this->saveEmployees($employees);
-                Log::info('Remboursement de ' . $order['total_amount'] . 'F à ' . $order['employee_name']);
+            // Rembourser l'employé directement dans MySQL
+            $employee = \App\Models\Employee::find($order['employee_id']);
+            
+            if ($employee) {
+                $employee->increment('ticket_balance', $order['total_amount']);
+                Log::info('Remboursement de ' . $order['total_amount'] . 'F à ' . $employee->name . ' (Nouveau solde: ' . $employee->ticket_balance . 'F)');
+            } else {
+                Log::warning('Employé non trouvé pour remboursement: ' . $order['employee_id']);
             }
 
-            Log::info('Commande rejetée: ' . $id . ' par ' . $userName);
+            Log::info('Commande rejetée: ' . $id . ' par ' . $rejectedBy);
 
             // Récupérer le nom du restaurant (priorité aux données de la commande)
             $restaurantName = 'Restaurant'; // Valeur par défaut
@@ -311,7 +312,7 @@ class OrderManagementController extends Controller
                     'restaurant_name' => $restaurantName,
                     'total_amount' => $order['total_amount'],
                     'rejection_reason' => $rejectionReason,
-                    'rejected_by' => $userName,
+                    'rejected_by' => $rejectedBy,
                     'rejected_at' => $orders[$orderIndex]['rejected_at'],
                     'refunded' => true
                 ]
@@ -379,14 +380,7 @@ class OrderManagementController extends Controller
      */
     private function loadOrders()
     {
-        $filePath = storage_path('app/' . $this->ordersFile);
-        
-        if (!file_exists($filePath)) {
-            return [];
-        }
-
-        $content = file_get_contents($filePath);
-        return json_decode($content, true) ?? [];
+        return \App\Models\Order::all()->toArray();
     }
 
     /**
@@ -394,56 +388,9 @@ class OrderManagementController extends Controller
      */
     private function saveOrders($orders)
     {
-        $filePath = storage_path('app/' . $this->ordersFile);
-        
-        // Nettoyer les caractères UTF-8 invalides
-        $cleanedOrders = $this->cleanUtf8Recursively($orders);
-        
-        $json = json_encode($cleanedOrders, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-        
-        if ($json === false) {
-            Log::error('Erreur encodage JSON commandes: ' . json_last_error_msg());
-            throw new \Exception('Impossible d\'encoder les données en JSON');
+        foreach ($orders as $order) {
+            \App\Models\Order::updateOrCreate(['id' => $order['id']], $order);
         }
-        
-        file_put_contents($filePath, $json);
-    }
-
-    /**
-     * Nettoyer récursivement les caractères UTF-8 invalides
-     */
-    private function cleanUtf8Recursively($data)
-    {
-        if ($data === null) {
-            return null;
-        }
-        
-        if (is_array($data)) {
-            $cleaned = [];
-            foreach ($data as $key => $value) {
-                // Ne pas altérer les clés UTF-8 valides
-                $cleanedKey = $key;
-                if (is_string($key) && !mb_check_encoding($key, 'UTF-8')) {
-                    $cleanedKey = mb_convert_encoding($key, 'UTF-8', 'ISO-8859-1');
-                }
-                $cleaned[$cleanedKey] = $this->cleanUtf8Recursively($value);
-            }
-            return $cleaned;
-        }
-        
-        if (is_string($data)) {
-            // Vérifier si déjà en UTF-8 valide
-            if (mb_check_encoding($data, 'UTF-8')) {
-                // Si déjà UTF-8 valide, retourner tel quel (pas de nettoyage qui pourrait corrompre)
-                return $data;
-            }
-            
-            // Sinon, essayer de convertir en UTF-8 depuis ISO-8859-1 (Latin-1)
-            $cleaned = mb_convert_encoding($data, 'UTF-8', 'ISO-8859-1');
-            return $cleaned;
-        }
-        
-        return $data;
     }
 
     /**
@@ -451,106 +398,95 @@ class OrderManagementController extends Controller
      */
     private function loadEmployees()
     {
-        $filePath = storage_path('app/' . $this->employeesFile);
-        
-        if (!file_exists($filePath)) {
-            return [];
-        }
-
-        $content = file_get_contents($filePath);
-        $employees = json_decode($content, true) ?? [];
-        
-        // Nettoyer les données chargées pour éviter les problèmes d'encodage
-        return $this->cleanUtf8Recursively($employees);
+        return \App\Models\Employee::all()->toArray();
     }
 
     /**
-     * Sauvegarder les employés
+     * Sauvegarder les employés (MySQL gère automatiquement)
      */
     private function saveEmployees($employees)
     {
-        $filePath = storage_path('app/' . $this->employeesFile);
-        
-        // Nettoyer les caractères UTF-8 invalides
-        $cleanedEmployees = $this->cleanUtf8Recursively($employees);
-        
-        $json = json_encode($cleanedEmployees, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-        
-        if ($json === false) {
-            Log::error('Erreur encodage JSON employés: ' . json_last_error_msg());
-            throw new \Exception('Impossible d\'encoder les données en JSON');
-        }
-        
-        file_put_contents($filePath, $json);
+        // Avec MySQL, la sauvegarde est automatique via Eloquent
+        // Cette méthode est conservée pour compatibilité mais ne fait rien
     }
 
     /**
-     * Charger les restaurants
+     * Charger les restaurants (désormais depuis la BDD)
      */
     private function loadRestaurants()
     {
-        $filePath = storage_path('app/' . $this->restaurantsFile);
-        
-        if (!file_exists($filePath)) {
-            return [];
-        }
-
-        $content = file_get_contents($filePath);
-        return json_decode($content, true) ?? [];
+        return Restaurant::all()->toArray();
     }
 
     /**
-     * Charger les plats
+     * Charger les plats (désormais depuis la BDD)
      */
     private function loadMenuItems()
     {
-        $filePath = storage_path('app/' . $this->menuItemsFile);
-        
-        if (!file_exists($filePath)) {
-            return [];
-        }
-
-        $content = file_get_contents($filePath);
-        return json_decode($content, true) ?? [];
+        return MenuItem::all()->toArray();
     }
 
     /**
-     * Mettre à jour l'utilisation des souches de tickets
+     * Mettre à jour l'utilisation des tickets dans les souches (MySQL)
      */
     private function updateTicketBatchUsage($employeeId, $amount)
     {
-        $batchesFile = storage_path('app/ticket_batches.json');
+        // Trouver la première souche active de l'employé
+        $batch = \App\Models\TicketBatch::where('employee_id', $employeeId)
+            ->where('status', 'active')
+            ->orderBy('created_at', 'asc')
+            ->first();
         
-        if (!file_exists($batchesFile)) {
+        if (!$batch) {
             return; // Pas de souches à mettre à jour
         }
 
-        $batches = json_decode(file_get_contents($batchesFile), true) ?? [];
+        // Calculer combien de tickets ont été utilisés
+        $ticketValue = $batch->ticket_value ?? 500;
+        $ticketsUsed = intval($amount / $ticketValue);
         
-        // Trouver les souches de l'employé et les mettre à jour
-        foreach ($batches as &$batch) {
-            if (isset($batch['employee_id']) && $batch['employee_id'] === $employeeId) {
-                // Calculer combien de tickets ont été utilisés (basé sur la valeur)
-                $ticketValue = $batch['ticket_value'] ?? 500;
-                $ticketsUsed = intval($amount / $ticketValue);
-                
-                // Mettre à jour les compteurs
-                $batch['used_tickets'] = ($batch['used_tickets'] ?? 0) + $ticketsUsed;
-                $batch['remaining_tickets'] = max(0, ($batch['remaining_tickets'] ?? $batch['total_tickets']) - $ticketsUsed);
-                $batch['updated_at'] = now()->toDateTimeString();
-                
-                Log::info("Souche {$batch['id']} mise à jour: +{$ticketsUsed} tickets utilisés");
-                break; // On met à jour uniquement la première souche de l'employé
-            }
+        // Mettre à jour les compteurs
+        $batch->increment('used_tickets', $ticketsUsed);
+        $batch->decrement('remaining_tickets', $ticketsUsed);
+        
+        Log::info("Souche {$batch->id} mise à jour: +{$ticketsUsed} tickets utilisés");
+    }
+
+    /**
+     * Nettoyer le nom d'utilisateur pour éviter les problèmes d'encodage
+     */
+    private function cleanUserName($name)
+    {
+        // Utiliser iconv pour translittérer les caractères accentués en ASCII
+        $cleanName = iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $name);
+        
+        // Si iconv échoue, essayer une méthode de remplacement manuelle
+        if ($cleanName === false || empty($cleanName)) {
+            $transliterations = [
+                'é' => 'e', 'è' => 'e', 'ê' => 'e', 'ë' => 'e',
+                'à' => 'a', 'â' => 'a', 'ä' => 'a',
+                'ô' => 'o', 'ö' => 'o',
+                'û' => 'u', 'ù' => 'u', 'ü' => 'u',
+                'î' => 'i', 'ï' => 'i',
+                'ç' => 'c',
+                'É' => 'E', 'È' => 'E', 'Ê' => 'E', 'Ë' => 'E',
+                'À' => 'A', 'Â' => 'A', 'Ä' => 'A',
+                'Ô' => 'O', 'Ö' => 'O',
+                'Û' => 'U', 'Ù' => 'U', 'Ü' => 'U',
+                'Î' => 'I', 'Ï' => 'I',
+                'Ç' => 'C',
+            ];
+            $cleanName = strtr($name, $transliterations);
         }
         
-        // Sauvegarder
-        $cleanedBatches = $this->cleanUtf8Recursively($batches);
-        $json = json_encode($cleanedBatches, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        // Enlever tous les caractères non-ASCII restants
+        $cleanName = preg_replace('/[^\x20-\x7E]/', '', $cleanName);
         
-        if ($json !== false) {
-            file_put_contents($batchesFile, $json);
-            Log::info('Souches de tickets mises à jour après validation commande');
+        // Si le nettoyage échoue complètement, retourner un nom par défaut
+        if (empty($cleanName)) {
+            return 'Gestionnaire';
         }
+        
+        return trim($cleanName);
     }
 }

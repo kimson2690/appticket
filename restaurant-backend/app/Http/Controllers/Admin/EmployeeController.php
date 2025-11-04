@@ -22,46 +22,30 @@ class EmployeeController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
-        // Stockage persistant en fichier
-        $filePath = storage_path('app/employees.json');
+        // Utiliser MySQL via Eloquent
+        $userRole = $request->header('X-User-Role');
+        $userCompanyId = $request->header('X-User-Company-Id');
         
-        if (file_exists($filePath)) {
-            $employees = json_decode(file_get_contents($filePath), true) ?? [];
-            
-            // Corriger les données incohérentes (company_name basé sur company_id)
-            $corrected = false;
-            foreach ($employees as &$employee) {
-                $correctCompanyName = $this->getCompanyName($employee['company_id'] ?? '');
-                if ($employee['company_name'] !== $correctCompanyName) {
-                    $employee['company_name'] = $correctCompanyName;
-                    $corrected = true;
-                }
-            }
-            
-            // Sauvegarder si des corrections ont été apportées
-            if ($corrected) {
-                file_put_contents($filePath, json_encode($employees, JSON_PRETTY_PRINT));
-                Log::info('Données employés corrigées pour cohérence des entreprises');
-            }
-            
-            // Filtrage par rôle
-            $userRole = $request->header('X-User-Role');
-            $userCompanyId = $request->header('X-User-Company-Id');
-            
-            Log::info('EmployeeController@index - Rôle: ' . $userRole . ', Company ID: ' . $userCompanyId);
-            
-            // Si c'est un gestionnaire d'entreprise, filtrer par son entreprise uniquement
-            if ($userRole === 'Gestionnaire Entreprise' && $userCompanyId) {
-                $employees = array_filter($employees, function($employee) use ($userCompanyId) {
-                    return isset($employee['company_id']) && $employee['company_id'] === $userCompanyId;
-                });
-                Log::info('Employés filtrés pour gestionnaire: ' . count($employees));
-            }
-            // Si c'est un administrateur, il voit TOUS les employés (pas de filtre)
-            
-        } else {
-            $employees = [];
+        // Si le rôle est un objet JSON, extraire le nom
+        if ($userRole && is_string($userRole) && (str_starts_with($userRole, '{') || str_starts_with($userRole, '['))) {
+            $roleData = json_decode($userRole, true);
+            $userRole = $roleData['name'] ?? $userRole;
         }
+        
+        Log::info('EmployeeController@index - Rôle: ' . $userRole . ', Company ID: ' . $userCompanyId);
+        
+        // Query builder
+        $query = \App\Models\Employee::query();
+        
+        // Si gestionnaire d'entreprise, filtrer par son entreprise
+        if ($userRole === 'Gestionnaire Entreprise' && $userCompanyId) {
+            $query->where('company_id', $userCompanyId);
+            Log::info('Employés filtrés pour gestionnaire entreprise ID: ' . $userCompanyId);
+        }
+        
+        $employees = $query->get()->toArray();
+        
+        Log::info('Nombre d\'employés récupérés: ' . count($employees));
 
         return response()->json([
             'success' => true,
@@ -70,18 +54,12 @@ class EmployeeController extends Controller
     }
 
     /**
-     * Get company name by ID
+     * Get company name by ID from database
      */
     private function getCompanyName(string $companyId): string
     {
-        switch ($companyId) {
-            case '1':
-                return 'TechCorp Solutions';
-            case '2':
-                return 'Burkina Tech SARL';
-            default:
-                return 'Non assigné';
-        }
+        $company = \App\Models\Company::find($companyId);
+        return $company ? $company->name : 'Non assigné';
     }
 
     /**
@@ -103,8 +81,20 @@ class EmployeeController extends Controller
             $position = $request->input('position', '');
             $employee_number = $request->input('employee_number', '');
             $ticket_balance = $request->input('ticket_balance', 0);
-            $status = $request->input('status', 'active');
+            $status = $request->input('status', 'pending'); // Par défaut 'pending' pour auto-inscription
             $hire_date = $request->input('hire_date', null);
+            
+            // Nettoyer et valider la date d'embauche
+            if ($hire_date) {
+                // Convertir au format Y-m-d si ce n'est pas déjà le cas
+                try {
+                    $dateObj = new \DateTime($hire_date);
+                    $hire_date = $dateObj->format('Y-m-d');
+                } catch (\Exception $e) {
+                    Log::warning('Format de date invalide pour hire_date: ' . $hire_date);
+                    $hire_date = null;
+                }
+            }
             
             if (!$name || !$email || !$password) {
                 return response()->json([
@@ -113,19 +103,11 @@ class EmployeeController extends Controller
                 ], 422);
             }
 
-            // Charger les employés existants
-            $filePath = storage_path('app/employees.json');
-            $employees = [];
-            
-            if (file_exists($filePath)) {
-                $employees = json_decode(file_get_contents($filePath), true) ?? [];
-            }
-
-            // Récupérer le nom de l'entreprise basé sur le company_id
+            // Récupérer le nom de l'entreprise
             $companyName = $this->getCompanyName($company_id);
 
-            // Créer le nouvel employé
-            $employeeData = [
+            // Créer l'employé en MySQL
+            $employee = \App\Models\Employee::create([
                 'id' => 'emp_' . time() . '_' . rand(1000, 9999),
                 'name' => $name,
                 'email' => $email,
@@ -139,17 +121,11 @@ class EmployeeController extends Controller
                 'ticket_balance' => (int) $ticket_balance,
                 'status' => $status,
                 'hire_date' => $hire_date,
-                'created_at' => date('Y-m-d'),
-                'updated_at' => date('Y-m-d'),
-            ];
+            ]);
 
-            // Ajouter à la liste
-            $employees[] = $employeeData;
+            $employeeData = $employee->toArray();
 
-            // Sauvegarder dans le fichier
-            file_put_contents($filePath, json_encode($employees, JSON_PRETTY_PRINT));
-
-            Log::info('Employé sauvegardé dans le fichier:', $employeeData);
+            Log::info('Employé sauvegardé dans MySQL:', $employeeData);
 
             // Créer une notification pour le gestionnaire si l'employé est en attente
             if ($status === 'pending') {
@@ -218,16 +194,8 @@ class EmployeeController extends Controller
     public function show(string $id): JsonResponse
     {
         try {
-            // Charger les employés depuis le fichier
-            $filePath = storage_path('app/employees.json');
-            $employees = [];
-            
-            if (file_exists($filePath)) {
-                $employees = json_decode(file_get_contents($filePath), true) ?? [];
-            }
-
-            // Trouver l'employé par ID
-            $employee = collect($employees)->firstWhere('id', $id);
+            // Trouver l'employé en MySQL
+            $employee = \App\Models\Employee::find($id);
 
             if (!$employee) {
                 return response()->json([
@@ -238,7 +206,7 @@ class EmployeeController extends Controller
 
             return response()->json([
                 'success' => true,
-                'data' => $employee
+                'data' => $employee->toArray()
             ]);
             
         } catch (\Exception $e) {
@@ -260,88 +228,80 @@ class EmployeeController extends Controller
             Log::info('EmployeeController@update - Début pour ID: ' . $id);
             Log::info('Données reçues:', $request->all());
             
-            // Charger les employés depuis le fichier
-            $filePath = storage_path('app/employees.json');
-            $employees = [];
-            
-            if (file_exists($filePath)) {
-                $employees = json_decode(file_get_contents($filePath), true) ?? [];
-            }
+            // Trouver l'employé en MySQL
+            $employee = \App\Models\Employee::find($id);
 
-            // Trouver l'index de l'employé
-            $employeeIndex = collect($employees)->search(function ($employee) use ($id) {
-                return $employee['id'] === $id;
-            });
-
-            if ($employeeIndex === false) {
+            if (!$employee) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Employé non trouvé'
                 ], 404);
             }
 
-            // Récupérer les nouvelles données
-            $name = $request->input('name', $employees[$employeeIndex]['name']);
-            $email = $request->input('email', $employees[$employeeIndex]['email']);
-            $phone = $request->input('phone', $employees[$employeeIndex]['phone']);
-            $company_id = $request->input('company_id', $employees[$employeeIndex]['company_id']);
-            $department = $request->input('department', $employees[$employeeIndex]['department']);
-            $position = $request->input('position', $employees[$employeeIndex]['position']);
-            $employee_number = $request->input('employee_number', $employees[$employeeIndex]['employee_number'] ?? '');
-            $ticket_balance = $request->input('ticket_balance', $employees[$employeeIndex]['ticket_balance'] ?? 0);
-            $status = $request->input('status', $employees[$employeeIndex]['status']);
-            $hire_date = $request->input('hire_date', $employees[$employeeIndex]['hire_date'] ?? null);
-
-            // Récupérer le nom de l'entreprise basé sur le company_id
-            $companyName = $this->getCompanyName($company_id);
-
-            Log::info('Mise à jour avec nouvelle entreprise:', [
-                'company_id' => $company_id,
-                'company_name' => $companyName
-            ]);
-
             // Préparer les données de mise à jour
-            $updateData = [
-                'name' => $name,
-                'email' => $email,
-                'phone' => $phone,
-                'company_id' => $company_id,
-                'company_name' => $companyName,
-                'department' => $department,
-                'position' => $position,
-                'employee_number' => $employee_number,
-                'ticket_balance' => (int) $ticket_balance,
-                'status' => $status,
-                'hire_date' => $hire_date,
-                'updated_at' => date('Y-m-d H:i:s'),
-            ];
+            $updateData = [];
+            if ($request->filled('name')) $updateData['name'] = $request->input('name');
+            if ($request->filled('email')) $updateData['email'] = $request->input('email');
+            if ($request->filled('phone')) $updateData['phone'] = $request->input('phone');
+            if ($request->filled('department')) $updateData['department'] = $request->input('department');
+            if ($request->filled('position')) $updateData['position'] = $request->input('position');
+            if ($request->filled('employee_number')) $updateData['employee_number'] = $request->input('employee_number');
+            if ($request->filled('ticket_balance')) $updateData['ticket_balance'] = (int) $request->input('ticket_balance');
+            if ($request->filled('status')) $updateData['status'] = $request->input('status');
+            
+            // Nettoyer et valider la date d'embauche
+            if ($request->filled('hire_date')) {
+                $hire_date = $request->input('hire_date');
+                if ($hire_date) {
+                    try {
+                        $dateObj = new \DateTime($hire_date);
+                        $updateData['hire_date'] = $dateObj->format('Y-m-d');
+                    } catch (\Exception $e) {
+                        Log::warning('Format de date invalide pour hire_date: ' . $hire_date);
+                        $updateData['hire_date'] = null;
+                    }
+                } else {
+                    $updateData['hire_date'] = null;
+                }
+            }
+            
+            // Mettre à jour company_id et company_name si fourni
+            if ($request->filled('company_id')) {
+                $company_id = $request->input('company_id');
+                $updateData['company_id'] = $company_id;
+                $updateData['company_name'] = $this->getCompanyName($company_id);
+                
+                Log::info('Mise à jour avec nouvelle entreprise:', [
+                    'company_id' => $company_id,
+                    'company_name' => $updateData['company_name']
+                ]);
+            }
 
-            // Si un nouveau mot de passe est fourni, le hasher et l'ajouter
+            // Si un nouveau mot de passe est fourni
             if ($request->filled('password')) {
                 $updateData['password'] = Hash::make($request->input('password'));
                 Log::info('Nouveau mot de passe hashé pour l\'employé');
             }
 
-            // Détecter si c'est une approbation (pending → active)
-            $oldStatus = $employees[$employeeIndex]['status'];
-            $isApproval = ($oldStatus === 'pending' && $status === 'active');
+            // Détecter approbation/rejet
+            $oldStatus = $employee->status;
+            $newStatus = $updateData['status'] ?? $oldStatus;
+            $isApproval = ($oldStatus === 'pending' && $newStatus === 'active');
+            $isRejection = ($oldStatus === 'pending' && $newStatus === 'rejected');
+
+            // Mettre à jour en MySQL
+            $employee->update($updateData);
+
+            Log::info('Employé mis à jour en MySQL:', $employee->toArray());
             
-            // Détecter si c'est un rejet (pending → rejected ou suppression)
-            $isRejection = ($oldStatus === 'pending' && $status === 'rejected');
-
-            // Mettre à jour l'employé
-            $employees[$employeeIndex] = array_merge($employees[$employeeIndex], $updateData);
-
-            // Sauvegarder dans le fichier
-            file_put_contents($filePath, json_encode($employees, JSON_PRETTY_PRINT));
-
-            Log::info('Employé mis à jour:', $employees[$employeeIndex]);
+            // Rafraîchir pour obtenir les dernières données
+            $employee->refresh();
             
             // Envoyer email d'approbation si nécessaire
             if ($isApproval) {
                 try {
-                    Mail::to($email)->send(new EmployeeApproved($name, $companyName));
-                    Log::info("Email d'approbation envoyé à: $email");
+                    Mail::to($employee->email)->send(new EmployeeApproved($employee->name, $employee->company_name));
+                    Log::info("Email d'approbation envoyé à: " . $employee->email);
                 } catch (\Exception $e) {
                     Log::error("Erreur envoi email approbation: " . $e->getMessage());
                 }
@@ -350,8 +310,8 @@ class EmployeeController extends Controller
             // Envoyer email de rejet si nécessaire
             if ($isRejection) {
                 try {
-                    Mail::to($email)->send(new EmployeeRejected($name, $companyName));
-                    Log::info("Email de rejet envoyé à: $email");
+                    Mail::to($employee->email)->send(new EmployeeRejected($employee->name, $employee->company_name));
+                    Log::info("Email de rejet envoyé à: " . $employee->email);
                 } catch (\Exception $e) {
                     Log::error("Erreur envoi email rejet: " . $e->getMessage());
                 }
@@ -359,7 +319,7 @@ class EmployeeController extends Controller
 
             return response()->json([
                 'success' => true,
-                'data' => $employees[$employeeIndex],
+                'data' => $employee->toArray(),
                 'message' => 'Employé mis à jour avec succès'
             ]);
             
@@ -381,25 +341,10 @@ class EmployeeController extends Controller
         try {
             Log::info('EmployeeController@destroy - Suppression ID: ' . $id);
             
-            // Charger les employés depuis le fichier
-            $filePath = storage_path('app/employees.json');
-            $employees = [];
-            
-            if (file_exists($filePath)) {
-                $employees = json_decode(file_get_contents($filePath), true) ?? [];
-            }
+            // Trouver et supprimer l'employé en MySQL
+            $employee = \App\Models\Employee::find($id);
 
-            Log::info('Employés avant suppression:', ['count' => count($employees)]);
-
-            // Filtrer pour supprimer l'employé
-            $originalCount = count($employees);
-            $employees = array_values(array_filter($employees, function ($employee) use ($id) {
-                return $employee['id'] !== $id;
-            }));
-
-            Log::info('Employés après suppression:', ['count' => count($employees), 'original' => $originalCount]);
-
-            if (count($employees) === $originalCount) {
+            if (!$employee) {
                 Log::warning('Employé non trouvé pour suppression: ' . $id);
                 return response()->json([
                     'success' => false,
@@ -407,8 +352,7 @@ class EmployeeController extends Controller
                 ], 404);
             }
 
-            // Sauvegarder dans le fichier
-            file_put_contents($filePath, json_encode($employees, JSON_PRETTY_PRINT));
+            $employee->delete();
 
             Log::info('Employé supprimé avec succès: ' . $id);
 
@@ -434,14 +378,9 @@ class EmployeeController extends Controller
     public function approve(Request $request, string $id): JsonResponse
     {
         try {
-            $filePath = storage_path('app/employees.json');
-            $employees = json_decode(file_get_contents($filePath), true) ?? [];
+            $employee = \App\Models\Employee::find($id);
 
-            $employeeIndex = collect($employees)->search(function ($emp) use ($id) {
-                return $emp['id'] === $id;
-            });
-
-            if ($employeeIndex === false) {
+            if (!$employee) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Employé non trouvé'
@@ -449,30 +388,25 @@ class EmployeeController extends Controller
             }
 
             // Mettre à jour le statut
-            $employees[$employeeIndex]['status'] = 'active';
-            $employees[$employeeIndex]['updated_at'] = date('Y-m-d H:i:s');
-
-            file_put_contents($filePath, json_encode($employees, JSON_PRETTY_PRINT));
-
-            $employee = $employees[$employeeIndex];
+            $employee->update(['status' => 'active']);
 
             // Créer une notification pour l'employé
             NotificationController::createNotification([
                 'type' => 'success',
                 'title' => 'Compte activé !',
-                'message' => "Votre demande d'inscription a été approuvée. Bienvenue chez {$employee['company_name']} !",
-                'user_id' => $employee['id'],
+                'message' => "Votre demande d'inscription a été approuvée. Bienvenue chez {$employee->company_name} !",
+                'user_id' => $employee->id,
                 'action_url' => '/login',
                 'metadata' => [
-                    'company_name' => $employee['company_name'],
+                    'company_name' => $employee->company_name,
                     'approved_at' => date('Y-m-d H:i:s')
                 ]
             ]);
             
             // Envoyer email d'approbation à l'employé
             try {
-                Mail::to($employee['email'])->send(new EmployeeApproved($employee['name'], $employee['company_name']));
-                Log::info("Email d'approbation envoyé à: {$employee['email']}");
+                Mail::to($employee->email)->send(new EmployeeApproved($employee->name, $employee->company_name));
+                Log::info("Email d'approbation envoyé à: {$employee->email}");
             } catch (\Exception $e) {
                 Log::error("Erreur envoi email approbation: " . $e->getMessage());
             }
@@ -480,7 +414,7 @@ class EmployeeController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Employé approuvé avec succès',
-                'data' => $employee
+                'data' => $employee->toArray()
             ]);
 
         } catch (\Exception $e) {
@@ -499,48 +433,38 @@ class EmployeeController extends Controller
     public function reject(Request $request, string $id): JsonResponse
     {
         try {
-            $filePath = storage_path('app/employees.json');
-            $employees = json_decode(file_get_contents($filePath), true) ?? [];
+            // Trouver l'employé en MySQL
+            $employee = \App\Models\Employee::find($id);
 
-            $employeeIndex = collect($employees)->search(function ($emp) use ($id) {
-                return $emp['id'] === $id;
-            });
-
-            if ($employeeIndex === false) {
+            if (!$employee) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Employé non trouvé'
                 ], 404);
             }
 
-            $employee = $employees[$employeeIndex];
-
             // Créer une notification pour l'employé avant suppression
             NotificationController::createNotification([
                 'type' => 'warning',
                 'title' => 'Demande non approuvée',
-                'message' => "Votre demande d'inscription chez {$employee['company_name']} n'a pas été approuvée. Contactez votre gestionnaire pour plus d'informations.",
-                'user_id' => $employee['id'],
+                'message' => "Votre demande d'inscription chez {$employee->company_name} n'a pas été approuvée. Contactez votre gestionnaire pour plus d'informations.",
+                'user_id' => $employee->id,
                 'metadata' => [
-                    'company_name' => $employee['company_name'],
+                    'company_name' => $employee->company_name,
                     'rejected_at' => date('Y-m-d H:i:s')
                 ]
             ]);
             
             // Envoyer email de rejet à l'employé
             try {
-                Mail::to($employee['email'])->send(new EmployeeRejected($employee['name'], $employee['company_name']));
-                Log::info("Email de rejet envoyé à: {$employee['email']}");
+                Mail::to($employee->email)->send(new EmployeeRejected($employee->name, $employee->company_name));
+                Log::info("Email de rejet envoyé à: {$employee->email}");
             } catch (\Exception $e) {
                 Log::error("Erreur envoi email rejet: " . $e->getMessage());
             }
 
             // Supprimer l'employé rejeté
-            $employees = array_values(array_filter($employees, function ($emp) use ($id) {
-                return $emp['id'] !== $id;
-            }));
-
-            file_put_contents($filePath, json_encode($employees, JSON_PRETTY_PRINT));
+            $employee->delete();
 
             return response()->json([
                 'success' => true,

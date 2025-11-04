@@ -70,59 +70,54 @@ class AuthController extends Controller
                 ]);
             }
 
-            // Si pas trouvé dans users, chercher dans employees.json
-            Log::info('Utilisateur non trouvé dans users, recherche dans employees.json');
-            $employeesFile = storage_path('app/employees.json');
+            // Si pas trouvé dans users, chercher dans employees (MySQL)
+            Log::info('Utilisateur non trouvé dans users, recherche dans employees MySQL');
             
-            if (file_exists($employeesFile)) {
-                $employees = json_decode(file_get_contents($employeesFile), true) ?? [];
+            $employee = \App\Models\Employee::where('email', $credentials['email'])->first();
+            
+            if ($employee) {
+                Log::info('Employé trouvé dans MySQL');
                 
-                foreach ($employees as $employee) {
-                    if ($employee['email'] === $credentials['email']) {
-                        Log::info('Employé trouvé dans employees.json');
-                        
-                        // Vérifier le mot de passe
-                        if (!Hash::check($credentials['password'], $employee['password'])) {
-                            return response()->json([
-                                'success' => false,
-                                'message' => 'Identifiants incorrects'
-                            ], 401);
-                        }
-
-                        // Vérifier le statut
-                        if ($employee['status'] !== 'active') {
-                            $message = $employee['status'] === 'pending' 
-                                ? 'Votre demande est en attente de validation par le gestionnaire.'
-                                : 'Compte désactivé. Contactez l\'administrateur.';
-                            
-                            return response()->json([
-                                'success' => false,
-                                'message' => $message
-                            ], 403);
-                        }
-
-                        // Générer un token
-                        $token = 'token_' . $employee['id'] . '_' . time();
-
-                        return response()->json([
-                            'success' => true,
-                            'user' => [
-                                'id' => $employee['id'],
-                                'name' => $employee['name'],
-                                'email' => $employee['email'],
-                                'phone' => $employee['phone'] ?? null,
-                                'role' => 'Utilisateur',
-                                'role_id' => null,
-                                'company_id' => $employee['company_id'] ?? null,
-                                'company_name' => $employee['company_name'] ?? null,
-                                'restaurant_id' => null,
-                                'restaurant_name' => null,
-                                'status' => $employee['status']
-                            ],
-                            'token' => $token
-                        ]);
-                    }
+                // Vérifier le mot de passe
+                if ($employee->password && !Hash::check($credentials['password'], $employee->password)) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Identifiants incorrects'
+                    ], 401);
                 }
+
+                // Vérifier le statut
+                if ($employee->status !== 'active') {
+                    $message = $employee->status === 'pending' 
+                        ? 'Votre demande est en attente de validation par le gestionnaire.'
+                        : 'Compte désactivé. Contactez l\'administrateur.';
+                    
+                    return response()->json([
+                        'success' => false,
+                        'message' => $message
+                    ], 403);
+                }
+
+                // Générer un token
+                $token = 'token_' . $employee->id . '_' . time();
+
+                return response()->json([
+                    'success' => true,
+                    'user' => [
+                        'id' => $employee->id,
+                        'name' => $employee->name,
+                        'email' => $employee->email,
+                        'phone' => $employee->phone ?? null,
+                        'role' => 'Utilisateur',
+                        'role_id' => null,
+                        'company_id' => $employee->company_id ?? null,
+                        'company_name' => $employee->company_name ?? null,
+                        'restaurant_id' => null,
+                        'restaurant_name' => null,
+                        'status' => $employee->status
+                    ],
+                    'token' => $token
+                ]);
             }
 
             // Aucun utilisateur trouvé

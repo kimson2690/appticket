@@ -127,13 +127,7 @@ class StatisticsController extends Controller
      */
     private function getEmployeesFromFile(): array
     {
-        $filePath = storage_path('app/employees.json');
-        
-        if (file_exists($filePath)) {
-            return json_decode(file_get_contents($filePath), true) ?? [];
-        }
-        
-        return [];
+        return \App\Models\Employee::all()->toArray();
     }
 
     /**

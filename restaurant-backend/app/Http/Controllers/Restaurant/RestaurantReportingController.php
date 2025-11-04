@@ -300,14 +300,7 @@ class RestaurantReportingController extends Controller
      */
     private function loadOrders()
     {
-        $filePath = storage_path('app/' . $this->ordersFile);
-        
-        if (!file_exists($filePath)) {
-            return [];
-        }
-
-        $content = file_get_contents($filePath);
-        return json_decode($content, true) ?? [];
+        return \App\Models\Order::all()->toArray();
     }
 
     /**
@@ -315,14 +308,7 @@ class RestaurantReportingController extends Controller
      */
     private function loadEmployees()
     {
-        $filePath = storage_path('app/' . $this->employeesFile);
-        
-        if (!file_exists($filePath)) {
-            return [];
-        }
-
-        $content = file_get_contents($filePath);
-        return json_decode($content, true) ?? [];
+        return \App\Models\Employee::all()->toArray();
     }
 
     /**

@@ -98,8 +98,8 @@ const TicketBatchManagement: React.FC = () => {
         config_id: formData.config_id,
         created_by: currentUser.userName,
         total_tickets: formData.total_tickets,
-        ticket_value: selectedConfig.ticket_value,
-        type: selectedConfig.type,
+        ticket_value: parseFloat(selectedConfig.ticket_value),
+        type: 'standard' as const, // Backend n'utilise plus ce champ
         validity_start: formData.validity_start,
         validity_end: formData.validity_end
       };
@@ -714,7 +714,7 @@ const TicketBatchManagement: React.FC = () => {
                     const startDate = new Date(formData.validity_start);
                     const endDate = new Date(startDate);
                     if (selectedConfig) {
-                      endDate.setDate(startDate.getDate() + selectedConfig.validity_duration_days);
+                      endDate.setDate(startDate.getDate() + selectedConfig.validity_days);
                     }
                     setFormData({ 
                       ...formData, 
@@ -728,7 +728,7 @@ const TicketBatchManagement: React.FC = () => {
                   <option value="">Sélectionnez une configuration</option>
                   {configurations.map((config) => (
                     <option key={config.id} value={config.id}>
-                      {config.type} - {config.ticket_value}F - {config.validity_duration_days} jours
+                      {config.company_name} - {config.ticket_value}F - {config.validity_days} jours
                     </option>
                   ))}
                 </select>
@@ -771,7 +771,7 @@ const TicketBatchManagement: React.FC = () => {
                         const startDate = new Date(e.target.value);
                         const endDate = new Date(startDate);
                         if (selectedConfig) {
-                          endDate.setDate(startDate.getDate() + selectedConfig.validity_duration_days);
+                          endDate.setDate(startDate.getDate() + selectedConfig.validity_days);
                         }
                         setFormData({ 
                           ...formData, 

@@ -8,18 +8,6 @@ use Illuminate\Support\Facades\Log;
 
 class NotificationController extends Controller
 {
-    private $notificationsFile;
-
-    public function __construct()
-    {
-        $this->notificationsFile = storage_path('app/notifications.json');
-        
-        // Créer le fichier s'il n'existe pas
-        if (!file_exists($this->notificationsFile)) {
-            file_put_contents($this->notificationsFile, json_encode([]));
-        }
-    }
-
     /**
      * Récupérer les notifications d'un utilisateur
      */
@@ -31,48 +19,35 @@ class NotificationController extends Controller
             $userCompanyId = $request->header('X-User-Company-Id');
             $userRestaurantId = $request->header('X-User-Restaurant-Id');
 
-            Log::info('NotificationController@index - Récupération des notifications pour:', [
+            Log::info('NotificationController@index - Récupération depuis MySQL:', [
                 'user_id' => $userId,
-                'role' => $userRole,
-                'company_id' => $userCompanyId,
-                'restaurant_id' => $userRestaurantId
+                'role' => $userRole
             ]);
 
-            $notifications = $this->loadNotifications();
+            // Query MySQL avec filtres
+            $query = \App\Models\Notification::query();
 
-            // Filtrer les notifications selon le rôle et l'utilisateur
-            $userNotifications = array_filter($notifications, function($notif) use ($userId, $userRole, $userCompanyId, $userRestaurantId) {
-                // Notification directement pour cet utilisateur
-                if (isset($notif['user_id']) && $notif['user_id'] === $userId) {
-                    return true;
-                }
-
-                // Notification pour un rôle spécifique
-                if (isset($notif['role']) && $notif['role'] === $userRole) {
-                    // Si notification pour gestionnaire entreprise, vérifier l'entreprise
-                    if ($userRole === 'Gestionnaire Entreprise' && isset($notif['company_id'])) {
-                        return $notif['company_id'] === $userCompanyId;
-                    }
-                    
-                    // Si notification pour gestionnaire restaurant, vérifier le restaurant
-                    if ($userRole === 'Gestionnaire Restaurant' && isset($notif['restaurant_id'])) {
-                        return $notif['restaurant_id'] === $userRestaurantId;
-                    }
-                    
-                    return true;
-                }
-
-                return false;
+            // Notification directement pour cet utilisateur OU pour son rôle
+            $query->where(function($q) use ($userId, $userRole, $userCompanyId, $userRestaurantId) {
+                $q->where('user_id', $userId)
+                  ->orWhere(function($roleQuery) use ($userRole, $userCompanyId, $userRestaurantId) {
+                      $roleQuery->where('role', $userRole);
+                      
+                      if ($userRole === 'Gestionnaire Entreprise' && $userCompanyId) {
+                          $roleQuery->where('company_id', $userCompanyId);
+                      }
+                      
+                      if ($userRole === 'Gestionnaire Restaurant' && $userRestaurantId) {
+                          $roleQuery->where('restaurant_id', $userRestaurantId);
+                      }
+                  });
             });
 
-            // Trier par date décroissante
-            usort($userNotifications, function($a, $b) {
-                return strtotime($b['created_at']) - strtotime($a['created_at']);
-            });
+            $userNotifications = $query->orderBy('created_at', 'desc')->get()->toArray();
 
             return response()->json([
                 'success' => true,
-                'notifications' => array_values($userNotifications)
+                'notifications' => $userNotifications
             ]);
 
         } catch (\Exception $e) {
@@ -90,26 +65,19 @@ class NotificationController extends Controller
     public function markAsRead(Request $request, $id)
     {
         try {
-            $notifications = $this->loadNotifications();
+            $notification = \App\Models\Notification::find($id);
 
-            $found = false;
-            foreach ($notifications as &$notif) {
-                if ($notif['id'] === $id) {
-                    $notif['read'] = true;
-                    $notif['read_at'] = date('Y-m-d H:i:s');
-                    $found = true;
-                    break;
-                }
-            }
-
-            if (!$found) {
+            if (!$notification) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Notification non trouvée'
                 ], 404);
             }
 
-            $this->saveNotifications($notifications);
+            $notification->update([
+                'read' => true,
+                'read_at' => now()
+            ]);
 
             return response()->json([
                 'success' => true,
@@ -132,18 +100,13 @@ class NotificationController extends Controller
     {
         try {
             $userId = $request->header('X-User-Id');
-            $notifications = $this->loadNotifications();
 
-            $count = 0;
-            foreach ($notifications as &$notif) {
-                if (isset($notif['user_id']) && $notif['user_id'] === $userId && !$notif['read']) {
-                    $notif['read'] = true;
-                    $notif['read_at'] = date('Y-m-d H:i:s');
-                    $count++;
-                }
-            }
-
-            $this->saveNotifications($notifications);
+            $count = \App\Models\Notification::where('user_id', $userId)
+                ->where('read', false)
+                ->update([
+                    'read' => true,
+                    'read_at' => now()
+                ]);
 
             return response()->json([
                 'success' => true,
@@ -166,20 +129,16 @@ class NotificationController extends Controller
     public function destroy($id)
     {
         try {
-            $notifications = $this->loadNotifications();
+            $notification = \App\Models\Notification::find($id);
             
-            $filtered = array_filter($notifications, function($notif) use ($id) {
-                return $notif['id'] !== $id;
-            });
-
-            if (count($notifications) === count($filtered)) {
+            if (!$notification) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Notification non trouvée'
                 ], 404);
             }
 
-            $this->saveNotifications(array_values($filtered));
+            $notification->delete();
 
             return response()->json([
                 'success' => true,
@@ -196,24 +155,17 @@ class NotificationController extends Controller
     }
 
     /**
-     * Créer une nouvelle notification
+     * Créer une notification (méthode statique pour être appelée depuis d'autres contrôleurs)
      */
     public static function createNotification($data)
     {
         try {
-            $notificationsFile = storage_path('app/notifications.json');
-            
-            if (!file_exists($notificationsFile)) {
-                file_put_contents($notificationsFile, json_encode([]));
-            }
-
-            $notifications = json_decode(file_get_contents($notificationsFile), true) ?? [];
-
-            $notification = [
-                'id' => 'notif_' . time() . '_' . uniqid(),
-                'type' => $data['type'] ?? 'info', // info, success, warning, alert
+            // Créer en MySQL
+            $notification = \App\Models\Notification::create([
+                'id' => 'notif_' . time() . '_' . rand(1000, 9999),
+                'type' => $data['type'] ?? 'info',
                 'title' => $data['title'],
-                'message' => $data['message'] ?? '',
+                'message' => $data['message'],
                 'user_id' => $data['user_id'] ?? null,
                 'role' => $data['role'] ?? null,
                 'company_id' => $data['company_id'] ?? null,
@@ -221,38 +173,16 @@ class NotificationController extends Controller
                 'action_url' => $data['action_url'] ?? null,
                 'metadata' => $data['metadata'] ?? [],
                 'read' => false,
-                'read_at' => null,
-                'created_at' => date('Y-m-d H:i:s')
-            ];
+                'read_at' => null
+            ]);
 
-            $notifications[] = $notification;
+            Log::info('Notification créée en MySQL', $notification->toArray());
 
-            file_put_contents($notificationsFile, json_encode($notifications, JSON_PRETTY_PRINT));
-
-            Log::info('Notification créée', $notification);
-
-            return $notification;
+            return $notification->toArray();
 
         } catch (\Exception $e) {
             Log::error('Erreur lors de la création de notification: ' . $e->getMessage());
             return null;
         }
-    }
-
-    /**
-     * Charger toutes les notifications
-     */
-    private function loadNotifications()
-    {
-        $content = file_get_contents($this->notificationsFile);
-        return json_decode($content, true) ?? [];
-    }
-
-    /**
-     * Sauvegarder les notifications
-     */
-    private function saveNotifications($notifications)
-    {
-        file_put_contents($this->notificationsFile, json_encode($notifications, JSON_PRETTY_PRINT));
     }
 }

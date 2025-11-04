@@ -35,16 +35,10 @@ class UserTicketController extends Controller
             $validityDays = $request->input('validity_days');
             $notes = $request->input('notes', '');
 
-            // Charger les employés
-            $employeesFile = storage_path('app/employees.json');
-            $employees = json_decode(file_get_contents($employeesFile), true) ?? [];
+            // Trouver l'employé en MySQL
+            $employee = \App\Models\Employee::find($employeeId);
 
-            // Trouver l'employé
-            $employeeIndex = collect($employees)->search(function ($emp) use ($employeeId) {
-                return $emp['id'] === $employeeId;
-            });
-
-            if ($employeeIndex === false) {
+            if (!$employee) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Employé non trouvé'
@@ -57,77 +51,50 @@ class UserTicketController extends Controller
 
             // Si une souche est spécifiée, utiliser ses valeurs
             if ($batchId) {
-                $batchesFile = storage_path('app/ticket_batches.json');
-                if (file_exists($batchesFile)) {
-                    $batches = json_decode(file_get_contents($batchesFile), true) ?? [];
-                    
-                    $batchIndex = collect($batches)->search(function ($batch) use ($batchId) {
-                        return $batch['id'] === $batchId;
-                    });
-
-                    if ($batchIndex !== false) {
-                        $batch = &$batches[$batchIndex];
-                        
-                        // Utiliser les valeurs de la souche
-                        $ticketValue = $batch['ticket_value'];
-                        $validityStart = $batch['validity_start'];
-                        $validityEnd = $batch['validity_end'];
-
-                        // Sauvegarder la souche mise à jour
-                        file_put_contents($batchesFile, json_encode($batches, JSON_PRETTY_PRINT));
-                    }
+                $batch = \App\Models\TicketBatch::find($batchId);
+                if ($batch) {
+                    $ticketValue = $batch->ticket_value;
+                    $validityStart = $batch->validity_start;
+                    $validityEnd = $batch->validity_end;
                 }
             }
             
             // Pour affectation manuelle: valeur par défaut si non spécifiée
             if (!$ticketValue) {
-                $ticketValue = 500; // Valeur par défaut
+                $ticketValue = 500;
             }
             
-            // Pour affectation manuelle: calculer dates de validité si spécifiées
+            // Pour affectation manuelle: calculer dates de validité
             if (!$batchId && $validityDays) {
                 $validityStart = date('Y-m-d');
                 $validityEnd = date('Y-m-d', strtotime("+{$validityDays} days"));
             }
 
-            // Mettre à jour le solde de l'employé
+            // Mettre à jour le solde de l'employé en MySQL
             $amountToAdd = $ticketsCount * $ticketValue;
-            $employees[$employeeIndex]['ticket_balance'] += $amountToAdd;
-            $employees[$employeeIndex]['updated_at'] = date('Y-m-d H:i:s');
+            $employee->increment('ticket_balance', $amountToAdd);
 
-            // Sauvegarder les employés
-            file_put_contents($employeesFile, json_encode($employees, JSON_PRETTY_PRINT));
-
-            // Enregistrer l'affectation dans l'historique
-            $assignmentsFile = storage_path('app/ticket_assignments.json');
-            $assignments = [];
-            if (file_exists($assignmentsFile)) {
-                $assignments = json_decode(file_get_contents($assignmentsFile), true) ?? [];
-            }
-
-            $assignment = [
+            // Créer l'affectation en MySQL
+            $assignment = \App\Models\UserTicket::create([
                 'id' => 'assign_' . time() . '_' . rand(1000, 9999),
                 'employee_id' => $employeeId,
-                'employee_name' => $employees[$employeeIndex]['name'],
+                'employee_name' => $employee->name,
                 'batch_id' => $batchId,
                 'tickets_count' => $ticketsCount,
                 'ticket_value' => $ticketValue,
-                'validity_start' => $validityStart,
-                'validity_end' => $validityEnd,
                 'type' => $batchId ? 'batch' : 'manual',
                 'assigned_by' => $request->header('X-User-Name', 'Système'),
-                'notes' => $notes,
-                'created_at' => date('Y-m-d H:i:s')
-            ];
-
-            $assignments[] = $assignment;
-            file_put_contents($assignmentsFile, json_encode($assignments, JSON_PRETTY_PRINT));
+                'notes' => $notes
+            ]);
 
             Log::info('Tickets affectés avec succès');
 
-            // Créer une notification pour l'employé
-            $employeeName = $employees[$employeeIndex]['name'];
-            $newBalance = $employees[$employeeIndex]['ticket_balance'];
+            // Rafraîchir l'employé
+            $employee->refresh();
+            
+            // Créer une notification
+            $employeeName = $employee->name;
+            $newBalance = $employee->ticket_balance;
             NotificationController::createNotification([
                 'type' => 'success',
                 'title' => 'Nouveaux tickets reçus !',
@@ -143,20 +110,19 @@ class UserTicketController extends Controller
             
             // Envoyer email d'affectation de tickets à l'employé
             try {
-                $employeeEmail = $employees[$employeeIndex]['email'];
-                Mail::to($employeeEmail)->send(new TicketsAssigned(
+                Mail::to($employee->email)->send(new TicketsAssigned(
                     $employeeName,
                     $ticketsCount,
                     $ticketValue,
                     $amountToAdd
                 ));
-                Log::info("Email d'affectation de tickets envoyé à: $employeeEmail");
+                Log::info("Email d'affectation de tickets envoyé à: {$employee->email}");
             } catch (\Exception $e) {
                 Log::error("Erreur envoi email affectation tickets: " . $e->getMessage());
             }
             
             // Envoyer notification WhatsApp à l'employé
-            if (env('WHATSAPP_ENABLED', false) && !empty($employees[$employeeIndex]['phone'])) {
+            if (env('WHATSAPP_ENABLED', false) && !empty($employee->phone)) {
                 try {
                     $whatsappService = new \App\Services\WhatsAppService();
                     
@@ -178,20 +144,20 @@ class UserTicketController extends Controller
                     $whatsappData = [
                         'employee_name' => $employeeName,
                         'tickets_count' => $ticketsCount,
-                        'ticket_value' => number_format($ticketValue, 0, '', ' '),
+                        'ticket_value' => number_format((float)$ticketValue, 0, '', ' '),
                         'batch_number' => $batchNumber,
                         'validity_start' => $validityStartFormatted,
                         'validity_end' => $validityEndFormatted,
-                        'new_balance' => number_format($newBalance, 0, '', ' ')
+                        'new_balance' => number_format((float)$newBalance, 0, '', ' ')
                     ];
                     
                     $whatsappService->sendTemplate(
-                        $employees[$employeeIndex]['phone'], 
+                        $employee->phone, 
                         'tickets_assigned', 
                         $whatsappData
                     );
                     
-                    Log::info("Notification WhatsApp d'affectation tickets envoyée à: {$employees[$employeeIndex]['phone']}");
+                    Log::info("Notification WhatsApp d'affectation tickets envoyée à: {$employee->phone}");
                 } catch (\Exception $e) {
                     Log::error("Erreur envoi WhatsApp affectation tickets: " . $e->getMessage());
                 }
@@ -199,7 +165,7 @@ class UserTicketController extends Controller
 
             return response()->json([
                 'success' => true,
-                'data' => $employees[$employeeIndex],
+                'data' => $employee->toArray(),
                 'message' => 'Tickets affectés avec succès'
             ]);
             
@@ -231,57 +197,40 @@ class UserTicketController extends Controller
             $amount = $request->input('amount');
             $notes = $request->input('notes', '');
 
-            // Charger les employés
-            $employeesFile = storage_path('app/employees.json');
-            $employees = json_decode(file_get_contents($employeesFile), true) ?? [];
+            // Trouver l'employé en MySQL
+            $employee = \App\Models\Employee::find($employeeId);
 
-            // Trouver l'employé
-            $employeeIndex = collect($employees)->search(function ($emp) use ($employeeId) {
-                return $emp['id'] === $employeeId;
-            });
-
-            if ($employeeIndex === false) {
+            if (!$employee) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Employé non trouvé'
                 ], 404);
             }
 
-            // Mettre à jour le solde
-            $employees[$employeeIndex]['ticket_balance'] += $amount;
-            $employees[$employeeIndex]['updated_at'] = date('Y-m-d H:i:s');
+            // Mettre à jour le solde en MySQL
+            $employee->increment('ticket_balance', $amount);
 
-            // Sauvegarder
-            file_put_contents($employeesFile, json_encode($employees, JSON_PRETTY_PRINT));
-
-            // Enregistrer dans l'historique
-            $assignmentsFile = storage_path('app/ticket_assignments.json');
-            $assignments = [];
-            if (file_exists($assignmentsFile)) {
-                $assignments = json_decode(file_get_contents($assignmentsFile), true) ?? [];
-            }
-
-            $assignment = [
+            // Enregistrer dans l'historique MySQL
+            $assignment = \App\Models\UserTicket::create([
                 'id' => 'recharge_' . time() . '_' . rand(1000, 9999),
                 'employee_id' => $employeeId,
-                'employee_name' => $employees[$employeeIndex]['name'],
+                'employee_name' => $employee->name,
                 'batch_id' => null,
                 'tickets_count' => 1,
                 'ticket_value' => $amount,
                 'type' => 'manual',
                 'assigned_by' => $request->header('X-User-Name', 'Système'),
-                'notes' => $notes ? "Rechargement: $notes" : 'Rechargement manuel',
-                'created_at' => date('Y-m-d H:i:s')
-            ];
-
-            $assignments[] = $assignment;
-            file_put_contents($assignmentsFile, json_encode($assignments, JSON_PRETTY_PRINT));
+                'notes' => $notes ? "Rechargement: $notes" : 'Rechargement manuel'
+            ]);
 
             Log::info('Solde rechargé avec succès');
 
+            // Rafraîchir l'employé
+            $employee->refresh();
+
             return response()->json([
                 'success' => true,
-                'data' => $employees[$employeeIndex],
+                'data' => $employee->toArray(),
                 'message' => 'Solde rechargé avec succès'
             ]);
             
@@ -322,11 +271,8 @@ class UserTicketController extends Controller
                      ?? $request->input('created_by') 
                      ?? 'Système';
 
-            // Charger la configuration pour obtenir les paramètres
-            $configsFile = storage_path('app/ticket_configurations.json');
-            $configs = json_decode(file_get_contents($configsFile), true) ?? [];
-            
-            $config = collect($configs)->firstWhere('id', $configId);
+            // Charger la configuration depuis MySQL
+            $config = \App\Models\TicketConfiguration::find($configId);
             if (!$config) {
                 return response()->json([
                     'success' => false,
@@ -334,100 +280,46 @@ class UserTicketController extends Controller
                 ], 404);
             }
 
-            // Charger les employés
-            $employeesFile = storage_path('app/employees.json');
-            $employees = json_decode(file_get_contents($employeesFile), true) ?? [];
+            // Charger les employés actifs depuis MySQL
+            $query = \App\Models\Employee::where('status', 'active');
+            if ($userCompanyId) {
+                $query->where('company_id', $userCompanyId);
+            }
+            $activeEmployees = $query->get();
 
-            // Filtrer les employés actifs de l'entreprise du gestionnaire
-            $activeEmployees = array_filter($employees, function($emp) use ($userCompanyId) {
-                return $emp['status'] === 'active' && 
-                       (!$userCompanyId || (isset($emp['company_id']) && $emp['company_id'] === $userCompanyId));
-            });
-
-            if (empty($activeEmployees)) {
+            if ($activeEmployees->isEmpty()) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Aucun employé actif trouvé'
                 ], 404);
             }
 
-            // Charger les souches existantes
-            $batchesFile = storage_path('app/ticket_batches.json');
-            $batches = [];
-            if (file_exists($batchesFile)) {
-                $batches = json_decode(file_get_contents($batchesFile), true) ?? [];
-            }
-
-            // Charger les affectations existantes
-            $assignmentsFile = storage_path('app/ticket_assignments.json');
-            $assignments = [];
-            if (file_exists($assignmentsFile)) {
-                $assignments = json_decode(file_get_contents($assignmentsFile), true) ?? [];
-            }
-
-            // Générer un code entreprise unique à partir du company_id
-            // Extraire les chiffres du company_id pour créer un code court
+            // Générer un code entreprise
             preg_match_all('/\d+/', $userCompanyId, $matches);
             $companyCode = !empty($matches[0]) ? 'E' . implode('', $matches[0]) : 'E000';
             
-            // Compter les souches de cette entreprise seulement
-            $companyBatches = array_filter($batches, function($b) use ($userCompanyId) {
-                return isset($b['company_id']) && $b['company_id'] === $userCompanyId;
-            });
-            $batchCounter = count($companyBatches) + 1;
+            // Compter les souches existantes de cette entreprise
+            $batchCounter = \App\Models\TicketBatch::where('company_id', $userCompanyId)->count() + 1;
             $timestamp = time();
             
             $createdBatches = [];
-            $updatedEmployees = [];
             $successCount = 0;
 
             // Calculer les dates de validité
             $validityStart = date('Y-m-d');
-            $validityEnd = date('Y-m-d', strtotime("+{$config['validity_duration_days']} days"));
+            $validityEnd = date('Y-m-d', strtotime("+{$config->validity_days} days"));
 
             // Créer une souche pour chaque employé actif
-            foreach ($employees as &$employee) {
-                // Vérifier si c'est un employé actif de la liste
-                $isActiveEmployee = false;
-                foreach ($activeEmployees as $activeEmp) {
-                    if ($activeEmp['id'] === $employee['id']) {
-                        $isActiveEmployee = true;
-                        break;
-                    }
-                }
-
-                if ($isActiveEmployee) {
+            foreach ($activeEmployees as $employee) {
                     // Générer un numéro de souche unique avec format: SOUCHE-[CODE_ENTREPRISE]-YYYYMMDD-XXXX
                     $batchNumber = 'SOUCHE-' . $companyCode . '-' . date('Ymd') . '-' . str_pad($batchCounter, 4, '0', STR_PAD_LEFT);
                     $batchId = 'batch_' . $timestamp . '_' . $batchCounter;
                     
-                    // Créer la souche individuelle pour cet employé
-                    $batch = [
-                        'id' => $batchId,
-                        'batch_number' => $batchNumber,
-                        'company_id' => $userCompanyId,
-                        'config_id' => $configId,
-                        'employee_id' => $employee['id'],
-                        'employee_name' => $employee['name'],
-                        'created_by' => $userName,
-                        'total_tickets' => $ticketsCount,
-                        'ticket_value' => $ticketValue,
-                        'type' => $config['type'],
-                        'validity_start' => $validityStart,
-                        'validity_end' => $validityEnd,
-                        'assigned_tickets' => $ticketsCount, // Tous les tickets assignés dès la création
-                        'used_tickets' => 0, // Aucun ticket consommé pour l'instant
-                        'remaining_tickets' => $ticketsCount, // Disponibles = diminuera lors de la consommation
-                        'status' => 'active',
-                        'tickets' => [],
-                        'created_at' => date('Y-m-d H:i:s'),
-                        'updated_at' => date('Y-m-d H:i:s')
-                    ];
-
-                    // Générer les tickets individuels avec numéros de suivi
+                    // Générer les tickets individuels
+                    $tickets = [];
                     for ($i = 1; $i <= $ticketsCount; $i++) {
                         $ticketNumber = $batchNumber . '-T' . str_pad($i, 3, '0', STR_PAD_LEFT);
-                        $batch['tickets'][] = [
+                        $tickets[] = [
                             'ticket_number' => $ticketNumber,
                             'value' => $ticketValue,
                             'status' => 'available',
@@ -435,95 +327,95 @@ class UserTicketController extends Controller
                         ];
                     }
 
-                    $batches[] = $batch;
-                    $createdBatches[] = $batch;
-
-                    // Mettre à jour le solde de l'employé
-                    $amountToAdd = $ticketsCount * $ticketValue;
-                    $employee['ticket_balance'] += $amountToAdd;
-                    $employee['updated_at'] = date('Y-m-d H:i:s');
-
-                    // Enregistrer l'affectation
-                    $assignment = [
-                        'id' => 'assign_' . $timestamp . '_' . $batchCounter,
-                        'employee_id' => $employee['id'],
-                        'employee_name' => $employee['name'],
-                        'batch_id' => $batchId,
+                    // Créer la souche en MySQL
+                    $batch = \App\Models\TicketBatch::create([
+                        'id' => $batchId,
                         'batch_number' => $batchNumber,
+                        'company_id' => $userCompanyId,
+                        'config_id' => $configId,
+                        'employee_id' => $employee->id,
+                        'employee_name' => $employee->name,
+                        'created_by' => $userName,
+                        'total_tickets' => $ticketsCount,
+                        'ticket_value' => $ticketValue,
+                        'type' => 'standard', // Type par défaut
+                        'validity_start' => $validityStart,
+                        'validity_end' => $validityEnd,
+                        'assigned_tickets' => $ticketsCount,
+                        'used_tickets' => 0,
+                        'remaining_tickets' => $ticketsCount,
+                        'status' => 'active',
+                        'tickets' => $tickets
+                    ]);
+
+                    $createdBatches[] = $batch->toArray();
+
+                    // Mettre à jour le solde de l'employé en MySQL
+                    $amountToAdd = $ticketsCount * $ticketValue;
+                    $employee->increment('ticket_balance', $amountToAdd);
+
+                    // Enregistrer l'affectation en MySQL
+                    $assignment = \App\Models\UserTicket::create([
+                        'id' => 'assign_' . $timestamp . '_' . $batchCounter,
+                        'employee_id' => $employee->id,
+                        'employee_name' => $employee->name,
+                        'batch_id' => $batchId,
                         'tickets_count' => $ticketsCount,
                         'ticket_value' => $ticketValue,
                         'type' => 'batch',
                         'assigned_by' => $userName,
-                        'notes' => $notes ? "Affectation groupée: $notes" : "Affectation groupée - Souche $batchNumber",
-                        'created_at' => date('Y-m-d H:i:s')
-                    ];
-                    $assignments[] = $assignment;
+                        'notes' => $notes ? "Affectation groupée: $notes" : "Affectation groupée - Souche $batchNumber"
+                    ]);
 
                     // Créer une notification pour cet employé
                     NotificationController::createNotification([
                         'type' => 'success',
                         'title' => 'Tickets distribués !',
                         'message' => "Distribution mensuelle : Vous avez reçu $ticketsCount ticket(s) de {$ticketValue}F. Bon appétit !",
-                        'user_id' => $employee['id'],
+                        'user_id' => $employee->id,
                         'action_url' => '/employee/tickets',
                         'metadata' => [
                             'batch_number' => $batchNumber,
                             'tickets_count' => $ticketsCount,
                             'ticket_value' => $ticketValue,
-                            'assignment_id' => $assignment['id']
+                            'assignment_id' => $assignment->id
                         ]
                     ]);
                     
-                    // Envoyer notification WhatsApp à cet employé
-                    if (env('WHATSAPP_ENABLED', false) && !empty($employee['phone'])) {
+                    // Envoyer notification WhatsApp
+                    if (env('WHATSAPP_ENABLED', false) && !empty($employee->phone)) {
                         try {
                             $whatsappService = new \App\Services\WhatsAppService();
+                            $employee->refresh(); // Rafraîchir pour avoir le nouveau solde
                             
                             $whatsappData = [
-                                'employee_name' => $employee['name'],
+                                'employee_name' => $employee->name,
                                 'tickets_count' => $ticketsCount,
                                 'ticket_value' => number_format($ticketValue, 0, '', ' '),
                                 'batch_number' => $batchNumber,
                                 'validity_start' => date('d/m/Y', strtotime($validityStart)),
                                 'validity_end' => date('d/m/Y', strtotime($validityEnd)),
-                                'new_balance' => number_format($employee['ticket_balance'], 0, '', ' ')
+                                'new_balance' => number_format($employee->ticket_balance, 0, '', ' ')
                             ];
                             
-                            $whatsappService->sendTemplate(
-                                $employee['phone'], 
-                                'tickets_assigned', 
-                                $whatsappData
-                            );
-                            
-                            Log::info("WhatsApp affectation groupée envoyée à: {$employee['phone']} ({$employee['name']})");
+                            $whatsappService->sendTemplate($employee->phone, 'tickets_assigned', $whatsappData);
+                            Log::info("WhatsApp affectation groupée envoyée à: {$employee->phone}");
                         } catch (\Exception $e) {
-                            Log::error("Erreur envoi WhatsApp affectation groupée pour {$employee['name']}: " . $e->getMessage());
+                            Log::error("Erreur WhatsApp pour {$employee->name}: " . $e->getMessage());
                         }
                     }
 
-                    $updatedEmployees[] = $employee;
                     $successCount++;
                     $batchCounter++;
-                }
             }
 
-            // Sauvegarder les souches
-            file_put_contents($batchesFile, json_encode($batches, JSON_PRETTY_PRINT));
-
-            // Sauvegarder les employés
-            file_put_contents($employeesFile, json_encode($employees, JSON_PRETTY_PRINT));
-
-            // Sauvegarder les affectations
-            file_put_contents($assignmentsFile, json_encode($assignments, JSON_PRETTY_PRINT));
-
-            Log::info("Affectation groupée réussie: $successCount souches créées pour $successCount employés");
+            Log::info("Affectation groupée réussie: $successCount souches créées");
 
             return response()->json([
                 'success' => true,
                 'data' => [
                     'success' => $successCount,
-                    'total' => count($activeEmployees),
-                    'employees' => $updatedEmployees,
+                    'total' => $activeEmployees->count(),
                     'batches' => $createdBatches
                 ],
                 'message' => "$successCount souche(s) créée(s) et affectée(s) avec succès"
@@ -547,46 +439,12 @@ class UserTicketController extends Controller
         try {
             $employeeId = $request->query('employee_id');
             
-            $assignmentsFile = storage_path('app/ticket_assignments.json');
-            $assignments = [];
-            
-            if (file_exists($assignmentsFile)) {
-                $assignments = json_decode(file_get_contents($assignmentsFile), true) ?? [];
-            }
-
-            // Nettoyer les affectations orphelines (dont le batch_id n'existe plus)
-            $batchesFile = storage_path('app/ticket_batches.json');
-            if (file_exists($batchesFile)) {
-                $batches = json_decode(file_get_contents($batchesFile), true) ?? [];
-                $validBatchIds = array_column($batches, 'id');
-                
-                $assignmentsCountBefore = count($assignments);
-                
-                // Garder seulement les affectations avec batch_id valide OU sans batch_id (manuelles)
-                $assignments = array_filter($assignments, function($assignment) use ($validBatchIds) {
-                    // Si pas de batch_id (affectation manuelle), on garde
-                    if (!isset($assignment['batch_id']) || empty($assignment['batch_id'])) {
-                        return true;
-                    }
-                    // Sinon, on vérifie que le batch_id existe toujours
-                    return in_array($assignment['batch_id'], $validBatchIds);
-                });
-                
-                $assignmentsCountAfter = count($assignments);
-                $orphansDeleted = $assignmentsCountBefore - $assignmentsCountAfter;
-                
-                // Si des orphelins ont été supprimés, sauvegarder
-                if ($orphansDeleted > 0) {
-                    file_put_contents($assignmentsFile, json_encode(array_values($assignments), JSON_PRETTY_PRINT));
-                    Log::info("Nettoyage automatique: {$orphansDeleted} affectation(s) orpheline(s) supprimée(s)");
-                }
-            }
+            // Charger depuis MySQL
+            $query = \App\Models\UserTicket::query();
 
             // Filtrer par employé si spécifié
             if ($employeeId) {
-                $assignments = array_filter($assignments, function($assignment) use ($employeeId) {
-                    return $assignment['employee_id'] === $employeeId;
-                });
+                $query->where('employee_id', $employeeId);
             }
 
             // Filtrage par rôle et entreprise
@@ -594,26 +452,16 @@ class UserTicketController extends Controller
             $userCompanyId = $request->header('X-User-Company-Id');
             
             if ($userRole === 'Gestionnaire Entreprise' && $userCompanyId) {
-                // Charger les employés pour filtrer par entreprise
-                $employeesFile = storage_path('app/employees.json');
-                if (file_exists($employeesFile)) {
-                    $employees = json_decode(file_get_contents($employeesFile), true) ?? [];
-                    $companyEmployeeIds = array_column(
-                        array_filter($employees, function($emp) use ($userCompanyId) {
-                            return isset($emp['company_id']) && $emp['company_id'] === $userCompanyId;
-                        }),
-                        'id'
-                    );
-                    
-                    $assignments = array_filter($assignments, function($assignment) use ($companyEmployeeIds) {
-                        return in_array($assignment['employee_id'], $companyEmployeeIds);
-                    });
-                }
+                // Filtrer par employés de l'entreprise
+                $companyEmployeeIds = \App\Models\Employee::where('company_id', $userCompanyId)->pluck('id')->toArray();
+                $query->whereIn('employee_id', $companyEmployeeIds);
             }
+
+            $assignments = $query->orderBy('created_at', 'desc')->get()->toArray();
 
             return response()->json([
                 'success' => true,
-                'data' => array_values($assignments)
+                'data' => $assignments
             ]);
             
         } catch (\Exception $e) {

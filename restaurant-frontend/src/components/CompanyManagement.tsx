@@ -308,7 +308,7 @@ const CompanyManagement: React.FC = () => {
           </div>
           <div>
             <p className="text-gray-600 text-sm font-medium">Total Employés</p>
-            <p className="text-3xl font-bold text-gray-900">{companies.reduce((sum, company) => sum + company.employee_count, 0)}</p>
+            <p className="text-3xl font-bold text-gray-900">{companies.reduce((sum, company) => sum + Number(company.employee_count || 0), 0)}</p>
           </div>
         </div>
 

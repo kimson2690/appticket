@@ -15,20 +15,12 @@ class MigrateBatchNumbersController extends Controller
     public function migrate(Request $request): JsonResponse
     {
         try {
-            Log::info('MigrateBatchNumbersController@migrate - Début migration');
+            Log::info('MigrateBatchNumbersController@migrate - Début migration depuis MySQL');
             
-            $filePath = storage_path('app/ticket_batches.json');
+            // Charger toutes les souches depuis MySQL
+            $batches = \App\Models\TicketBatch::all();
             
-            if (!file_exists($filePath)) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Aucun fichier de souches trouvé'
-                ], 404);
-            }
-            
-            $batches = json_decode(file_get_contents($filePath), true) ?? [];
-            
-            if (empty($batches)) {
+            if ($batches->isEmpty()) {
                 return response()->json([
                     'success' => true,
                     'message' => 'Aucune souche à migrer',
@@ -36,10 +28,10 @@ class MigrateBatchNumbersController extends Controller
                 ]);
             }
             
-            // Grouper les souches par entreprise pour générer les compteurs
+            // Grouper les souches par entreprise
             $batchesByCompany = [];
             foreach ($batches as $batch) {
-                $companyId = $batch['company_id'] ?? 'unknown';
+                $companyId = $batch->company_id ?? 'unknown';
                 if (!isset($batchesByCompany[$companyId])) {
                     $batchesByCompany[$companyId] = [];
                 }
@@ -47,75 +39,71 @@ class MigrateBatchNumbersController extends Controller
             }
             
             $migratedCount = 0;
-            $updatedBatches = [];
             
             // Traiter chaque entreprise séparément
             foreach ($batchesByCompany as $companyId => $companyBatchList) {
                 // Générer le code entreprise
                 if ($companyId === 'unknown' || empty($companyId) || $companyId === 'null') {
-                    $companyCode = 'E000'; // Code par défaut pour les souches sans entreprise
+                    $companyCode = 'E000';
                 } else {
                     preg_match_all('/\d+/', $companyId, $matches);
                     $companyCode = !empty($matches[0]) ? 'E' . implode('', $matches[0]) : 'E000';
                 }
                 
-                // Trier par date de création pour respecter l'ordre chronologique
+                // Trier par date de création
                 usort($companyBatchList, function($a, $b) {
-                    return strtotime($a['created_at']) - strtotime($b['created_at']);
+                    return strtotime($a->created_at) - strtotime($b->created_at);
                 });
                 
                 $counter = 1;
                 
                 foreach ($companyBatchList as $batch) {
-                    // Si la souche n'a pas de batch_number OU si elle a l'ancien format "BATCH-", la migrer
-                    $needsMigration = !isset($batch['batch_number']) || 
-                                     empty($batch['batch_number']) || 
-                                     strpos($batch['batch_number'], 'BATCH-') === 0;
+                    // Si la souche n'a pas de batch_number OU ancien format "BATCH-"
+                    $needsMigration = empty($batch->batch_number) || 
+                                     strpos($batch->batch_number, 'BATCH-') === 0;
                     
                     if ($needsMigration) {
-                        // Utiliser la date de création de la souche
-                        $createdDate = date('Ymd', strtotime($batch['created_at']));
-                        $batch['batch_number'] = 'SOUCHE-' . $companyCode . '-' . $createdDate . '-' . str_pad($counter, 4, '0', STR_PAD_LEFT);
+                        // Nouveau format
+                        $createdDate = date('Ymd', strtotime($batch->created_at));
+                        $newBatchNumber = 'SOUCHE-' . $companyCode . '-' . $createdDate . '-' . str_pad($counter, 4, '0', STR_PAD_LEFT);
                         
-                        // Mettre à jour les tickets si ils existent
-                        if (isset($batch['tickets']) && is_array($batch['tickets'])) {
-                            foreach ($batch['tickets'] as &$ticket) {
-                                // Générer le numéro de ticket avec le nouveau format
+                        // Mettre à jour les tickets
+                        $tickets = $batch->tickets ?? [];
+                        if (is_array($tickets) && !empty($tickets)) {
+                            foreach ($tickets as &$ticket) {
                                 if (isset($ticket['ticket_number'])) {
-                                    // Extraire le numéro de ticket (ex: T001)
                                     preg_match('/-T(\d+)$/', $ticket['ticket_number'], $ticketMatches);
                                     if (!empty($ticketMatches[1])) {
-                                        $ticket['ticket_number'] = $batch['batch_number'] . '-T' . $ticketMatches[1];
+                                        $ticket['ticket_number'] = $newBatchNumber . '-T' . $ticketMatches[1];
                                     }
                                 }
                             }
                         } else {
-                            // Si pas de tickets, en générer
-                            $batch['tickets'] = [];
-                            for ($i = 1; $i <= $batch['total_tickets']; $i++) {
-                                $ticketNumber = $batch['batch_number'] . '-T' . str_pad($i, 3, '0', STR_PAD_LEFT);
-                                $batch['tickets'][] = [
-                                    'ticket_number' => $ticketNumber,
-                                    'value' => $batch['ticket_value'],
-                                    'status' => $i <= $batch['used_tickets'] ? 'used' : 'available',
-                                    'used_at' => $i <= $batch['used_tickets'] ? $batch['updated_at'] : null
+                            // Générer les tickets
+                            $tickets = [];
+                            for ($i = 1; $i <= $batch->total_tickets; $i++) {
+                                $tickets[] = [
+                                    'ticket_number' => $newBatchNumber . '-T' . str_pad($i, 3, '0', STR_PAD_LEFT),
+                                    'value' => $batch->ticket_value,
+                                    'status' => $i <= $batch->used_tickets ? 'used' : 'available',
+                                    'used_at' => $i <= $batch->used_tickets ? $batch->updated_at : null
                                 ];
                             }
                         }
                         
-                        $batch['updated_at'] = date('Y-m-d H:i:s');
-                        $migratedCount++;
+                        // Mettre à jour en MySQL
+                        $batch->update([
+                            'batch_number' => $newBatchNumber,
+                            'tickets' => $tickets
+                        ]);
                         
-                        Log::info("Souche migrée: {$batch['id']} -> {$batch['batch_number']}");
+                        $migratedCount++;
+                        Log::info("Souche migrée: {$batch->id} -> {$newBatchNumber}");
                     }
                     
-                    $updatedBatches[] = $batch;
                     $counter++;
                 }
             }
-            
-            // Sauvegarder les souches mises à jour
-            file_put_contents($filePath, json_encode($updatedBatches, JSON_PRETTY_PRINT));
             
             Log::info("Migration terminée: $migratedCount souche(s) migrée(s)");
             
@@ -123,7 +111,7 @@ class MigrateBatchNumbersController extends Controller
                 'success' => true,
                 'message' => "Migration réussie: $migratedCount souche(s) migrée(s)",
                 'migrated' => $migratedCount,
-                'total' => count($updatedBatches)
+                'total' => $batches->count()
             ]);
             
         } catch (\Exception $e) {

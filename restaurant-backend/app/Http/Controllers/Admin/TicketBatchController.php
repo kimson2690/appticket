@@ -15,46 +15,47 @@ class TicketBatchController extends Controller
     public function index(Request $request): JsonResponse
     {
         try {
-            // Stockage persistant en fichier
-            $filePath = storage_path('app/ticket_batches.json');
-            
-            if (file_exists($filePath)) {
-                $batches = json_decode(file_get_contents($filePath), true) ?? [];
-            } else {
-                $batches = [];
-            }
-
-            // Filtrage par rôle
+            // Charger depuis MySQL
             $userRole = $request->header('X-User-Role');
             $userCompanyId = $request->header('X-User-Company-Id');
             
             Log::info('TicketBatchController@index - Rôle: ' . $userRole . ', Company ID: ' . $userCompanyId);
             
-            // Si c'est un gestionnaire d'entreprise, filtrer par son entreprise uniquement
+            // Query builder avec filtrage
+            $query = \App\Models\TicketBatch::query();
+            
+            // Si gestionnaire d'entreprise, filtrer par entreprise
             if ($userRole === 'Gestionnaire Entreprise' && $userCompanyId) {
-                $batches = array_filter($batches, function($batch) use ($userCompanyId) {
-                    return isset($batch['company_id']) && $batch['company_id'] === $userCompanyId;
-                });
-                Log::info('Souches filtrées pour gestionnaire: ' . count($batches));
+                $query->where('company_id', $userCompanyId);
+                Log::info('Souches filtrées pour gestionnaire');
             }
-            // Si c'est un administrateur, il voit TOUTES les souches (pas de filtre)
+            
+            $batches = $query->get();
             
             // Mettre à jour le statut des souches (actif/expiré)
             $currentDate = date('Y-m-d');
-            foreach ($batches as &$batch) {
-                if ($batch['remaining_tickets'] <= 0 && $batch['status'] !== 'depleted') {
-                    $batch['status'] = 'depleted';
-                } elseif ($currentDate > $batch['validity_end'] && $batch['status'] !== 'expired') {
-                    $batch['status'] = 'expired';
-                } elseif ($batch['status'] !== 'active' && $currentDate <= $batch['validity_end'] && $batch['remaining_tickets'] > 0) {
-                    $batch['status'] = 'active';
+            foreach ($batches as $batch) {
+                $needsUpdate = false;
+                $newStatus = $batch->status;
+                
+                if ($batch->remaining_tickets <= 0 && $batch->status !== 'depleted') {
+                    $newStatus = 'depleted';
+                    $needsUpdate = true;
+                } elseif ($currentDate > $batch->validity_end && $batch->status !== 'expired') {
+                    $newStatus = 'expired';
+                    $needsUpdate = true;
+                } elseif ($batch->status !== 'active' && $currentDate <= $batch->validity_end && $batch->remaining_tickets > 0) {
+                    $newStatus = 'active';
+                    $needsUpdate = true;
+                }
+                
+                if ($needsUpdate) {
+                    $batch->update(['status' => $newStatus]);
                 }
             }
             
-            // Sauvegarder les mises à jour de statut
-            if (count($batches) > 0) {
-                file_put_contents($filePath, json_encode(array_values($batches), JSON_PRETTY_PRINT));
-            }
+            // Recharger pour obtenir les statuts à jour
+            $batches = $query->get()->toArray();
             
             return response()->json([
                 'success' => true,
@@ -100,24 +101,12 @@ class TicketBatchController extends Controller
             $validityStart = $request->input('validity_start');
             $validityEnd = $request->input('validity_end');
 
-            // Charger les souches existantes
-            $filePath = storage_path('app/ticket_batches.json');
-            $batches = [];
-            
-            if (file_exists($filePath)) {
-                $batches = json_decode(file_get_contents($filePath), true) ?? [];
-            }
-
-            // Générer un code entreprise unique à partir du company_id
-            // Extraire les chiffres du company_id pour créer un code court
+            // Charger les souches existantes depuis MySQL
             preg_match_all('/\d+/', $companyId, $matches);
             $companyCode = !empty($matches[0]) ? 'E' . implode('', $matches[0]) : 'E000';
             
-            // Compter les souches de cette entreprise seulement
-            $companyBatches = array_filter($batches, function($b) use ($companyId) {
-                return isset($b['company_id']) && $b['company_id'] === $companyId;
-            });
-            $batchCounter = count($companyBatches) + 1;
+            // Compter les souches de cette entreprise
+            $batchCounter = \App\Models\TicketBatch::where('company_id', $companyId)->count() + 1;
             $timestamp = time();
             
             // Générer un numéro de souche unique avec format: SOUCHE-[CODE_ENTREPRISE]-YYYYMMDD-XXXX
@@ -129,15 +118,17 @@ class TicketBatchController extends Controller
                 'batch_number' => $batchNumber,
                 'company_id' => $companyId,
                 'config_id' => $configId,
+                'employee_id' => 'N/A', // N/A pour souche générale
+                'employee_name' => 'Souche générale', // Nom pour souche générale
                 'created_by' => $createdBy,
                 'total_tickets' => (int) $totalTickets,
                 'ticket_value' => (float) $ticketValue,
                 'type' => $type,
                 'validity_start' => $validityStart,
                 'validity_end' => $validityEnd,
-                'assigned_tickets' => (int) $totalTickets, // Tous les tickets sont assignés dès la création
+                'assigned_tickets' => 0, // Aucun ticket assigné au départ pour souche générale
                 'used_tickets' => 0, // Aucun ticket consommé au départ
-                'remaining_tickets' => (int) $totalTickets, // Disponibles = diminue lors de la consommation
+                'remaining_tickets' => (int) $totalTickets, // Disponibles = total au départ
                 'status' => 'active',
                 'tickets' => [],
                 'created_at' => date('Y-m-d H:i:s'),
@@ -155,13 +146,10 @@ class TicketBatchController extends Controller
                 ];
             }
 
-            // Ajouter à la liste
-            $batches[] = $batchData;
+            // Créer en MySQL
+            $batch = \App\Models\TicketBatch::create($batchData);
 
-            // Sauvegarder dans le fichier
-            file_put_contents($filePath, json_encode($batches, JSON_PRETTY_PRINT));
-
-            Log::info('Souche de tickets créée:', $batchData);
+            Log::info('Souche de tickets créée:', $batch->toArray());
 
             // Créer une notification pour le gestionnaire
             $totalValue = $totalTickets * $ticketValue;
@@ -204,16 +192,8 @@ class TicketBatchController extends Controller
     public function show(string $id): JsonResponse
     {
         try {
-            // Charger les souches depuis le fichier
-            $filePath = storage_path('app/ticket_batches.json');
-            $batches = [];
-            
-            if (file_exists($filePath)) {
-                $batches = json_decode(file_get_contents($filePath), true) ?? [];
-            }
-
-            // Trouver la souche par ID
-            $batch = collect($batches)->firstWhere('id', $id);
+            // Trouver la souche en MySQL
+            $batch = \App\Models\TicketBatch::find($id);
 
             if (!$batch) {
                 return response()->json([
@@ -224,7 +204,7 @@ class TicketBatchController extends Controller
 
             return response()->json([
                 'success' => true,
-                'data' => $batch
+                'data' => $batch->toArray()
             ]);
             
         } catch (\Exception $e) {
@@ -245,18 +225,10 @@ class TicketBatchController extends Controller
         try {
             Log::info('TicketBatchController@destroy - Suppression ID: ' . $id);
             
-            // Charger les souches depuis le fichier
-            $filePath = storage_path('app/ticket_batches.json');
-            $batches = [];
-            
-            if (file_exists($filePath)) {
-                $batches = json_decode(file_get_contents($filePath), true) ?? [];
-            }
+            // Trouver la souche dans MySQL
+            $batch = \App\Models\TicketBatch::find($id);
 
-            // Trouver la souche à supprimer pour récupérer les infos de l'employé
-            $batchToDelete = collect($batches)->firstWhere('id', $id);
-
-            if (!$batchToDelete) {
+            if (!$batch) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Souche non trouvée'
@@ -264,67 +236,22 @@ class TicketBatchController extends Controller
             }
 
             // Si la souche est liée à un employé, mettre à jour son solde
-            if (isset($batchToDelete['employee_id'])) {
-                $employeeId = $batchToDelete['employee_id'];
-                $ticketsToRemove = $batchToDelete['remaining_tickets']; // Tickets non consommés
-                $ticketValue = $batchToDelete['ticket_value'];
-                $amountToRemove = $ticketsToRemove * $ticketValue;
-
-                // Charger les employés
-                $employeesFile = storage_path('app/employees.json');
-                if (file_exists($employeesFile)) {
-                    $employees = json_decode(file_get_contents($employeesFile), true) ?? [];
-                    
-                    // Trouver et mettre à jour l'employé
-                    $employeeIndex = collect($employees)->search(function ($emp) use ($employeeId) {
-                        return $emp['id'] === $employeeId;
-                    });
-
-                    if ($employeeIndex !== false) {
-                        // Déduire le montant des tickets non consommés
-                        $employees[$employeeIndex]['ticket_balance'] -= $amountToRemove;
-                        $employees[$employeeIndex]['updated_at'] = date('Y-m-d H:i:s');
-                        
-                        // Sauvegarder les employés mis à jour
-                        file_put_contents($employeesFile, json_encode($employees, JSON_PRETTY_PRINT));
-                        
-                        Log::info("Solde de l'employé {$employeeId} réduit de {$amountToRemove}F ({$ticketsToRemove} tickets non consommés)");
-                    }
+            if ($batch->employee_id) {
+                $employee = \App\Models\Employee::find($batch->employee_id);
+                if ($employee) {
+                    $amountToRemove = $batch->remaining_tickets * $batch->ticket_value;
+                    $employee->decrement('ticket_balance', $amountToRemove);
+                    Log::info("Solde de l'employé {$batch->employee_id} réduit de {$amountToRemove}F");
                 }
             }
 
-            // Filtrer pour supprimer la souche
-            $batches = array_values(array_filter($batches, function ($batch) use ($id) {
-                return $batch['id'] !== $id;
-            }));
+            // Supprimer les affectations liées
+            $deletedAssignments = \App\Models\UserTicket::where('batch_id', $id)->delete();
+            
+            // Supprimer la souche
+            $batch->delete();
 
-            // Sauvegarder dans le fichier
-            file_put_contents($filePath, json_encode($batches, JSON_PRETTY_PRINT));
-
-            // Supprimer également les affectations (assignments) liées à cette souche
-            $assignmentsFile = storage_path('app/ticket_assignments.json');
-            if (file_exists($assignmentsFile)) {
-                $assignments = json_decode(file_get_contents($assignmentsFile), true) ?? [];
-                
-                // Compter les affectations avant suppression
-                $assignmentsCountBefore = count($assignments);
-                
-                // Filtrer pour supprimer les affectations liées à cette souche
-                $assignments = array_values(array_filter($assignments, function ($assignment) use ($id) {
-                    return !isset($assignment['batch_id']) || $assignment['batch_id'] !== $id;
-                }));
-                
-                // Compter les affectations après suppression
-                $assignmentsCountAfter = count($assignments);
-                $assignmentsDeleted = $assignmentsCountBefore - $assignmentsCountAfter;
-                
-                // Sauvegarder les affectations mises à jour
-                file_put_contents($assignmentsFile, json_encode($assignments, JSON_PRETTY_PRINT));
-                
-                Log::info("Souche {$id} supprimée avec {$assignmentsDeleted} affectation(s) associée(s)");
-            }
-
-            Log::info('Souche supprimée avec succès: ' . $id);
+            Log::info("Souche {$id} supprimée avec {$deletedAssignments} affectation(s)");
 
             return response()->json([
                 'success' => true,
@@ -349,20 +276,10 @@ class TicketBatchController extends Controller
         try {
             Log::info('TicketBatchController@useTicket - ID: ' . $id);
             
-            // Charger les souches depuis le fichier
-            $filePath = storage_path('app/ticket_batches.json');
-            $batches = [];
-            
-            if (file_exists($filePath)) {
-                $batches = json_decode(file_get_contents($filePath), true) ?? [];
-            }
+            // Trouver la souche en MySQL
+            $batch = \App\Models\TicketBatch::find($id);
 
-            // Trouver l'index de la souche
-            $batchIndex = collect($batches)->search(function ($batch) use ($id) {
-                return $batch['id'] === $id;
-            });
-
-            if ($batchIndex === false) {
+            if (!$batch) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Souche non trouvée'
@@ -370,7 +287,7 @@ class TicketBatchController extends Controller
             }
 
             // Vérifier si des tickets sont disponibles
-            if ($batches[$batchIndex]['remaining_tickets'] <= 0) {
+            if ($batch->remaining_tickets <= 0) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Aucun ticket disponible dans cette souche'
@@ -378,7 +295,7 @@ class TicketBatchController extends Controller
             }
 
             // Vérifier si la souche est expirée
-            if ($batches[$batchIndex]['status'] === 'expired') {
+            if ($batch->status === 'expired') {
                 return response()->json([
                     'success' => false,
                     'message' => 'Cette souche de tickets est expirée'
@@ -386,23 +303,20 @@ class TicketBatchController extends Controller
             }
 
             // Utiliser un ticket
-            $batches[$batchIndex]['used_tickets'] += 1;
-            $batches[$batchIndex]['remaining_tickets'] -= 1;
-            $batches[$batchIndex]['updated_at'] = date('Y-m-d H:i:s');
+            $batch->increment('used_tickets');
+            $batch->decrement('remaining_tickets');
 
             // Mettre à jour le statut si épuisé
-            if ($batches[$batchIndex]['remaining_tickets'] <= 0) {
-                $batches[$batchIndex]['status'] = 'depleted';
+            if ($batch->remaining_tickets <= 0) {
+                $batch->update(['status' => 'depleted']);
             }
 
-            // Sauvegarder dans le fichier
-            file_put_contents($filePath, json_encode($batches, JSON_PRETTY_PRINT));
-
-            Log::info('Ticket utilisé, souche mise à jour:', $batches[$batchIndex]);
+            $batch->refresh();
+            Log::info('Ticket utilisé, souche mise à jour:', $batch->toArray());
 
             return response()->json([
                 'success' => true,
-                'data' => $batches[$batchIndex],
+                'data' => $batch->toArray(),
                 'message' => 'Ticket utilisé avec succès'
             ]);
             

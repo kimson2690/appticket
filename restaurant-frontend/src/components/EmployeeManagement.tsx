@@ -190,19 +190,19 @@ const EmployeeManagement: React.FC = () => {
   
   // Si c'est un gestionnaire d'entreprise, filtrer par son entreprise uniquement
   if (isCompanyManager && currentUser.companyId) {
-    filteredEmployees = employees.filter(emp => emp.company_id === currentUser.companyId);
+    filteredEmployees = employees.filter(emp => String(emp.company_id) === String(currentUser.companyId));
   }
   
   // Appliquer le filtre de sélection d'entreprise (pour les administrateurs)
   if (selectedCompanyFilter && !isCompanyManager) {
-    filteredEmployees = filteredEmployees.filter(emp => emp.company_id === selectedCompanyFilter);
+    filteredEmployees = filteredEmployees.filter(emp => String(emp.company_id) === String(selectedCompanyFilter));
   }
 
   // Statistiques basées sur les employés visibles
   const totalEmployees = filteredEmployees.length;
   const activeEmployees = filteredEmployees.filter(emp => emp.status === 'active').length;
   const pendingEmployees = filteredEmployees.filter(emp => emp.status === 'pending');
-  const totalTickets = filteredEmployees.reduce((sum, emp) => sum + emp.ticket_balance, 0);
+  const totalTickets = filteredEmployees.reduce((sum, emp) => sum + Number(emp.ticket_balance || 0), 0);
 
   // Fonction pour approuver un employé
   const handleApproveEmployee = async (employeeId: string) => {

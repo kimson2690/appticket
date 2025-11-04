@@ -6,86 +6,70 @@ use App\Http\Controllers\Controller;
 use App\Models\Company;
 use App\Models\Restaurant;
 use App\Models\User;
+use App\Models\Employee;
+use App\Models\Order;
+use App\Models\UserTicket;
+use App\Models\TicketBatch;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class DashboardStatsController extends Controller
 {
-    private $employeesFile = 'employees.json';
-    private $companiesFile = 'companies.json';
-    private $restaurantsFile = 'restaurants.json';
-    private $ordersFile = 'orders.json';
-    private $batchesFile = 'ticket_batches.json';
-    private $assignmentsFile = 'ticket_assignments.json';
-
     /**
      * Statistiques pour l'administrateur système
      */
     public function getAdminStats(Request $request)
     {
         try {
-            // Charger depuis JSON
-            $employees = $this->loadFile($this->employeesFile);
-            $orders = $this->loadFile($this->ordersFile);
-            $batches = $this->loadFile($this->batchesFile);
-            $assignments = $this->loadFile($this->assignmentsFile);
-            
-            // Charger depuis BDD
-            $companies = Company::all()->toArray();
-            $restaurants = Restaurant::all()->toArray();
+            // Statistiques générales depuis la BDD
+            $totalUsers = Employee::count() + User::count();
+            $totalCompanies = Company::count();
+            $totalRestaurants = Restaurant::count();
+            $totalOrders = Order::count();
 
-            \Log::info('📊 [DashboardStats] Fichiers chargés', [
-                'employees' => count($employees),
-                'companies' => count($companies),
-                'restaurants' => count($restaurants),
-                'orders' => count($orders),
-                'batches' => count($batches),
-                'assignments' => count($assignments),
+            Log::info('📊 [DashboardStats] Données chargées depuis MySQL', [
+                'employees' => Employee::count(),
+                'users' => User::count(),
+                'companies' => $totalCompanies,
+                'restaurants' => $totalRestaurants,
+                'orders' => $totalOrders,
             ]);
 
-            // Charger les utilisateurs de la BDD (admins, gestionnaires)
-            $usersFromDB = User::all();
-            
-            // Statistiques générales
-            $totalUsers = count($employees) + count($usersFromDB);
-            $totalCompanies = count($companies);
-            $totalRestaurants = count($restaurants);
-            $totalOrders = count($orders);
-
-            // Répartition par rôle - Combiner BDD + JSON
+            // Répartition par rôle - Combiner Users (admins/gestionnaires) + Employees
             $usersByRole = [];
             
             // Compter les utilisateurs de la BDD (gestionnaires, admins)
+            $usersFromDB = User::with('role')->get();
             foreach ($usersFromDB as $user) {
-                // $user->role est une relation, on doit accéder à ->name
                 $role = $user->role->name ?? 'Utilisateur';
                 $usersByRole[$role] = ($usersByRole[$role] ?? 0) + 1;
             }
             
-            // Compter les employés du JSON
-            foreach ($employees as $emp) {
-                $role = $emp['role'] ?? 'Utilisateur';
-                $usersByRole[$role] = ($usersByRole[$role] ?? 0) + 1;
-            }
+            // Ajouter les employés
+            $employeeCount = Employee::count();
+            $usersByRole['Employé'] = ($usersByRole['Employé'] ?? 0) + $employeeCount;
 
-            // Tickets émis
-            $totalTicketsIssued = array_sum(array_column($assignments, 'tickets_count'));
-            $totalTicketsValue = 0;
-            foreach ($assignments as $assignment) {
-                $totalTicketsValue += ($assignment['tickets_count'] * $assignment['ticket_value']);
-            }
+            // Tickets émis - agrégation SQL
+            $ticketStats = UserTicket::selectRaw('
+                SUM(tickets_count) as total_tickets,
+                SUM(tickets_count * ticket_value) as total_value
+            ')->first();
+            
+            $totalTicketsIssued = $ticketStats->total_tickets ?? 0;
+            $totalTicketsValue = $ticketStats->total_value ?? 0;
 
             // Commandes par mois (6 derniers mois)
-            $ordersByMonth = $this->getOrdersByMonth($orders, 6);
+            $ordersByMonth = $this->getOrdersByMonth();
 
             // Restaurants les plus actifs
-            $restaurantStats = $this->getTopRestaurantsByRevenue($orders, $restaurants);
+            $restaurantStats = $this->getTopRestaurantsByRevenue();
             
             // Commandes par entreprise
-            $ordersByCompany = $this->getOrdersByCompany($orders, $companies);
+            $ordersByCompany = $this->getOrdersByCompany();
             
             // Tickets affectés par mois et par entreprise
-            $ticketsByMonthAndCompany = $this->getTicketsByMonthAndCompany($assignments, $companies);
+            $ticketsByMonthAndCompany = $this->getTicketsByMonthAndCompany();
 
             return response()->json([
                 'success' => true,
@@ -106,6 +90,7 @@ class DashboardStatsController extends Controller
                 ]
             ]);
         } catch (\Exception $e) {
+            Log::error('❌ [DashboardStats] Erreur getAdminStats', ['error' => $e->getMessage()]);
             return response()->json(['error' => $e->getMessage()], 500);
         }
     }
@@ -122,45 +107,37 @@ class DashboardStatsController extends Controller
                 return response()->json(['error' => 'Company ID manquant'], 401);
             }
 
-            $employees = $this->loadFile($this->employeesFile);
-            $orders = $this->loadFile($this->ordersFile);
-            $assignments = $this->loadFile($this->assignmentsFile);
+            // Récupérer les IDs des employés de l'entreprise
+            $companyEmployeeIds = Employee::where('company_id', $companyId)
+                ->pluck('id')
+                ->toArray();
 
-            // Filtrer les employés de l'entreprise
-            $companyEmployees = array_filter($employees, fn($e) => ($e['company_id'] ?? '') === $companyId);
-            
-            // Créer un index des IDs d'employés de l'entreprise
-            $companyEmployeeIds = array_column($companyEmployees, 'id');
-            
-            // Filtrer les commandes des employés de l'entreprise (via employee_id)
-            $companyOrders = array_filter($orders, fn($o) => in_array($o['employee_id'] ?? '', $companyEmployeeIds));
-            
-            // Filtrer les affectations des employés de l'entreprise (via employee_id)
-            $companyAssignments = array_filter($assignments, fn($a) => in_array($a['employee_id'] ?? '', $companyEmployeeIds));
+            // Statistiques générales
+            $totalEmployees = count($companyEmployeeIds);
+            $totalOrders = Order::whereIn('employee_id', $companyEmployeeIds)->count();
+            $totalSpent = Order::whereIn('employee_id', $companyEmployeeIds)
+                ->sum('total_amount');
 
             // Dépenses par restaurant
-            $expensesByRestaurant = $this->getExpensesByRestaurant($companyOrders);
+            $expensesByRestaurant = $this->getExpensesByRestaurant($companyEmployeeIds);
 
             // Dépenses par employé
-            $expensesByEmployee = $this->getExpensesByEmployee($companyOrders, $companyEmployees);
+            $expensesByEmployee = $this->getExpensesByEmployee($companyEmployeeIds);
 
             // Évolution mensuelle
-            $monthlyExpenses = $this->getMonthlyExpenses($companyOrders, 6);
+            $monthlyExpenses = $this->getMonthlyExpenses($companyEmployeeIds);
 
             // Taux d'utilisation des tickets
-            $totalAssigned = array_sum(array_column($companyAssignments, 'tickets_count'));
+            $totalAssigned = UserTicket::whereIn('employee_id', $companyEmployeeIds)
+                ->sum('tickets_count');
             
-            // Obtenir la valeur d'un ticket (depuis la première affectation)
-            $ticketValue = 500; // Valeur par défaut
-            if (!empty($companyAssignments)) {
-                $ticketValue = $companyAssignments[0]['ticket_value'] ?? 500;
-            }
+            // Calculer le solde total restant de tous les employés
+            $totalBalanceAmount = Employee::whereIn('id', $companyEmployeeIds)
+                ->sum('ticket_balance');
             
-            // Calculer le solde total restant de tous les employés (en valeur monétaire)
-            $totalBalanceAmount = 0;
-            foreach ($companyEmployees as $emp) {
-                $totalBalanceAmount += $emp['ticket_balance'] ?? 0;
-            }
+            // Obtenir la valeur d'un ticket (depuis la première affectation ou config)
+            $ticketValue = UserTicket::whereIn('employee_id', $companyEmployeeIds)
+                ->value('ticket_value') ?? 500;
             
             // Convertir le solde en nombre de tickets
             $totalBalanceTickets = $ticketValue > 0 ? round($totalBalanceAmount / $ticketValue) : 0;
@@ -175,9 +152,9 @@ class DashboardStatsController extends Controller
                 'success' => true,
                 'data' => [
                     'overview' => [
-                        'total_employees' => count($companyEmployees),
-                        'total_orders' => count($companyOrders),
-                        'total_spent' => array_sum(array_column($companyOrders, 'total_amount')),
+                        'total_employees' => $totalEmployees,
+                        'total_orders' => $totalOrders,
+                        'total_spent' => $totalSpent,
                         'tickets_usage_rate' => $usageRate,
                     ],
                     'expenses_by_restaurant' => $expensesByRestaurant,
@@ -186,6 +163,7 @@ class DashboardStatsController extends Controller
                 ]
             ]);
         } catch (\Exception $e) {
+            Log::error('❌ [DashboardStats] Erreur getCompanyStats', ['error' => $e->getMessage()]);
             return response()->json(['error' => $e->getMessage()], 500);
         }
     }
@@ -198,64 +176,45 @@ class DashboardStatsController extends Controller
         try {
             $restaurantId = $request->header('X-User-Restaurant-Id');
             
-            \Log::info('🍽️ [getRestaurantStats] Début', [
+            Log::info('🍽️ [getRestaurantStats] Début', [
                 'restaurant_id' => $restaurantId,
             ]);
             
             if (!$restaurantId) {
-                \Log::error('🍽️ [getRestaurantStats] Restaurant ID manquant');
+                Log::error('🍽️ [getRestaurantStats] Restaurant ID manquant');
                 return response()->json(['error' => 'Restaurant ID manquant'], 401);
             }
 
-            $orders = $this->loadFile($this->ordersFile);
-            $restaurants = $this->loadFile($this->restaurantsFile);
+            // Statistiques générales (seulement commandes confirmées)
+            $totalOrders = Order::where('restaurant_id', $restaurantId)
+                ->where('status', 'confirmed')
+                ->count();
+                
+            $totalRevenue = Order::where('restaurant_id', $restaurantId)
+                ->where('status', 'confirmed')
+                ->sum('total_amount');
             
-            \Log::info('🍽️ [getRestaurantStats] Fichiers chargés', [
-                'orders_count' => count($orders),
-                'restaurants_count' => count($restaurants),
+            $avgOrderValue = $totalOrders > 0 ? $totalRevenue / $totalOrders : 0;
+
+            Log::info('🍽️ [getRestaurantStats] Données chargées', [
+                'total_orders' => $totalOrders,
+                'total_revenue' => $totalRevenue,
             ]);
 
-            // Filtrer les commandes du restaurant (seulement les validées)
-            $restaurantOrders = array_filter($orders, function($o) use ($restaurantId) {
-                return ($o['restaurant_id'] ?? '') === $restaurantId 
-                    && ($o['status'] ?? '') === 'confirmed';
-            });
-            
-            \Log::info('🍽️ [getRestaurantStats] Commandes filtrées', [
-                'total_orders' => count($restaurantOrders),
-                'restaurant_id' => $restaurantId,
-            ]);
-
-            // Commandes par mois
-            $ordersByMonth = $this->getOrdersByMonth($restaurantOrders, 6);
+            // Commandes par mois (6 derniers mois, seulement confirmées)
+            $ordersByMonth = $this->getOrdersByMonthForRestaurant($restaurantId);
 
             // Revenus par entreprise
-            $revenueByCompany = $this->getRevenueByCompany($restaurantOrders);
+            $revenueByCompany = $this->getRevenueByCompanyForRestaurant($restaurantId);
 
             // Plats les plus commandés
-            try {
-                \Log::info('🍽️ [getRestaurantStats] Chargement des plats...');
-                $topDishes = $this->getTopDishes($restaurantOrders);
-                \Log::info('🍽️ [getRestaurantStats] Plats chargés', [
-                    'count' => count($topDishes),
-                ]);
-            } catch (\Exception $e) {
-                \Log::error('🍽️ [getRestaurantStats] Erreur getTopDishes', [
-                    'error' => $e->getMessage(),
-                ]);
-                // En cas d'erreur, renvoyer un tableau vide au lieu de crasher
-                $topDishes = [];
-            }
-
-            // Statistiques générales (seulement commandes confirmées)
-            $totalRevenue = array_sum(array_column($restaurantOrders, 'total_amount'));
-            $avgOrderValue = count($restaurantOrders) > 0 ? $totalRevenue / count($restaurantOrders) : 0;
+            $topDishes = $this->getTopDishes($restaurantId);
 
             return response()->json([
                 'success' => true,
                 'data' => [
                     'overview' => [
-                        'total_orders' => count($restaurantOrders),
+                        'total_orders' => $totalOrders,
                         'total_revenue' => $totalRevenue,
                         'average_order_value' => round($avgOrderValue),
                     ],
@@ -265,6 +224,7 @@ class DashboardStatsController extends Controller
                 ]
             ]);
         } catch (\Exception $e) {
+            Log::error('❌ [DashboardStats] Erreur getRestaurantStats', ['error' => $e->getMessage()]);
             return response()->json(['error' => $e->getMessage()], 500);
         }
     }
@@ -281,28 +241,22 @@ class DashboardStatsController extends Controller
                 return response()->json(['error' => 'User ID manquant'], 401);
             }
 
-            $orders = $this->loadFile($this->ordersFile);
-            $assignments = $this->loadFile($this->assignmentsFile);
+            // Statistiques générales
+            $totalOrders = Order::where('employee_id', $userId)->count();
+            $totalSpent = Order::where('employee_id', $userId)->sum('total_amount');
+            $totalAssigned = UserTicket::where('employee_id', $userId)->sum('tickets_count');
 
-            // Filtrer les commandes de l'employé
-            $userOrders = array_filter($orders, fn($o) => ($o['employee_id'] ?? '') === $userId);
-
-            // Utilisation mensuelle
-            $monthlyUsage = $this->getMonthlyExpenses($userOrders, 6);
+            // Utilisation mensuelle (6 derniers mois)
+            $monthlyUsage = $this->getMonthlyExpensesForEmployee($userId);
 
             // Restaurants favoris
-            $favoriteRestaurants = $this->getFavoriteRestaurants($userOrders);
-
-            // Tickets assignés
-            $userAssignments = array_filter($assignments, fn($a) => ($a['employee_id'] ?? '') === $userId);
-            $totalAssigned = array_sum(array_column($userAssignments, 'tickets_count'));
-            $totalSpent = array_sum(array_column($userOrders, 'total_amount'));
+            $favoriteRestaurants = $this->getFavoriteRestaurants($userId);
 
             return response()->json([
                 'success' => true,
                 'data' => [
                     'overview' => [
-                        'total_orders' => count($userOrders),
+                        'total_orders' => $totalOrders,
                         'total_spent' => $totalSpent,
                         'tickets_assigned' => $totalAssigned,
                     ],
@@ -311,342 +265,288 @@ class DashboardStatsController extends Controller
                 ]
             ]);
         } catch (\Exception $e) {
+            Log::error('❌ [DashboardStats] Erreur getEmployeeStats', ['error' => $e->getMessage()]);
             return response()->json(['error' => $e->getMessage()], 500);
         }
     }
 
-    // Méthodes utilitaires
-
-    private function loadFile($filename)
-    {
-        try {
-            $path = storage_path("app/{$filename}");
-            
-            if (!file_exists($path)) {
-                \Log::warning("⚠️ Fichier non trouvé: {$path}");
-                return [];
-            }
-            
-            $content = file_get_contents($path);
-            $data = json_decode($content, true);
-            
-            if (json_last_error() !== JSON_ERROR_NONE) {
-                \Log::error("❌ Erreur JSON dans {$filename}: " . json_last_error_msg());
-                return [];
-            }
-            
-            \Log::info("✅ Fichier chargé: {$filename} - " . count($data ?? []) . " éléments");
-            return $data ?? [];
-        } catch (\Exception $e) {
-            \Log::error("❌ Erreur chargement {$filename}: " . $e->getMessage());
-            return [];
-        }
-    }
-
-    private function getOrdersByMonth($orders, $months = 6)
+    // =============== Méthodes utilitaires SQL ===============
+    
+    /**
+     * Commandes par mois (pour Admin - toutes les commandes)
+     */
+    private function getOrdersByMonth($months = 6)
     {
         $result = [];
         for ($i = $months - 1; $i >= 0; $i--) {
-            $month = date('Y-m', strtotime("-$i months"));
-            $monthName = date('M', strtotime("-$i months"));
+            $startOfMonth = now()->subMonths($i)->startOfMonth();
+            $endOfMonth = now()->subMonths($i)->endOfMonth();
             
-            $monthOrders = array_filter($orders, function($o) use ($month) {
-                return isset($o['created_at']) && strpos($o['created_at'], $month) === 0;
-            });
+            $stats = Order::whereBetween('created_at', [$startOfMonth, $endOfMonth])
+                ->selectRaw('COUNT(*) as count, SUM(total_amount) as amount')
+                ->first();
             
             $result[] = [
-                'month' => $monthName,
-                'orders' => count($monthOrders),
-                'amount' => array_sum(array_column($monthOrders, 'total_amount')),
+                'month' => $startOfMonth->format('M'),
+                'orders' => $stats->count ?? 0,
+                'amount' => $stats->amount ?? 0,
             ];
         }
         return $result;
     }
 
-    private function getTopRestaurantsByRevenue($orders, $restaurants)
+    /**
+     * Top restaurants par revenue (pour Admin)
+     */
+    private function getTopRestaurantsByRevenue()
     {
-        $stats = [];
-        foreach ($orders as $order) {
-            $rid = $order['restaurant_id'] ?? '';
-            if (!isset($stats[$rid])) {
-                $restaurant = collect($restaurants)->firstWhere('id', $rid);
-                $stats[$rid] = [
-                    'restaurant_id' => $rid,
-                    'restaurant_name' => $restaurant['name'] ?? 'Inconnu',
-                    'orders' => 0,
-                    'revenue' => 0,
-                ];
-            }
-            $stats[$rid]['orders']++;
-            $stats[$rid]['revenue'] += $order['total_amount'] ?? 0;
-        }
-        usort($stats, fn($a, $b) => $b['revenue'] - $a['revenue']);
-        return array_values($stats);
-    }
+        $stats = Order::select('restaurant_id')
+            ->selectRaw('COUNT(*) as orders')
+            ->selectRaw('SUM(total_amount) as revenue')
+            ->groupBy('restaurant_id')
+            ->orderByDesc('revenue')
+            ->get();
 
-    private function getOrdersByCompany($orders, $companies)
-    {
-        // Charger les employés pour obtenir le company_id
-        $employees = $this->loadFile($this->employeesFile);
-        $employeesById = [];
-        foreach ($employees as $emp) {
-            $employeesById[$emp['id']] = $emp;
-        }
+        $result = [];
+        $restaurants = Restaurant::all()->keyBy('id');
         
-        $stats = [];
-        foreach ($orders as $order) {
-            // Récupérer le company_id depuis l'employé
-            $employeeId = $order['employee_id'] ?? '';
-            $employee = $employeesById[$employeeId] ?? null;
-            $cid = $employee['company_id'] ?? '';
-            
-            if (!$cid) continue; // Ignorer les commandes sans entreprise
-            
-            if (!isset($stats[$cid])) {
-                $company = collect($companies)->firstWhere('id', (string)$cid);
-                $stats[$cid] = [
-                    'company_id' => $cid,
-                    'company_name' => $company['name'] ?? 'Inconnue',
-                    'orders' => 0,
-                    'amount' => 0,
-                ];
-            }
-            $stats[$cid]['orders']++;
-            $stats[$cid]['amount'] += $order['total_amount'] ?? 0;
-        }
-        usort($stats, fn($a, $b) => $b['orders'] - $a['orders']);
-        return array_values($stats);
-    }
-
-    private function getTicketsByMonthAndCompany($assignments, $companies)
-    {
-        \Log::info('🎫 [getTicketsByMonthAndCompany] Début', [
-            'assignments_count' => count($assignments),
-            'companies_count' => count($companies),
-        ]);
-        
-        // Charger les employés pour obtenir le company_id
-        $employees = $this->loadFile($this->employeesFile);
-        $employeesById = [];
-        foreach ($employees as $emp) {
-            $employeesById[$emp['id']] = $emp;
-        }
-        
-        \Log::info('🎫 [getTicketsByMonthAndCompany] Employés chargés', [
-            'employees_count' => count($employees),
-        ]);
-        
-        // Créer un tableau des mois (6 derniers mois)
-        $monthsData = [];
-        for ($i = 5; $i >= 0; $i--) {
-            $month = date('Y-m', strtotime("-$i months"));
-            $monthName = date('M y', strtotime("-$i months"));
-            $monthsData[] = [
-                'month' => $monthName,
-                'month_key' => $month,
+        foreach ($stats as $stat) {
+            $restaurant = $restaurants->get($stat->restaurant_id);
+            $result[] = [
+                'restaurant_id' => $stat->restaurant_id,
+                'restaurant_name' => $restaurant->name ?? 'Inconnu',
+                'orders' => $stat->orders,
+                'revenue' => $stat->revenue,
             ];
         }
         
-        \Log::info('🎫 [getTicketsByMonthAndCompany] Mois générés', [
-            'months' => array_column($monthsData, 'month_key'),
-        ]);
+        return $result;
+    }
 
-        // Index des entreprises
-        $companiesById = [];
-        foreach ($companies as $company) {
-            $companiesById[$company['id']] = $company['name'];
-        }
+    /**
+     * Commandes par entreprise (pour Admin)
+     */
+    private function getOrdersByCompany()
+    {
+        $stats = Order::join('employees', 'orders.employee_id', '=', 'employees.id')
+            ->select('employees.company_id')
+            ->selectRaw('COUNT(orders.id) as orders_count')
+            ->selectRaw('SUM(orders.total_amount) as total_amount')
+            ->groupBy('employees.company_id')
+            ->orderByDesc('orders_count')
+            ->get();
 
-        // Grouper les affectations par mois et par entreprise
-        $ticketsByMonth = [];
-        foreach ($assignments as $assignment) {
-            $createdAt = $assignment['created_at'] ?? '';
-            $employeeId = $assignment['employee_id'] ?? '';
-            $ticketsCount = $assignment['tickets_count'] ?? 0;
-
-            if (!$createdAt || !$employeeId) continue;
-
-            // Récupérer le company_id depuis l'employé
-            $employee = $employeesById[$employeeId] ?? null;
-            $companyId = $employee['company_id'] ?? '';
-            
-            if (!$companyId) continue;
-
-            $month = date('Y-m', strtotime($createdAt));
-            $monthName = date('M y', strtotime($createdAt));
-
-            if (!isset($ticketsByMonth[$month])) {
-                $ticketsByMonth[$month] = [
-                    'month' => $monthName,
-                ];
-            }
-
-            $companyName = $companiesById[$companyId] ?? 'Inconnue';
-            if (!isset($ticketsByMonth[$month][$companyName])) {
-                $ticketsByMonth[$month][$companyName] = 0;
-            }
-            $ticketsByMonth[$month][$companyName] += $ticketsCount;
-        }
-
-        \Log::info('🎫 [getTicketsByMonthAndCompany] Données groupées par mois', [
-            'ticketsByMonth_keys' => array_keys($ticketsByMonth),
-            'ticketsByMonth' => $ticketsByMonth,
-        ]);
+        $result = [];
+        $companies = Company::all()->keyBy('id');
         
+        foreach ($stats as $stat) {
+            $company = $companies->get($stat->company_id);
+            $result[] = [
+                'company_id' => $stat->company_id,
+                'company_name' => $company->name ?? 'Inconnue',
+                'orders' => $stat->orders_count,
+                'amount' => $stat->total_amount,
+            ];
+        }
+        
+        return $result;
+    }
+
+    /**
+     * Tickets affectés par mois et par entreprise (pour Admin)
+     */
+    private function getTicketsByMonthAndCompany()
+    {
+        // Créer un tableau des 6 derniers mois
+        $monthsData = [];
+        for ($i = 5; $i >= 0; $i--) {
+            $date = now()->subMonths($i);
+            $monthsData[] = [
+                'month' => $date->format('M y'),
+                'month_key' => $date->format('Y-m'),
+            ];
+        }
+
+        // Récupérer les tickets par mois et par entreprise via la jointure
+        $tickets = UserTicket::join('employees', 'user_tickets.employee_id', '=', 'employees.id')
+            ->join('companies', 'employees.company_id', '=', 'companies.id')
+            ->selectRaw('DATE_FORMAT(user_tickets.created_at, "%Y-%m") as month')
+            ->selectRaw('companies.name as company_name')
+            ->selectRaw('SUM(user_tickets.tickets_count) as total_tickets')
+            ->groupBy('month', 'company_name')
+            ->get();
+
+        // Indexer par mois et entreprise
+        $ticketsByMonth = [];
+        foreach ($tickets as $ticket) {
+            if (!isset($ticketsByMonth[$ticket->month])) {
+                $ticketsByMonth[$ticket->month] = [];
+            }
+            $ticketsByMonth[$ticket->month][$ticket->company_name] = $ticket->total_tickets;
+        }
+
         // Construire le résultat final avec tous les mois
         $result = [];
         foreach ($monthsData as $monthData) {
-            $monthKey = $monthData['month_key'];
-            $monthName = $monthData['month'];
+            $row = ['month' => $monthData['month']];
             
-            $row = ['month' => $monthName];
-            
-            // Ajouter les tickets de chaque entreprise pour ce mois
-            if (isset($ticketsByMonth[$monthKey])) {
-                foreach ($ticketsByMonth[$monthKey] as $key => $value) {
-                    if ($key !== 'month') {
-                        $row[$key] = $value;
-                    }
+            if (isset($ticketsByMonth[$monthData['month_key']])) {
+                foreach ($ticketsByMonth[$monthData['month_key']] as $companyName => $count) {
+                    $row[$companyName] = $count;
                 }
             }
             
             $result[] = $row;
         }
 
-        \Log::info('🎫 [getTicketsByMonthAndCompany] Résultat final', [
-            'result_count' => count($result),
-            'result' => $result,
-        ]);
-
         return $result;
     }
 
-    private function getExpensesByRestaurant($orders)
+    /**
+     * Dépenses par restaurant (pour Company)
+     */
+    private function getExpensesByRestaurant(array $employeeIds)
     {
-        // Charger les restaurants depuis la BDD (plus fiable que le JSON)
-        $restaurants = \App\Models\Restaurant::all()->toArray();
+        $stats = Order::whereIn('employee_id', $employeeIds)
+            ->select('restaurant_id')
+            ->selectRaw('COUNT(*) as orders_count')
+            ->selectRaw('SUM(total_amount) as amount')
+            ->groupBy('restaurant_id')
+            ->get();
+
+        $result = [];
+        $restaurants = Restaurant::all()->keyBy('id');
         
-        $expenses = [];
-        foreach ($orders as $order) {
-            $rid = $order['restaurant_id'] ?? 'unknown';
-            
-            // Priorité 1: Utiliser restaurant_name des items de la commande
-            $rname = 'Inconnu';
-            if (!empty($order['items'][0]['restaurant_name'])) {
-                $rname = $order['items'][0]['restaurant_name'];
-            } else {
-                // Priorité 2: Chercher dans restaurants.json
-                $restaurant = collect($restaurants)->firstWhere('id', $rid);
-                
-                // Si pas trouvé, essayer avec le préfixe rest_*_
-                if (!$restaurant) {
-                    $restaurant = collect($restaurants)->first(function($r) use ($rid) {
-                        return str_ends_with($r['id'], '_' . $rid);
-                    });
-                }
-                
-                if ($restaurant && !empty($restaurant['name'])) {
-                    $rname = $restaurant['name'];
-                }
-            }
-            
-            if (!isset($expenses[$rid])) {
-                $expenses[$rid] = ['name' => $rname, 'amount' => 0, 'orders' => 0];
-            }
-            $expenses[$rid]['amount'] += $order['total_amount'] ?? 0;
-            $expenses[$rid]['orders']++;
+        foreach ($stats as $stat) {
+            $restaurant = $restaurants->get($stat->restaurant_id);
+            $result[] = [
+                'name' => $restaurant->name ?? 'Inconnu',
+                'amount' => $stat->amount,
+                'orders' => $stat->orders_count,
+            ];
         }
-        return array_values($expenses);
+        
+        return $result;
     }
 
-    private function getExpensesByEmployee($orders, $employees)
+    /**
+     * Dépenses par employé (pour Company)
+     */
+    private function getExpensesByEmployee(array $employeeIds)
     {
-        $expenses = [];
-        foreach ($orders as $order) {
-            $eid = $order['employee_id'] ?? '';
-            if (!isset($expenses[$eid])) {
-                $employee = collect($employees)->firstWhere('id', $eid);
-                $expenses[$eid] = [
-                    'name' => $employee['name'] ?? 'Inconnu',
-                    'amount' => 0,
-                    'orders' => 0,
-                ];
-            }
-            $expenses[$eid]['amount'] += $order['total_amount'] ?? 0;
-            $expenses[$eid]['orders']++;
+        $stats = Order::whereIn('employee_id', $employeeIds)
+            ->select('employee_id', 'employee_name')
+            ->selectRaw('COUNT(*) as orders_count')
+            ->selectRaw('SUM(total_amount) as amount')
+            ->groupBy('employee_id', 'employee_name')
+            ->orderByDesc('amount')
+            ->get();
+
+        $result = [];
+        foreach ($stats as $stat) {
+            $result[] = [
+                'name' => $stat->employee_name,
+                'amount' => $stat->amount,
+                'orders' => $stat->orders_count,
+            ];
         }
-        usort($expenses, fn($a, $b) => $b['amount'] - $a['amount']);
-        return array_values($expenses);
+        
+        return $result;
     }
 
-    private function getMonthlyExpenses($orders, $months = 6)
+    /**
+     * Évolution mensuelle des dépenses (pour Company)
+     */
+    private function getMonthlyExpenses(array $employeeIds, $months = 6)
     {
         $result = [];
         for ($i = $months - 1; $i >= 0; $i--) {
-            $month = date('Y-m', strtotime("-$i months"));
-            $monthName = date('M', strtotime("-$i months"));
+            $startOfMonth = now()->subMonths($i)->startOfMonth();
+            $endOfMonth = now()->subMonths($i)->endOfMonth();
             
-            $monthOrders = array_filter($orders, function($o) use ($month) {
-                return isset($o['created_at']) && strpos($o['created_at'], $month) === 0;
-            });
+            $amount = Order::whereIn('employee_id', $employeeIds)
+                ->whereBetween('created_at', [$startOfMonth, $endOfMonth])
+                ->sum('total_amount');
             
             $result[] = [
-                'month' => $monthName,
-                'amount' => array_sum(array_column($monthOrders, 'total_amount')),
+                'month' => $startOfMonth->format('M'),
+                'amount' => $amount,
             ];
         }
         return $result;
     }
 
-    private function getRevenueByCompany($orders)
+    /**
+     * Commandes par mois pour un restaurant spécifique
+     */
+    private function getOrdersByMonthForRestaurant($restaurantId, $months = 6)
     {
-        $revenue = [];
-        foreach ($orders as $order) {
-            $cid = $order['company_id'] ?? 'unknown';
-            $cname = $order['company_name'] ?? 'Inconnu';
-            if (!isset($revenue[$cid])) {
-                $revenue[$cid] = ['name' => $cname, 'amount' => 0];
-            }
-            $revenue[$cid]['amount'] += $order['total_amount'] ?? 0;
+        $result = [];
+        for ($i = $months - 1; $i >= 0; $i--) {
+            $startOfMonth = now()->subMonths($i)->startOfMonth();
+            $endOfMonth = now()->subMonths($i)->endOfMonth();
+            
+            $stats = Order::where('restaurant_id', $restaurantId)
+                ->where('status', 'confirmed')
+                ->whereBetween('created_at', [$startOfMonth, $endOfMonth])
+                ->selectRaw('COUNT(*) as count, SUM(total_amount) as amount')
+                ->first();
+            
+            $result[] = [
+                'month' => $startOfMonth->format('M'),
+                'orders' => $stats->count ?? 0,
+                'amount' => $stats->amount ?? 0,
+            ];
         }
-        return array_values($revenue);
+        return $result;
     }
 
-    private function getTopDishes($orders)
+    /**
+     * Revenus par entreprise pour un restaurant
+     */
+    private function getRevenueByCompanyForRestaurant($restaurantId)
     {
-        // Charger les plats depuis menu_items.json pour récupérer les noms
-        $menuItemsPath = storage_path('app/private/menu_items.json');
-        $menuItems = [];
-        if (file_exists($menuItemsPath)) {
-            $menuItems = json_decode(file_get_contents($menuItemsPath), true) ?? [];
-            // Indexer par item_id pour accès rapide
-            $menuItemsById = [];
-            foreach ($menuItems as $menuItem) {
-                $menuItemsById[$menuItem['id']] = $menuItem;
-            }
+        // Les commandes contiennent directement company_id et company_name
+        $stats = Order::where('orders.restaurant_id', $restaurantId)
+            ->where('orders.status', 'confirmed')
+            ->join('employees', 'orders.employee_id', '=', 'employees.id')
+            ->select('employees.company_name')
+            ->selectRaw('SUM(orders.total_amount) as amount')
+            ->groupBy('employees.company_name')
+            ->get();
+
+        $result = [];
+        foreach ($stats as $stat) {
+            $result[] = [
+                'name' => $stat->company_name ?? 'Inconnu',
+                'amount' => $stat->amount,
+            ];
         }
+        
+        return $result;
+    }
+
+    /**
+     * Top plats les plus commandés (pour Restaurant)
+     */
+    private function getTopDishes($restaurantId)
+    {
+        // Récupérer toutes les commandes confirmées du restaurant
+        $orders = Order::where('restaurant_id', $restaurantId)
+            ->where('status', 'confirmed')
+            ->get();
         
         $dishes = [];
         
+        // Parcourir les items JSON de chaque commande
         foreach ($orders as $order) {
-            foreach ($order['items'] ?? [] as $item) {
-                // Priorité 1: Nom depuis l'item (nouvelles commandes)
-                $name = $item['name'] ?? null;
-                
-                // Priorité 2: Chercher dans menu_items.json via item_id (anciennes commandes)
-                if (!$name && isset($item['item_id']) && isset($menuItemsById[$item['item_id']])) {
-                    $name = $menuItemsById[$item['item_id']]['name'] ?? null;
-                }
-                
-                // Fallback: Plat inconnu
-                if (!$name) {
-                    $name = 'Plat inconnu';
-                }
-                
+            $items = $order->items ?? []; // Le cast array est automatique
+            
+            foreach ($items as $item) {
+                $name = $item['name'] ?? 'Plat inconnu';
                 $quantity = $item['quantity'] ?? 0;
                 $price = $item['price'] ?? 0;
                 
-                // Initialiser le plat s'il n'existe pas encore
                 if (!isset($dishes[$name])) {
                     $dishes[$name] = [
                         'name' => $name,
@@ -656,34 +556,66 @@ class DashboardStatsController extends Controller
                     ];
                 }
                 
-                // Incrémenter les statistiques
                 $dishes[$name]['quantity'] += $quantity;
                 $dishes[$name]['revenue'] += $price * $quantity;
-                $dishes[$name]['orders_count'] += 1; // Nombre de commandes contenant ce plat
+                $dishes[$name]['orders_count'] += 1;
             }
         }
         
         // Trier par quantité décroissante
-        usort($dishes, fn($a, $b) => $b['quantity'] - $a['quantity']);
+        $dishesArray = array_values($dishes);
+        usort($dishesArray, fn($a, $b) => $b['quantity'] - $a['quantity']);
         
-        // Limiter aux 10 premiers
-        return array_slice(array_values($dishes), 0, 10);
+        return array_slice($dishesArray, 0, 10);
     }
 
-    private function getFavoriteRestaurants($orders)
+    /**
+     * Utilisation mensuelle pour un employé
+     */
+    private function getMonthlyExpensesForEmployee($employeeId, $months = 6)
     {
-        $restaurants = [];
-        foreach ($orders as $order) {
-            $rid = $order['restaurant_id'] ?? '';
-            $rname = $order['restaurant_name'] ?? 'Inconnu';
-            if (!isset($restaurants[$rid])) {
-                $restaurants[$rid] = ['name' => $rname, 'orders' => 0, 'amount' => 0];
-            }
-            $restaurants[$rid]['orders']++;
-            $restaurants[$rid]['amount'] += $order['total_amount'] ?? 0;
+        $result = [];
+        for ($i = $months - 1; $i >= 0; $i--) {
+            $startOfMonth = now()->subMonths($i)->startOfMonth();
+            $endOfMonth = now()->subMonths($i)->endOfMonth();
+            
+            $amount = Order::where('employee_id', $employeeId)
+                ->whereBetween('created_at', [$startOfMonth, $endOfMonth])
+                ->sum('total_amount');
+            
+            $result[] = [
+                'month' => $startOfMonth->format('M'),
+                'amount' => $amount,
+            ];
         }
-        usort($restaurants, fn($a, $b) => $b['orders'] - $a['orders']);
-        return array_values($restaurants);
+        return $result;
     }
 
+    /**
+     * Restaurants favoris d'un employé
+     */
+    private function getFavoriteRestaurants($employeeId)
+    {
+        $stats = Order::where('employee_id', $employeeId)
+            ->select('restaurant_id')
+            ->selectRaw('COUNT(*) as orders_count')
+            ->selectRaw('SUM(total_amount) as amount')
+            ->groupBy('restaurant_id')
+            ->orderByDesc('orders_count')
+            ->get();
+
+        $result = [];
+        $restaurants = Restaurant::all()->keyBy('id');
+        
+        foreach ($stats as $stat) {
+            $restaurant = $restaurants->get($stat->restaurant_id);
+            $result[] = [
+                'name' => $restaurant->name ?? 'Inconnu',
+                'orders' => $stat->orders_count,
+                'amount' => $stat->amount,
+            ];
+        }
+        
+        return $result;
+    }
 }

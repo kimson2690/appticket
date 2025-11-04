@@ -162,28 +162,15 @@ class PasswordResetController extends Controller
      */
     private function saveResetToken($email, $token, $userType, $expiresAt)
     {
-        $filePath = storage_path('app/' . $this->resetTokensFile);
-        
-        $tokens = [];
-        if (file_exists($filePath)) {
-            $tokens = json_decode(file_get_contents($filePath), true) ?? [];
-        }
-
         // Supprimer les anciens tokens pour cet email
-        $tokens = array_filter($tokens, function($t) use ($email) {
-            return $t['email'] !== $email;
-        });
+        \App\Models\PasswordResetToken::where('email', $email)->delete();
 
-        // Ajouter le nouveau token
-        $tokens[] = [
+        // Créer le nouveau token en MySQL
+        \App\Models\PasswordResetToken::create([
             'email' => $email,
             'token' => $token,
-            'user_type' => $userType,
-            'expires_at' => $expiresAt,
-            'created_at' => now()->toDateTimeString()
-        ];
-
-        file_put_contents($filePath, json_encode($tokens, JSON_PRETTY_PRINT));
+            'expires_at' => $expiresAt
+        ]);
     }
 
     /**
@@ -191,29 +178,22 @@ class PasswordResetController extends Controller
      */
     private function verifyResetToken($email, $token)
     {
-        $filePath = storage_path('app/' . $this->resetTokensFile);
-        
-        if (!file_exists($filePath)) {
-            return null;
-        }
-
-        $tokens = json_decode(file_get_contents($filePath), true) ?? [];
-
-        $tokenData = collect($tokens)->first(function($t) use ($email, $token) {
-            return $t['email'] === $email && $t['token'] === $token;
-        });
+        // Chercher le token en MySQL
+        $tokenData = \App\Models\PasswordResetToken::where('email', $email)
+            ->where('token', $token)
+            ->first();
 
         if (!$tokenData) {
             return null;
         }
 
         // Vérifier l'expiration
-        if (strtotime($tokenData['expires_at']) < time()) {
+        if ($tokenData->expires_at->isPast()) {
             Log::warning("Token expiré pour: $email");
             return null;
         }
 
-        return $tokenData;
+        return $tokenData->toArray();
     }
 
     /**
@@ -221,31 +201,16 @@ class PasswordResetController extends Controller
      */
     private function deleteResetToken($email)
     {
-        $filePath = storage_path('app/' . $this->resetTokensFile);
-        
-        if (!file_exists($filePath)) {
-            return;
-        }
-
-        $tokens = json_decode(file_get_contents($filePath), true) ?? [];
-        
-        $tokens = array_filter($tokens, function($t) use ($email) {
-            return $t['email'] !== $email;
-        });
-
-        file_put_contents($filePath, json_encode(array_values($tokens), JSON_PRETTY_PRINT));
+        // Supprimer les tokens en MySQL
+        \App\Models\PasswordResetToken::where('email', $email)->delete();
     }
 
     /**
-     * Charger les employés
+     * Charger les employés depuis MySQL
      */
     private function loadEmployees()
     {
-        $filePath = storage_path('app/' . $this->employeesFile);
-        if (!file_exists($filePath)) {
-            return [];
-        }
-        return json_decode(file_get_contents($filePath), true) ?? [];
+        return \App\Models\Employee::all()->toArray();
     }
 
     /**

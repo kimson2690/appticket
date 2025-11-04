@@ -16,12 +16,8 @@ class CompanyController extends Controller
     public function index(): JsonResponse
     {
         try {
-            // Charger les employés du fichier JSON
-            $employeesFile = storage_path('app/employees.json');
-            $jsonEmployees = [];
-            if (file_exists($employeesFile)) {
-                $jsonEmployees = json_decode(file_get_contents($employeesFile), true) ?? [];
-            }
+            // Charger les employés depuis MySQL
+            $jsonEmployees = \App\Models\Employee::all()->toArray();
 
             $companies = Company::withCount('users')
                 ->orderBy('created_at', 'desc')
@@ -140,12 +136,8 @@ class CompanyController extends Controller
         try {
             $company = Company::withCount('users')->findOrFail($id);
 
-            // Charger les employés du fichier JSON
-            $employeesFile = storage_path('app/employees.json');
-            $jsonEmployees = [];
-            if (file_exists($employeesFile)) {
-                $jsonEmployees = json_decode(file_get_contents($employeesFile), true) ?? [];
-            }
+            // Charger les employés depuis MySQL
+            $jsonEmployees = \App\Models\Employee::all()->toArray();
 
             // Compter les employés dans la base de données
             $dbCount = $company->users_count;
@@ -215,12 +207,8 @@ class CompanyController extends Controller
 
             $company->update($validated);
 
-            // Charger les employés du fichier JSON
-            $employeesFile = storage_path('app/employees.json');
-            $jsonEmployees = [];
-            if (file_exists($employeesFile)) {
-                $jsonEmployees = json_decode(file_get_contents($employeesFile), true) ?? [];
-            }
+            // Charger les employés depuis MySQL
+            $jsonEmployees = \App\Models\Employee::all()->toArray();
 
             // Compter les employés dans la base de données
             $dbCount = $company->users()->count();
@@ -282,12 +270,8 @@ class CompanyController extends Controller
         try {
             $company = Company::findOrFail($id);
             
-            // Charger les employés du fichier JSON
-            $employeesFile = storage_path('app/employees.json');
-            $jsonEmployees = [];
-            if (file_exists($employeesFile)) {
-                $jsonEmployees = json_decode(file_get_contents($employeesFile), true) ?? [];
-            }
+            // Charger les employés depuis MySQL
+            $jsonEmployees = \App\Models\Employee::all()->toArray();
 
             // Compter les employés dans la base de données
             $dbCount = $company->users()->count();

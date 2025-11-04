@@ -721,13 +721,19 @@ interface TicketDistribution {
 
 export interface TicketConfiguration {
   id: string;
-  company_id: string;
-  ticket_value: number;
-  validity_duration_days: number;
-  type: 'standard' | 'premium' | 'bonus';
-  auto_renewal: boolean;
-  logo?: string;
-  is_active: boolean;
+  company_id: number;
+  company_name: string;
+  ticket_value: string; // Backend retourne string "500.00"
+  monthly_allocation: number;
+  validity_days: number; // Changé de validity_duration_days
+  rollover_unused: boolean;
+  max_order_amount: string | null;
+  allowed_days: string[] | null;
+  start_time: string | null;
+  end_time: string | null;
+  weekend_usage: boolean;
+  restrictions: string | null;
+  status: 'active' | 'inactive'; // Changé de is_active
   created_at: string;
   updated_at: string;
 }
