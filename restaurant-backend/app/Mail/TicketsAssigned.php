@@ -9,9 +9,13 @@ use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 
-class TicketsAssigned extends Mailable
+class TicketsAssigned extends Mailable implements ShouldQueue
 {
     use Queueable, SerializesModels;
+
+    public $tries = 3;
+    public $timeout = 30;
+    public $backoff = [10, 30, 60];
 
     public $employeeName;
     public $ticketsCount;

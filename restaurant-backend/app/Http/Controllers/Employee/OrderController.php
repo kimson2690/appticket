@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\Mail;
 use App\Mail\OrderConfirmation;
 use App\Mail\NewOrderReceived;
 use App\Models\DeliveryLocation;
+use App\Helpers\EmailPriority;
 
 class OrderController extends Controller
 {
@@ -170,13 +171,15 @@ class OrderController extends Controller
                     ];
                 }, $validated['items']);
                 
-                Mail::to($employee->email)->send(new OrderConfirmation(
+                $mailable = new OrderConfirmation(
                     $userName, 
                     $restaurantName, 
                     $totalAmount,
                     $orderItemsForEmail,
                     $deliveryLocation
-                ));
+                );
+                $mailable->onQueue(EmailPriority::HIGH);
+                Mail::to($employee->email)->queue($mailable);
                 Log::info("Email de confirmation commande envoyé à: {$employee->email}");
             } catch (\Exception $e) {
                 Log::error("Erreur envoi email confirmation commande: " . $e->getMessage());
@@ -200,13 +203,15 @@ class OrderController extends Controller
                     }, $validated['items']);
                     
                     // Envoyer email
-                    Mail::to($manager->email)->send(new NewOrderReceived(
+                    $mailable = new NewOrderReceived(
                         $userName,
                         $restaurantName,
                         $totalAmount,
                         $orderItemsForEmail,
                         $deliveryLocation
-                    ));
+                    );
+                    $mailable->onQueue(EmailPriority::HIGH);
+                    Mail::to($manager->email)->queue($mailable);
                     Log::info("Email de nouvelle commande envoyé au restaurant: {$manager->email}");
                     
                     // Envoyer notification WhatsApp au gestionnaire

@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use App\Mail\PasswordReset;
+use App\Helpers\EmailPriority;
 
 class PasswordResetController extends Controller
 {
@@ -71,7 +72,7 @@ class PasswordResetController extends Controller
             $resetUrl = env('FRONTEND_URL', 'http://localhost:5173') . '/reset-password?token=' . $token . '&email=' . urlencode($email);
 
             // Envoyer l'email
-            Mail::to($email)->send(new PasswordReset($userName, $token, $resetUrl));
+            Mail::to($email)->queue(new PasswordReset($userName, $token, $resetUrl));
             
             Log::info("Email de réinitialisation envoyé à: $email, Token: $token");
 

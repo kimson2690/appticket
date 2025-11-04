@@ -11,9 +11,13 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use App\Mail\EmployeeRegistrationPending;
+use App\Helpers\EmailPriority;
 use App\Mail\EmployeeApproved;
+use App\Helpers\EmailPriority;
 use App\Mail\EmployeeRejected;
+use App\Helpers\EmailPriority;
 use App\Mail\NewEmployeeRegistration;
+use App\Helpers\EmailPriority;
 
 class EmployeeController extends Controller
 {

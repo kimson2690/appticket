@@ -373,7 +373,7 @@ class DashboardStatsController extends Controller
             ->selectRaw('DATE_FORMAT(user_tickets.created_at, "%Y-%m") as month')
             ->selectRaw('companies.name as company_name')
             ->selectRaw('SUM(user_tickets.tickets_count) as total_tickets')
-            ->groupBy('month', 'company_name')
+            ->groupBy(DB::raw('DATE_FORMAT(user_tickets.created_at, "%Y-%m")'), 'companies.name')
             ->get();
 
         // Indexer par mois et entreprise
