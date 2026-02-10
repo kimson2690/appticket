@@ -987,13 +987,7 @@ export const getEmployeeExpenses = async (params?: {
   start_date?: string;
   end_date?: string;
   restaurant_id?: string;
-}): Promise<Array<{
-  employee_id: string;
-  employee_name: string;
-  employee_email: string;
-  total_amount: number;
-  total_orders: number;
-}>> => {
+}): Promise<any> => {
   const queryParams = new URLSearchParams();
   if (params?.start_date) queryParams.append('start_date', params.start_date);
   if (params?.end_date) queryParams.append('end_date', params.end_date);
@@ -1013,8 +1007,7 @@ export const getEmployeeExpenses = async (params?: {
     throw new Error('Erreur lors du chargement des dépenses par employé');
   }
 
-  const result = await response.json();
-  return result.data;
+  return response.json();
 };
 
 // Dashboard Statistics

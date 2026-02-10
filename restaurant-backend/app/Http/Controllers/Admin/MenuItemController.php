@@ -50,7 +50,7 @@ class MenuItemController extends Controller
         try {
             Log::info('=== DÉBUT CRÉATION PLAT ===');
             Log::info('Données brutes reçues:', $request->all());
-            
+
             $validated = $request->validate([
                 'restaurant_id' => 'nullable|string',
                 'name' => 'required|string|max:255',
@@ -69,7 +69,7 @@ class MenuItemController extends Controller
             // Récupérer restaurant_id depuis la requête ou le header
             $restaurantId = $request->input('restaurant_id') ?? $request->header('X-User-Restaurant-Id');
             $createdByRaw = $request->header('X-User-Name') ?? 'Admin';
-            
+
             // Nettoyer les caractères UTF-8 du nom de l'utilisateur
             $createdBy = mb_convert_encoding($createdByRaw, 'UTF-8', 'UTF-8');
 
@@ -102,7 +102,7 @@ class MenuItemController extends Controller
 
             $menuItems[] = $newItem;
             Log::info('Nombre total de plats après ajout: ' . count($menuItems));
-            
+
             Log::info('Appel de saveMenuItems...');
             $this->saveMenuItems($menuItems);
             Log::info('saveMenuItems terminé avec succès');
@@ -217,6 +217,24 @@ class MenuItemController extends Controller
                 return response()->json(['error' => 'Plat non trouvé'], 404);
             }
 
+            // Vérifier si le plat est référencé dans des commandes
+            $ordersWithItem = \App\Models\Order::all()->filter(function ($order) use ($id) {
+                $items = is_array($order->items) ? $order->items : json_decode($order->items, true);
+                if (!is_array($items)) return false;
+                foreach ($items as $item) {
+                    if (isset($item['item_id']) && $item['item_id'] === $id) return true;
+                    if (isset($item['id']) && $item['id'] === $id) return true;
+                }
+                return false;
+            });
+
+            if ($ordersWithItem->count() > 0) {
+                return response()->json([
+                    'success' => false,
+                    'message' => "Impossible de supprimer ce plat car il est référencé dans {$ordersWithItem->count()} commande(s). Vous pouvez le rendre indisponible à la place."
+                ], 422);
+            }
+
             array_splice($menuItems, $itemIndex, 1);
             $this->saveMenuItems($menuItems);
 
@@ -286,33 +304,33 @@ class MenuItemController extends Controller
     private function saveMenuItems($menuItems)
     {
         Log::info('saveMenuItems: Début - Nombre d\'items: ' . count($menuItems));
-        
+
         // Nettoyer les caractères UTF-8 invalides dans toutes les chaînes
         Log::info('saveMenuItems: Nettoyage UTF-8...');
         $cleanedItems = $this->cleanUtf8Recursively($menuItems);
         Log::info('saveMenuItems: Nettoyage terminé');
-        
+
         // Vérifier chaque item pour des problèmes potentiels
         foreach ($cleanedItems as $index => $item) {
             if (isset($item['image_url']) && !empty($item['image_url'])) {
                 $imageLength = strlen($item['image_url']);
                 Log::info("Item $index - image_url longueur: $imageLength caractères");
-                
+
                 // Vérifier si c'est une image base64
                 if (strpos($item['image_url'], 'data:image') === 0) {
                     Log::info("Item $index - Image base64 détectée");
                 }
             }
         }
-        
+
         Log::info('saveMenuItems: Encodage JSON...');
         $json = json_encode($cleanedItems, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-        
+
         if ($json === false) {
             $errorMsg = json_last_error_msg();
             $errorCode = json_last_error();
             Log::error('Erreur d\'encodage JSON - Code: ' . $errorCode . ' - Message: ' . $errorMsg);
-            
+
             // Log détaillé du dernier item ajouté (probablement celui qui pose problème)
             $lastItem = end($cleanedItems);
             Log::error('Dernier item ajouté:', [
@@ -320,15 +338,15 @@ class MenuItemController extends Controller
                 'name' => $lastItem['name'] ?? 'N/A',
                 'has_image' => isset($lastItem['image_url']) && !empty($lastItem['image_url'])
             ]);
-            
+
             throw new \Exception('Impossible d\'encoder les données en JSON');
         }
-        
+
         Log::info('saveMenuItems: Encodage réussi - Taille JSON: ' . strlen($json) . ' caractères');
         Log::info('saveMenuItems: Écriture dans le fichier...');
-        
+
         Storage::disk('local')->put($this->menuItemsFile, $json);
-        
+
         Log::info('saveMenuItems: Fichier sauvegardé avec succès');
     }
 
@@ -340,12 +358,12 @@ class MenuItemController extends Controller
         if (is_array($data)) {
             return array_map([$this, 'cleanUtf8Recursively'], $data);
         }
-        
+
         if (is_string($data)) {
             // Supprimer les caractères UTF-8 invalides
             return mb_convert_encoding($data, 'UTF-8', 'UTF-8');
         }
-        
+
         return $data;
     }
 }

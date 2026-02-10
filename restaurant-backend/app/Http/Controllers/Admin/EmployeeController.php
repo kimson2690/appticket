@@ -25,26 +25,26 @@ class EmployeeController extends Controller
         // Utiliser MySQL via Eloquent
         $userRole = $request->header('X-User-Role');
         $userCompanyId = $request->header('X-User-Company-Id');
-        
+
         // Si le rôle est un objet JSON, extraire le nom
         if ($userRole && is_string($userRole) && (str_starts_with($userRole, '{') || str_starts_with($userRole, '['))) {
             $roleData = json_decode($userRole, true);
             $userRole = $roleData['name'] ?? $userRole;
         }
-        
+
         Log::info('EmployeeController@index - Rôle: ' . $userRole . ', Company ID: ' . $userCompanyId);
-        
+
         // Query builder
         $query = \App\Models\Employee::query();
-        
+
         // Si gestionnaire d'entreprise, filtrer par son entreprise
         if ($userRole === 'Gestionnaire Entreprise' && $userCompanyId) {
             $query->where('company_id', $userCompanyId);
             Log::info('Employés filtrés pour gestionnaire entreprise ID: ' . $userCompanyId);
         }
-        
+
         $employees = $query->get()->toArray();
-        
+
         Log::info('Nombre d\'employés récupérés: ' . count($employees));
 
         return response()->json([
@@ -70,7 +70,7 @@ class EmployeeController extends Controller
         try {
             Log::info('EmployeeController@store - Début');
             Log::info('Données reçues:', $request->all());
-            
+
             // Validation des données requises
             $name = $request->input('name');
             $email = $request->input('email');
@@ -83,7 +83,7 @@ class EmployeeController extends Controller
             $ticket_balance = $request->input('ticket_balance', 0);
             $status = $request->input('status', 'pending'); // Par défaut 'pending' pour auto-inscription
             $hire_date = $request->input('hire_date', null);
-            
+
             // Nettoyer et valider la date d'embauche
             if ($hire_date) {
                 // Convertir au format Y-m-d si ce n'est pas déjà le cas
@@ -95,7 +95,7 @@ class EmployeeController extends Controller
                     $hire_date = null;
                 }
             }
-            
+
             if (!$name || !$email || !$password) {
                 return response()->json([
                     'success' => false,
@@ -142,7 +142,7 @@ class EmployeeController extends Controller
                         'employee_email' => $email
                     ]
                 ]);
-                
+
                 // Envoyer email à l'employé
                 try {
                     Mail::to($email)->send(new EmployeeRegistrationPending($name, $companyName));
@@ -150,7 +150,7 @@ class EmployeeController extends Controller
                 } catch (\Exception $e) {
                     Log::error("Erreur envoi email à employé: " . $e->getMessage());
                 }
-                
+
                 // Envoyer email au gestionnaire de l'entreprise
                 try {
                     // Récupérer le gestionnaire de l'entreprise depuis la BD
@@ -159,7 +159,7 @@ class EmployeeController extends Controller
                                       $query->where('name', 'Gestionnaire Entreprise');
                                   })
                                   ->first();
-                    
+
                     if ($manager && $manager->email) {
                         Mail::to($manager->email)->send(new NewEmployeeRegistration($name, $email, $companyName));
                         Log::info("Email de nouvelle inscription envoyé au gestionnaire: {$manager->email}");
@@ -176,7 +176,7 @@ class EmployeeController extends Controller
                 'data' => $employeeData,
                 'message' => 'Employé créé avec succès'
             ], 201);
-            
+
         } catch (\Exception $e) {
             Log::error('EmployeeController@store - Erreur générale: ' . $e->getMessage());
             Log::error('Stack trace: ' . $e->getTraceAsString());
@@ -208,7 +208,7 @@ class EmployeeController extends Controller
                 'success' => true,
                 'data' => $employee->toArray()
             ]);
-            
+
         } catch (\Exception $e) {
             Log::error('EmployeeController@show - Erreur: ' . $e->getMessage());
             return response()->json([
@@ -227,7 +227,7 @@ class EmployeeController extends Controller
         try {
             Log::info('EmployeeController@update - Début pour ID: ' . $id);
             Log::info('Données reçues:', $request->all());
-            
+
             // Trouver l'employé en MySQL
             $employee = \App\Models\Employee::find($id);
 
@@ -248,7 +248,7 @@ class EmployeeController extends Controller
             if ($request->filled('employee_number')) $updateData['employee_number'] = $request->input('employee_number');
             if ($request->filled('ticket_balance')) $updateData['ticket_balance'] = (int) $request->input('ticket_balance');
             if ($request->filled('status')) $updateData['status'] = $request->input('status');
-            
+
             // Nettoyer et valider la date d'embauche
             if ($request->filled('hire_date')) {
                 $hire_date = $request->input('hire_date');
@@ -264,13 +264,13 @@ class EmployeeController extends Controller
                     $updateData['hire_date'] = null;
                 }
             }
-            
+
             // Mettre à jour company_id et company_name si fourni
             if ($request->filled('company_id')) {
                 $company_id = $request->input('company_id');
                 $updateData['company_id'] = $company_id;
                 $updateData['company_name'] = $this->getCompanyName($company_id);
-                
+
                 Log::info('Mise à jour avec nouvelle entreprise:', [
                     'company_id' => $company_id,
                     'company_name' => $updateData['company_name']
@@ -293,10 +293,10 @@ class EmployeeController extends Controller
             $employee->update($updateData);
 
             Log::info('Employé mis à jour en MySQL:', $employee->toArray());
-            
+
             // Rafraîchir pour obtenir les dernières données
             $employee->refresh();
-            
+
             // Envoyer email d'approbation si nécessaire
             if ($isApproval) {
                 try {
@@ -306,7 +306,7 @@ class EmployeeController extends Controller
                     Log::error("Erreur envoi email approbation: " . $e->getMessage());
                 }
             }
-            
+
             // Envoyer email de rejet si nécessaire
             if ($isRejection) {
                 try {
@@ -322,7 +322,7 @@ class EmployeeController extends Controller
                 'data' => $employee->toArray(),
                 'message' => 'Employé mis à jour avec succès'
             ]);
-            
+
         } catch (\Exception $e) {
             Log::error('EmployeeController@update - Erreur: ' . $e->getMessage());
             return response()->json([
@@ -340,7 +340,7 @@ class EmployeeController extends Controller
     {
         try {
             Log::info('EmployeeController@destroy - Suppression ID: ' . $id);
-            
+
             // Trouver et supprimer l'employé en MySQL
             $employee = \App\Models\Employee::find($id);
 
@@ -352,6 +352,24 @@ class EmployeeController extends Controller
                 ], 404);
             }
 
+            // Vérifier s'il y a des commandes associées
+            $ordersCount = $employee->orders()->count();
+            if ($ordersCount > 0) {
+                return response()->json([
+                    'success' => false,
+                    'message' => "Impossible de supprimer cet employé car il est associé à {$ordersCount} commande(s). Vous pouvez le désactiver à la place."
+                ], 422);
+            }
+
+            // Vérifier s'il y a des souches de tickets associées
+            $batchesCount = \App\Models\TicketBatch::where('employee_id', $id)->count();
+            if ($batchesCount > 0) {
+                return response()->json([
+                    'success' => false,
+                    'message' => "Impossible de supprimer cet employé car il possède {$batchesCount} souche(s) de tickets. Vous pouvez le désactiver à la place."
+                ], 422);
+            }
+
             $employee->delete();
 
             Log::info('Employé supprimé avec succès: ' . $id);
@@ -360,7 +378,7 @@ class EmployeeController extends Controller
                 'success' => true,
                 'message' => 'Employé supprimé avec succès'
             ]);
-            
+
         } catch (\Exception $e) {
             Log::error('EmployeeController@destroy - Erreur: ' . $e->getMessage());
             Log::error('Stack trace: ' . $e->getTraceAsString());
@@ -402,7 +420,7 @@ class EmployeeController extends Controller
                     'approved_at' => date('Y-m-d H:i:s')
                 ]
             ]);
-            
+
             // Envoyer email d'approbation à l'employé
             try {
                 Mail::to($employee->email)->send(new EmployeeApproved($employee->name, $employee->company_name));
@@ -454,7 +472,7 @@ class EmployeeController extends Controller
                     'rejected_at' => date('Y-m-d H:i:s')
                 ]
             ]);
-            
+
             // Envoyer email de rejet à l'employé
             try {
                 Mail::to($employee->email)->send(new EmployeeRejected($employee->name, $employee->company_name));

@@ -25,12 +25,12 @@ class CompanyController extends Controller
                 ->map(function ($company) use ($jsonEmployees) {
                     // Compter les employés dans la base de données
                     $dbCount = $company->users_count;
-                    
+
                     // Compter les employés dans le fichier JSON pour cette entreprise
                     $jsonCount = collect($jsonEmployees)->filter(function ($emp) use ($company) {
                         return isset($emp['company_id']) && $emp['company_id'] == $company->id;
                     })->count();
-                    
+
                     // Total des employés
                     $totalEmployees = $dbCount + $jsonCount;
 
@@ -141,12 +141,12 @@ class CompanyController extends Controller
 
             // Compter les employés dans la base de données
             $dbCount = $company->users_count;
-            
+
             // Compter les employés dans le fichier JSON pour cette entreprise
             $jsonCount = collect($jsonEmployees)->filter(function ($emp) use ($company) {
                 return isset($emp['company_id']) && $emp['company_id'] == $company->id;
             })->count();
-            
+
             // Total des employés
             $totalEmployees = $dbCount + $jsonCount;
 
@@ -212,12 +212,12 @@ class CompanyController extends Controller
 
             // Compter les employés dans la base de données
             $dbCount = $company->users()->count();
-            
+
             // Compter les employés dans le fichier JSON pour cette entreprise
             $jsonCount = collect($jsonEmployees)->filter(function ($emp) use ($company) {
                 return isset($emp['company_id']) && $emp['company_id'] == $company->id;
             })->count();
-            
+
             // Total des employés
             $totalEmployees = $dbCount + $jsonCount;
 
@@ -269,27 +269,41 @@ class CompanyController extends Controller
     {
         try {
             $company = Company::findOrFail($id);
-            
-            // Charger les employés depuis MySQL
-            $jsonEmployees = \App\Models\Employee::all()->toArray();
 
-            // Compter les employés dans la base de données
-            $dbCount = $company->users()->count();
-            
-            // Compter les employés dans le fichier JSON pour cette entreprise
-            $jsonCount = collect($jsonEmployees)->filter(function ($emp) use ($company) {
-                return isset($emp['company_id']) && $emp['company_id'] == $company->id;
-            })->count();
-            
-            // Total des employés
-            $totalEmployees = $dbCount + $jsonCount;
-            
-            // Vérifier s'il y a des employés associés (DB ou JSON)
-            if ($totalEmployees > 0) {
+            // Vérifier s'il y a des employés associés
+            $employeesCount = \App\Models\Employee::where('company_id', $company->id)->count();
+            if ($employeesCount > 0) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Impossible de supprimer une entreprise qui a des employés associés'
-                ], 400);
+                    'message' => "Impossible de supprimer cette entreprise car elle a {$employeesCount} employé(s) associé(s). Supprimez ou transférez les employés d'abord."
+                ], 422);
+            }
+
+            // Vérifier s'il y a des configurations de tickets associées
+            $configsCount = \App\Models\TicketConfiguration::where('company_id', $company->id)->count();
+            if ($configsCount > 0) {
+                return response()->json([
+                    'success' => false,
+                    'message' => "Impossible de supprimer cette entreprise car elle a {$configsCount} configuration(s) de tickets. Supprimez les configurations d'abord."
+                ], 422);
+            }
+
+            // Vérifier s'il y a des souches de tickets associées
+            $batchesCount = \App\Models\TicketBatch::where('company_id', $company->id)->count();
+            if ($batchesCount > 0) {
+                return response()->json([
+                    'success' => false,
+                    'message' => "Impossible de supprimer cette entreprise car elle a {$batchesCount} souche(s) de tickets."
+                ], 422);
+            }
+
+            // Vérifier s'il y a des commandes associées
+            $ordersCount = $company->orders()->count();
+            if ($ordersCount > 0) {
+                return response()->json([
+                    'success' => false,
+                    'message' => "Impossible de supprimer cette entreprise car elle est associée à {$ordersCount} commande(s)."
+                ], 422);
             }
 
             $company->delete();

@@ -264,7 +264,16 @@ class RestaurantController extends Controller
     {
         try {
             $restaurant = Restaurant::findOrFail($id);
-            
+
+            // Vérifier s'il y a des commandes associées
+            $ordersCount = $restaurant->orders()->count();
+            if ($ordersCount > 0) {
+                return response()->json([
+                    'success' => false,
+                    'message' => "Impossible de supprimer ce restaurant car il est associé à {$ordersCount} commande(s). Vous pouvez le désactiver à la place."
+                ], 422);
+            }
+
             $restaurant->delete();
 
             return response()->json([

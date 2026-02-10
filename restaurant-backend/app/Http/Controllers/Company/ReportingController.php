@@ -82,12 +82,12 @@ class ReportingController extends Controller
                 return true;
             });
 
-            // Grouper par restaurant
+            // Grouper par restaurant avec détails employés
             $expensesByRestaurant = [];
 
             foreach ($filteredOrders as $order) {
                 $restaurantId = $order['restaurant_id'];
-                
+
                 if (!isset($expensesByRestaurant[$restaurantId])) {
                     $restaurant = collect($restaurants)->firstWhere('id', $restaurantId);
                     $expensesByRestaurant[$restaurantId] = [
@@ -96,18 +96,33 @@ class ReportingController extends Controller
                         'total_amount' => 0,
                         'total_orders' => 0,
                         'employees_count' => 0,
-                        'employee_ids' => []
+                        'employee_ids' => [],
+                        'employee_breakdown' => [],
                     ];
                 }
 
                 $expensesByRestaurant[$restaurantId]['total_amount'] += $order['total_amount'];
                 $expensesByRestaurant[$restaurantId]['total_orders']++;
-                
+
                 // Compter les employés uniques
                 if (!in_array($order['employee_id'], $expensesByRestaurant[$restaurantId]['employee_ids'])) {
                     $expensesByRestaurant[$restaurantId]['employee_ids'][] = $order['employee_id'];
                     $expensesByRestaurant[$restaurantId]['employees_count']++;
                 }
+
+                // Breakdown par employé
+                $empId = $order['employee_id'];
+                if (!isset($expensesByRestaurant[$restaurantId]['employee_breakdown'][$empId])) {
+                    $emp = collect($employees)->firstWhere('id', $empId);
+                    $expensesByRestaurant[$restaurantId]['employee_breakdown'][$empId] = [
+                        'employee_id' => $empId,
+                        'employee_name' => $emp['name'] ?? 'Inconnu',
+                        'total_amount' => 0,
+                        'total_orders' => 0,
+                    ];
+                }
+                $expensesByRestaurant[$restaurantId]['employee_breakdown'][$empId]['total_amount'] += $order['total_amount'];
+                $expensesByRestaurant[$restaurantId]['employee_breakdown'][$empId]['total_orders']++;
             }
 
             // Nettoyer et trier
@@ -116,14 +131,23 @@ class ReportingController extends Controller
                 return $b['total_amount'] - $a['total_amount'];
             });
 
-            // Supprimer employee_ids avant retour
+            // Convertir employee_breakdown en array indexé et supprimer employee_ids
             foreach ($results as &$result) {
+                $breakdown = array_values($result['employee_breakdown']);
+                usort($breakdown, fn($a, $b) => $b['total_amount'] - $a['total_amount']);
+                $result['employee_breakdown'] = $breakdown;
                 unset($result['employee_ids']);
             }
 
             // Calculer les totaux globaux
             $totalAmount = array_sum(array_column($results, 'total_amount'));
             $totalOrders = array_sum(array_column($results, 'total_orders'));
+            $allEmployeeIds = [];
+            foreach ($results as $r) {
+                foreach ($r['employee_breakdown'] as $eb) {
+                    $allEmployeeIds[$eb['employee_id']] = true;
+                }
+            }
 
             return response()->json([
                 'success' => true,
@@ -133,6 +157,9 @@ class ReportingController extends Controller
                         'total_amount' => $totalAmount,
                         'total_orders' => $totalOrders,
                         'restaurants_count' => count($results),
+                        'employees_count' => count($allEmployeeIds),
+                        'average_per_order' => $totalOrders > 0 ? round($totalAmount / $totalOrders) : 0,
+                        'average_per_employee' => count($allEmployeeIds) > 0 ? round($totalAmount / count($allEmployeeIds)) : 0,
                         'period' => [
                             'start_date' => $validated['start_date'] ?? null,
                             'end_date' => $validated['end_date'] ?? null
@@ -167,51 +194,78 @@ class ReportingController extends Controller
 
             $orders = $this->loadOrders();
             $employees = $this->loadEmployees();
+            $restaurants = $this->loadRestaurants();
 
             $companyEmployees = collect($employees)->where('company_id', $companyId);
 
             $expensesByEmployee = [];
+            $globalTotalAmount = 0;
+            $globalTotalOrders = 0;
 
             foreach ($companyEmployees as $employee) {
                 $employeeOrders = collect($orders)->filter(function ($order) use ($employee, $validated) {
-                    if ($order['employee_id'] !== $employee['id']) {
-                        return false;
-                    }
-
-                    if ($order['status'] !== 'confirmed') {
-                        return false;
-                    }
+                    if ($order['employee_id'] !== $employee['id']) return false;
+                    if ($order['status'] !== 'confirmed') return false;
 
                     if (!empty($validated['start_date'])) {
                         $orderDate = date('Y-m-d', strtotime($order['created_at']));
-                        if ($orderDate < $validated['start_date']) {
-                            return false;
-                        }
+                        if ($orderDate < $validated['start_date']) return false;
                     }
-
                     if (!empty($validated['end_date'])) {
                         $orderDate = date('Y-m-d', strtotime($order['created_at']));
-                        if ($orderDate > $validated['end_date']) {
-                            return false;
-                        }
+                        if ($orderDate > $validated['end_date']) return false;
                     }
-
                     if (!empty($validated['restaurant_id'])) {
-                        if ($order['restaurant_id'] !== $validated['restaurant_id']) {
-                            return false;
-                        }
+                        if ($order['restaurant_id'] !== $validated['restaurant_id']) return false;
                     }
-
                     return true;
                 });
 
                 if ($employeeOrders->count() > 0) {
+                    $totalAmount = $employeeOrders->sum('total_amount');
+                    $totalOrders = $employeeOrders->count();
+                    $globalTotalAmount += $totalAmount;
+                    $globalTotalOrders += $totalOrders;
+
+                    // Dernière commande
+                    $lastOrder = $employeeOrders->sortByDesc('created_at')->first();
+
+                    // Breakdown par restaurant
+                    $restaurantBreakdown = [];
+                    foreach ($employeeOrders->groupBy('restaurant_id') as $restId => $restOrders) {
+                        $restaurant = collect($restaurants)->firstWhere('id', $restId);
+                        $restaurantBreakdown[] = [
+                            'restaurant_id' => $restId,
+                            'restaurant_name' => $restaurant['name'] ?? 'Inconnu',
+                            'total_amount' => $restOrders->sum('total_amount'),
+                            'total_orders' => $restOrders->count(),
+                        ];
+                    }
+                    usort($restaurantBreakdown, fn($a, $b) => $b['total_amount'] - $a['total_amount']);
+
+                    // Historique des commandes récentes (5 dernières)
+                    $recentOrders = $employeeOrders->sortByDesc('created_at')->take(5)->map(function ($order) use ($restaurants) {
+                        $restaurant = collect($restaurants)->firstWhere('id', $order['restaurant_id']);
+                        return [
+                            'id' => $order['id'],
+                            'restaurant_name' => $restaurant['name'] ?? 'Inconnu',
+                            'total_amount' => $order['total_amount'],
+                            'items_count' => is_array($order['items'] ?? null) ? count($order['items']) : 0,
+                            'created_at' => $order['created_at'],
+                        ];
+                    })->values()->toArray();
+
                     $expensesByEmployee[] = [
                         'employee_id' => $employee['id'],
                         'employee_name' => $employee['name'],
                         'employee_email' => $employee['email'],
-                        'total_amount' => $employeeOrders->sum('total_amount'),
-                        'total_orders' => $employeeOrders->count()
+                        'total_amount' => $totalAmount,
+                        'total_orders' => $totalOrders,
+                        'average_order' => $totalOrders > 0 ? round($totalAmount / $totalOrders) : 0,
+                        'last_order_date' => $lastOrder['created_at'] ?? null,
+                        'restaurants_count' => count($restaurantBreakdown),
+                        'restaurant_breakdown' => $restaurantBreakdown,
+                        'recent_orders' => $recentOrders,
                     ];
                 }
             }
@@ -220,9 +274,32 @@ class ReportingController extends Controller
                 return $b['total_amount'] - $a['total_amount'];
             });
 
+            // Résumé global
+            $employeesWithOrders = count($expensesByEmployee);
+            $allRestaurantIds = [];
+            foreach ($expensesByEmployee as $emp) {
+                foreach ($emp['restaurant_breakdown'] as $rb) {
+                    $allRestaurantIds[$rb['restaurant_id']] = true;
+                }
+            }
+
             return response()->json([
                 'success' => true,
-                'data' => $expensesByEmployee
+                'data' => [
+                    'expenses_by_employee' => $expensesByEmployee,
+                    'summary' => [
+                        'total_amount' => $globalTotalAmount,
+                        'total_orders' => $globalTotalOrders,
+                        'employees_count' => $employeesWithOrders,
+                        'restaurants_count' => count($allRestaurantIds),
+                        'average_per_order' => $globalTotalOrders > 0 ? round($globalTotalAmount / $globalTotalOrders) : 0,
+                        'average_per_employee' => $employeesWithOrders > 0 ? round($globalTotalAmount / $employeesWithOrders) : 0,
+                        'period' => [
+                            'start_date' => $validated['start_date'] ?? null,
+                            'end_date' => $validated['end_date'] ?? null
+                        ]
+                    ]
+                ]
             ]);
 
         } catch (\Exception $e) {

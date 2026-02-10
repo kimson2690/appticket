@@ -38,14 +38,14 @@ class DashboardStatsController extends Controller
 
             // Répartition par rôle - Combiner Users (admins/gestionnaires) + Employees
             $usersByRole = [];
-            
+
             // Compter les utilisateurs de la BDD (gestionnaires, admins)
             $usersFromDB = User::with('role')->get();
             foreach ($usersFromDB as $user) {
                 $role = $user->role->name ?? 'Utilisateur';
                 $usersByRole[$role] = ($usersByRole[$role] ?? 0) + 1;
             }
-            
+
             // Ajouter les employés
             $employeeCount = Employee::count();
             $usersByRole['Employé'] = ($usersByRole['Employé'] ?? 0) + $employeeCount;
@@ -55,7 +55,7 @@ class DashboardStatsController extends Controller
                 SUM(tickets_count) as total_tickets,
                 SUM(tickets_count * ticket_value) as total_value
             ')->first();
-            
+
             $totalTicketsIssued = $ticketStats->total_tickets ?? 0;
             $totalTicketsValue = $ticketStats->total_value ?? 0;
 
@@ -64,10 +64,10 @@ class DashboardStatsController extends Controller
 
             // Restaurants les plus actifs
             $restaurantStats = $this->getTopRestaurantsByRevenue();
-            
+
             // Commandes par entreprise
             $ordersByCompany = $this->getOrdersByCompany();
-            
+
             // Tickets affectés par mois et par entreprise
             $ticketsByMonthAndCompany = $this->getTicketsByMonthAndCompany();
 
@@ -102,7 +102,7 @@ class DashboardStatsController extends Controller
     {
         try {
             $companyId = $request->header('X-User-Company-Id');
-            
+
             if (!$companyId) {
                 return response()->json(['error' => 'Company ID manquant'], 401);
             }
@@ -112,10 +112,12 @@ class DashboardStatsController extends Controller
                 ->pluck('id')
                 ->toArray();
 
-            // Statistiques générales
+            // Statistiques générales (uniquement commandes confirmées)
             $totalEmployees = count($companyEmployeeIds);
-            $totalOrders = Order::whereIn('employee_id', $companyEmployeeIds)->count();
+            $totalOrders = Order::whereIn('employee_id', $companyEmployeeIds)
+                ->where('status', 'confirmed')->count();
             $totalSpent = Order::whereIn('employee_id', $companyEmployeeIds)
+                ->where('status', 'confirmed')
                 ->sum('total_amount');
 
             // Dépenses par restaurant
@@ -130,21 +132,21 @@ class DashboardStatsController extends Controller
             // Taux d'utilisation des tickets
             $totalAssigned = UserTicket::whereIn('employee_id', $companyEmployeeIds)
                 ->sum('tickets_count');
-            
+
             // Calculer le solde total restant de tous les employés
             $totalBalanceAmount = Employee::whereIn('id', $companyEmployeeIds)
                 ->sum('ticket_balance');
-            
+
             // Obtenir la valeur d'un ticket (depuis la première affectation ou config)
             $ticketValue = UserTicket::whereIn('employee_id', $companyEmployeeIds)
                 ->value('ticket_value') ?? 500;
-            
+
             // Convertir le solde en nombre de tickets
             $totalBalanceTickets = $ticketValue > 0 ? round($totalBalanceAmount / $ticketValue) : 0;
-            
+
             // Tickets utilisés = Affectés - Tickets restants
             $totalUsed = $totalAssigned - $totalBalanceTickets;
-            
+
             // Taux d'utilisation en %
             $usageRate = $totalAssigned > 0 ? round(($totalUsed / $totalAssigned) * 100) : 0;
 
@@ -175,11 +177,11 @@ class DashboardStatsController extends Controller
     {
         try {
             $restaurantId = $request->header('X-User-Restaurant-Id');
-            
+
             Log::info('🍽️ [getRestaurantStats] Début', [
                 'restaurant_id' => $restaurantId,
             ]);
-            
+
             if (!$restaurantId) {
                 Log::error('🍽️ [getRestaurantStats] Restaurant ID manquant');
                 return response()->json(['error' => 'Restaurant ID manquant'], 401);
@@ -189,11 +191,11 @@ class DashboardStatsController extends Controller
             $totalOrders = Order::where('restaurant_id', $restaurantId)
                 ->where('status', 'confirmed')
                 ->count();
-                
+
             $totalRevenue = Order::where('restaurant_id', $restaurantId)
                 ->where('status', 'confirmed')
                 ->sum('total_amount');
-            
+
             $avgOrderValue = $totalOrders > 0 ? $totalRevenue / $totalOrders : 0;
 
             Log::info('🍽️ [getRestaurantStats] Données chargées', [
@@ -236,7 +238,7 @@ class DashboardStatsController extends Controller
     {
         try {
             $userId = $request->header('X-User-Id');
-            
+
             if (!$userId) {
                 return response()->json(['error' => 'User ID manquant'], 401);
             }
@@ -271,7 +273,7 @@ class DashboardStatsController extends Controller
     }
 
     // =============== Méthodes utilitaires SQL ===============
-    
+
     /**
      * Commandes par mois (pour Admin - toutes les commandes)
      */
@@ -281,11 +283,11 @@ class DashboardStatsController extends Controller
         for ($i = $months - 1; $i >= 0; $i--) {
             $startOfMonth = now()->subMonths($i)->startOfMonth();
             $endOfMonth = now()->subMonths($i)->endOfMonth();
-            
+
             $stats = Order::whereBetween('created_at', [$startOfMonth, $endOfMonth])
                 ->selectRaw('COUNT(*) as count, SUM(total_amount) as amount')
                 ->first();
-            
+
             $result[] = [
                 'month' => $startOfMonth->format('M'),
                 'orders' => $stats->count ?? 0,
@@ -301,6 +303,7 @@ class DashboardStatsController extends Controller
     private function getTopRestaurantsByRevenue()
     {
         $stats = Order::select('restaurant_id')
+            ->where('status', 'confirmed')
             ->selectRaw('COUNT(*) as orders')
             ->selectRaw('SUM(total_amount) as revenue')
             ->groupBy('restaurant_id')
@@ -309,17 +312,18 @@ class DashboardStatsController extends Controller
 
         $result = [];
         $restaurants = Restaurant::all()->keyBy('id');
-        
+
         foreach ($stats as $stat) {
             $restaurant = $restaurants->get($stat->restaurant_id);
+            if (!$restaurant) continue; // Ignorer les restaurants supprimés
             $result[] = [
                 'restaurant_id' => $stat->restaurant_id,
-                'restaurant_name' => $restaurant->name ?? 'Inconnu',
-                'orders' => $stat->orders,
-                'revenue' => $stat->revenue,
+                'restaurant_name' => $restaurant->name,
+                'orders' => (int) $stat->orders,
+                'revenue' => (float) $stat->revenue,
             ];
         }
-        
+
         return $result;
     }
 
@@ -338,7 +342,7 @@ class DashboardStatsController extends Controller
 
         $result = [];
         $companies = Company::all()->keyBy('id');
-        
+
         foreach ($stats as $stat) {
             $company = $companies->get($stat->company_id);
             $result[] = [
@@ -348,7 +352,7 @@ class DashboardStatsController extends Controller
                 'amount' => $stat->total_amount,
             ];
         }
-        
+
         return $result;
     }
 
@@ -389,13 +393,13 @@ class DashboardStatsController extends Controller
         $result = [];
         foreach ($monthsData as $monthData) {
             $row = ['month' => $monthData['month']];
-            
+
             if (isset($ticketsByMonth[$monthData['month_key']])) {
                 foreach ($ticketsByMonth[$monthData['month_key']] as $companyName => $count) {
                     $row[$companyName] = $count;
                 }
             }
-            
+
             $result[] = $row;
         }
 
@@ -408,6 +412,7 @@ class DashboardStatsController extends Controller
     private function getExpensesByRestaurant(array $employeeIds)
     {
         $stats = Order::whereIn('employee_id', $employeeIds)
+            ->where('status', 'confirmed')
             ->select('restaurant_id')
             ->selectRaw('COUNT(*) as orders_count')
             ->selectRaw('SUM(total_amount) as amount')
@@ -416,16 +421,17 @@ class DashboardStatsController extends Controller
 
         $result = [];
         $restaurants = Restaurant::all()->keyBy('id');
-        
+
         foreach ($stats as $stat) {
             $restaurant = $restaurants->get($stat->restaurant_id);
+            if (!$restaurant) continue; // Ignorer les restaurants supprimés
             $result[] = [
-                'name' => $restaurant->name ?? 'Inconnu',
-                'amount' => $stat->amount,
-                'orders' => $stat->orders_count,
+                'name' => $restaurant->name,
+                'amount' => (float) $stat->amount,
+                'orders' => (int) $stat->orders_count,
             ];
         }
-        
+
         return $result;
     }
 
@@ -435,6 +441,7 @@ class DashboardStatsController extends Controller
     private function getExpensesByEmployee(array $employeeIds)
     {
         $stats = Order::whereIn('employee_id', $employeeIds)
+            ->where('status', 'confirmed')
             ->select('employee_id', 'employee_name')
             ->selectRaw('COUNT(*) as orders_count')
             ->selectRaw('SUM(total_amount) as amount')
@@ -446,11 +453,11 @@ class DashboardStatsController extends Controller
         foreach ($stats as $stat) {
             $result[] = [
                 'name' => $stat->employee_name,
-                'amount' => $stat->amount,
-                'orders' => $stat->orders_count,
+                'amount' => (float) $stat->amount,
+                'orders' => (int) $stat->orders_count,
             ];
         }
-        
+
         return $result;
     }
 
@@ -463,11 +470,12 @@ class DashboardStatsController extends Controller
         for ($i = $months - 1; $i >= 0; $i--) {
             $startOfMonth = now()->subMonths($i)->startOfMonth();
             $endOfMonth = now()->subMonths($i)->endOfMonth();
-            
+
             $amount = Order::whereIn('employee_id', $employeeIds)
+                ->where('status', 'confirmed')
                 ->whereBetween('created_at', [$startOfMonth, $endOfMonth])
                 ->sum('total_amount');
-            
+
             $result[] = [
                 'month' => $startOfMonth->format('M'),
                 'amount' => $amount,
@@ -485,13 +493,13 @@ class DashboardStatsController extends Controller
         for ($i = $months - 1; $i >= 0; $i--) {
             $startOfMonth = now()->subMonths($i)->startOfMonth();
             $endOfMonth = now()->subMonths($i)->endOfMonth();
-            
+
             $stats = Order::where('restaurant_id', $restaurantId)
                 ->where('status', 'confirmed')
                 ->whereBetween('created_at', [$startOfMonth, $endOfMonth])
                 ->selectRaw('COUNT(*) as count, SUM(total_amount) as amount')
                 ->first();
-            
+
             $result[] = [
                 'month' => $startOfMonth->format('M'),
                 'orders' => $stats->count ?? 0,
@@ -522,7 +530,7 @@ class DashboardStatsController extends Controller
                 'amount' => $stat->amount,
             ];
         }
-        
+
         return $result;
     }
 
@@ -535,18 +543,18 @@ class DashboardStatsController extends Controller
         $orders = Order::where('restaurant_id', $restaurantId)
             ->where('status', 'confirmed')
             ->get();
-        
+
         $dishes = [];
-        
+
         // Parcourir les items JSON de chaque commande
         foreach ($orders as $order) {
             $items = $order->items ?? []; // Le cast array est automatique
-            
+
             foreach ($items as $item) {
                 $name = $item['name'] ?? 'Plat inconnu';
                 $quantity = $item['quantity'] ?? 0;
                 $price = $item['price'] ?? 0;
-                
+
                 if (!isset($dishes[$name])) {
                     $dishes[$name] = [
                         'name' => $name,
@@ -555,17 +563,17 @@ class DashboardStatsController extends Controller
                         'orders_count' => 0
                     ];
                 }
-                
+
                 $dishes[$name]['quantity'] += $quantity;
                 $dishes[$name]['revenue'] += $price * $quantity;
                 $dishes[$name]['orders_count'] += 1;
             }
         }
-        
+
         // Trier par quantité décroissante
         $dishesArray = array_values($dishes);
         usort($dishesArray, fn($a, $b) => $b['quantity'] - $a['quantity']);
-        
+
         return array_slice($dishesArray, 0, 10);
     }
 
@@ -578,11 +586,11 @@ class DashboardStatsController extends Controller
         for ($i = $months - 1; $i >= 0; $i--) {
             $startOfMonth = now()->subMonths($i)->startOfMonth();
             $endOfMonth = now()->subMonths($i)->endOfMonth();
-            
+
             $amount = Order::where('employee_id', $employeeId)
                 ->whereBetween('created_at', [$startOfMonth, $endOfMonth])
                 ->sum('total_amount');
-            
+
             $result[] = [
                 'month' => $startOfMonth->format('M'),
                 'amount' => $amount,
@@ -597,6 +605,7 @@ class DashboardStatsController extends Controller
     private function getFavoriteRestaurants($employeeId)
     {
         $stats = Order::where('employee_id', $employeeId)
+            ->where('status', 'confirmed')
             ->select('restaurant_id')
             ->selectRaw('COUNT(*) as orders_count')
             ->selectRaw('SUM(total_amount) as amount')
@@ -606,16 +615,17 @@ class DashboardStatsController extends Controller
 
         $result = [];
         $restaurants = Restaurant::all()->keyBy('id');
-        
+
         foreach ($stats as $stat) {
             $restaurant = $restaurants->get($stat->restaurant_id);
+            if (!$restaurant) continue; // Ignorer les restaurants supprimés
             $result[] = [
-                'name' => $restaurant->name ?? 'Inconnu',
-                'orders' => $stat->orders_count,
-                'amount' => $stat->amount,
+                'name' => $restaurant->name,
+                'orders' => (int) $stat->orders_count,
+                'amount' => (float) $stat->amount,
             ];
         }
-        
+
         return $result;
     }
 }

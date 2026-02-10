@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { getDashboardStats, type DashboardStatsData } from '../services/api';
 import { 
   Users, Building2, Store, ShoppingCart, TrendingUp, 
-  DollarSign, Package, BarChart3, PieChart, Activity,
+  DollarSign, Package, BarChart3, Activity,
   Ticket
 } from 'lucide-react';
 import {
@@ -522,11 +522,16 @@ const DashboardStats: React.FC = () => {
 
           {/* Dépenses par restaurant */}
           {stats.expenses_by_restaurant && stats.expenses_by_restaurant.length > 0 && (
-            <div className="bg-white rounded-lg shadow-md p-6">
-              <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                <PieChart className="w-5 h-5 text-orange-500" />
-                Dépenses par Restaurant
-              </h3>
+            <div className="bg-gradient-to-br from-white to-green-50/30 rounded-xl shadow-lg p-6 border border-green-100">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="p-2 bg-gradient-to-br from-green-500 to-emerald-600 rounded-lg shadow-md">
+                  <Store className="w-6 h-6 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-gray-900">Dépenses par Restaurant</h3>
+                  <p className="text-sm text-gray-500">{stats.expenses_by_restaurant.length} restaurant(s)</p>
+                </div>
+              </div>
               <ResponsiveContainer width="100%" height={300}>
                 <RechartsPie>
                   <Pie
@@ -534,16 +539,32 @@ const DashboardStats: React.FC = () => {
                     dataKey="amount"
                     nameKey="name"
                     cx="50%"
-                    cy="50%"
-                    outerRadius={100}
-                    label
+                    cy="45%"
+                    outerRadius={110}
+                    innerRadius={60}
+                    label={({ name, percent }: any) => `${name} (${(percent * 100).toFixed(0)}%)`}
+                    labelLine={{ stroke: '#9ca3af', strokeWidth: 1 }}
                   >
                     {stats.expenses_by_restaurant.map((_entry: any, index: number) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} strokeWidth={2} stroke="#fff" />
                     ))}
                   </Pie>
-                  <Tooltip />
-                  <Legend />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                      border: 'none',
+                      borderRadius: '12px',
+                      boxShadow: '0 10px 25px rgba(0, 0, 0, 0.1)',
+                      padding: '12px'
+                    }}
+                    formatter={(value: any) => [formatCurrency(value), 'Montant']}
+                  />
+                  <Legend
+                    verticalAlign="bottom"
+                    height={40}
+                    iconType="circle"
+                    wrapperStyle={{ paddingTop: '10px', fontSize: '13px' }}
+                  />
                 </RechartsPie>
               </ResponsiveContainer>
             </div>
