@@ -11,7 +11,7 @@ class Order extends Model
     protected $primaryKey = 'id';
     public $incrementing = false;
     protected $keyType = 'string';
-    
+
     protected $fillable = [
         'id',
         'employee_id',
@@ -21,6 +21,7 @@ class Order extends Model
         'total_amount',
         'ticket_amount_used',
         'status',
+        'delivery_location_id',
         'delivery_address',
         'notes',
         'confirmed_by',

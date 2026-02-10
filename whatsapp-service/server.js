@@ -21,6 +21,11 @@ const client = new Client({
     authStrategy: new LocalAuth({
         dataPath: './whatsapp-session'
     }),
+    webVersionCache: {
+        type: 'remote',
+        remotePath: 'https://raw.githubusercontent.com/nicholascelesworthy/whatsapp-web-version/main/versions.json',
+    },
+    restartOnAuthFail: true,
     puppeteer: {
         headless: true,
         executablePath: '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
@@ -31,7 +36,9 @@ const client = new Client({
             '--disable-accelerated-2d-canvas',
             '--no-first-run',
             '--no-zygote',
-            '--disable-gpu'
+            '--disable-gpu',
+            '--disable-extensions',
+            '--disable-software-rasterizer'
         ]
     }
 });
@@ -117,17 +124,7 @@ app.post('/send', async (req, res) => {
             ? formattedPhone 
             : `${formattedPhone}@c.us`;
 
-        // Vérifier que le numéro existe sur WhatsApp
-        const numberExists = await client.isRegisteredUser(chatId);
-        
-        if (!numberExists) {
-            return res.status(404).json({
-                success: false,
-                error: 'Ce numéro n\'est pas enregistré sur WhatsApp'
-            });
-        }
-
-        // Envoyer le message
+        // Envoyer le message directement (isRegisteredUser est cassé avec les versions récentes de WhatsApp Web)
         await client.sendMessage(chatId, message);
 
         console.log(`✅ Message envoyé à ${phone}`);
@@ -183,18 +180,9 @@ app.post('/send-template', async (req, res) => {
             });
         }
 
-        // Formater et envoyer
+        // Formater et envoyer directement (isRegisteredUser est cassé avec les versions récentes de WhatsApp Web)
         const formattedPhone = phone.replace(/\D/g, '');
         const chatId = `${formattedPhone}@c.us`;
-
-        const numberExists = await client.isRegisteredUser(chatId);
-        
-        if (!numberExists) {
-            return res.status(404).json({
-                success: false,
-                error: 'Numéro non enregistré sur WhatsApp'
-            });
-        }
 
         await client.sendMessage(chatId, message);
 

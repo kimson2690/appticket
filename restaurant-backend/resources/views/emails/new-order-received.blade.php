@@ -6,12 +6,12 @@
     <title>Nouvelle commande</title>
 </head>
 <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background: #f3f4f6; min-height: 100vh;">
-    
+
     <table width="100%" cellpadding="0" cellspacing="0" style="padding: 40px 20px;">
         <tr>
             <td align="center">
                 <table width="600" cellpadding="0" cellspacing="0" style="max-width: 600px; background: #ffffff; border-radius: 24px; overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,0.15);">
-                    
+
                     <!-- Header Restaurant -->
                     <tr>
                         <td style="background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%); padding: 0;">
@@ -25,7 +25,7 @@
                             </table>
                         </td>
                     </tr>
-                    
+
                     <!-- Badge Urgent -->
                     <tr>
                         <td style="padding: 30px 40px 30px 40px;">
@@ -33,8 +33,8 @@
                                 <table width="100%" cellpadding="0" cellspacing="0">
                                     <tr>
                                         <td align="center">
-                                            <div style="display: inline-block; background: linear-gradient(135deg, #f97316 0%, #ea580c 100%); color: #ffffff; padding: 16px 40px; border-radius: 16px; font-size: 16px; font-weight: 700; box-shadow: 0 15px 40px rgba(249, 115, 22, 0.6); letter-spacing: 0.5px; animation: pulse 2s infinite;">
-                                                🔔 COMMANDE À TRAITER
+                                            <div style="display: inline-block; background: linear-gradient(135deg, #f97316 0%, #ea580c 100%); color: #ffffff; padding: 16px 40px; border-radius: 16px; font-size: 16px; font-weight: 700; box-shadow: 0 15px 40px rgba(249, 115, 22, 0.6); letter-spacing: 0.5px;">
+                                                🔔 Nouvelle commande
                                             </div>
                                         </td>
                                     </tr>
@@ -42,16 +42,16 @@
                             </div>
                         </td>
                     </tr>
-                    
+
                     <!-- Contenu -->
                     <tr>
                         <td style="padding: 50px 40px;">
-                            
+
                             <h2 style="margin: 0 0 16px 0; color: #1f2937; font-size: 26px; font-weight: 700; letter-spacing: -0.5px; text-align: center;">Nouvelle demande client 🎯</h2>
                             <p style="margin: 0 0 36px 0; color: #6b7280; font-size: 16px; line-height: 1.7; text-align: center;">
                                 Une commande vient d'être passée par un client. Merci de la traiter rapidement pour garantir une excellente expérience.
                             </p>
-                            
+
                             <!-- Card Client -->
                             <table width="100%" cellpadding="0" cellspacing="0" style="background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%); border-radius: 16px; margin-bottom: 24px; border: 2px solid #93c5fd;">
                                 <tr>
@@ -67,14 +67,14 @@
                                     </td>
                                 </tr>
                             </table>
-                            
+
                             <!-- Card Commande -->
                             <table width="100%" cellpadding="0" cellspacing="0" style="background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); border-radius: 18px; margin-bottom: 28px; border: 3px solid #fbbf24; overflow: hidden;">
                                 <tr>
                                     <td style="padding: 28px 24px;">
-                                        
+
                                         <h3 style="margin: 0 0 20px 0; color: #92400e; font-size: 18px; font-weight: 700;">Détails de la commande</h3>
-                                        
+
                                         <!-- Items -->
                                         @foreach($orderItems as $item)
                                         <table width="100%" cellpadding="0" cellspacing="0" style="background: rgba(255,255,255,0.9); border-radius: 8px; margin-bottom: 10px; padding: 14px; border: 1px solid #fbbf24;">
@@ -86,7 +86,7 @@
                                             </tr>
                                         </table>
                                         @endforeach
-                                        
+
                                         <!-- Total -->
                                         <div style="margin-top: 20px; padding-top: 20px; border-top: 3px dashed #fbbf24;">
                                             <table width="100%" cellpadding="0" cellspacing="0">
@@ -100,11 +100,11 @@
                                                 </tr>
                                             </table>
                                         </div>
-                                        
+
                                     </td>
                                 </tr>
                             </table>
-                            
+
                             <!-- Lieu de livraison -->
                             @if(isset($deliveryLocation))
                             <table width="100%" cellpadding="0" cellspacing="0" style="background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); border-radius: 16px; border: 2px solid #86efac; margin-bottom: 24px;">
@@ -134,29 +134,29 @@
                                 </tr>
                             </table>
                             @endif
-                            
+
                             <!-- CTA Actions -->
                             <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 28px;">
                                 <tr>
                                     <td align="center">
-                                        <a href="http://localhost:5173/login" style="display: inline-block; background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: #ffffff; padding: 20px 54px; text-decoration: none; border-radius: 14px; font-weight: 700; font-size: 17px; box-shadow: 0 12px 35px rgba(16, 185, 129, 0.5); letter-spacing: 0.3px;">
-                                            VALIDER OU REJETER
+                                        <a href="{{ config('app.frontend_url', env('FRONTEND_URL', 'http://localhost:5173')) }}/login" style="display: inline-block; background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: #ffffff; padding: 20px 54px; text-decoration: none; border-radius: 14px; font-weight: 700; font-size: 17px; box-shadow: 0 12px 35px rgba(16, 185, 129, 0.5); letter-spacing: 0.3px;">
+                                            Voir la commande
                                         </a>
                                     </td>
                                 </tr>
                             </table>
-                            
+
                             <!-- Message Temps Réel -->
                             <div style="background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%); padding: 20px; border-radius: 12px; border: 2px solid #fca5a5; text-align: center;">
                                 <p style="margin: 0; color: #991b1b; font-size: 15px; font-weight: 700; line-height: 1.6;">
-                                    <strong>Action rapide recommandée</strong><br>
-                                    <span style="font-weight: 600; opacity: 0.9;">Une réponse sous 10 minutes améliore la satisfaction client</span>
+                                    <strong>Pensez à traiter cette commande</strong><br>
+                                    <span style="font-weight: 600; opacity: 0.9;">Connectez-vous pour valider ou rejeter la commande</span>
                                 </p>
                             </div>
-                            
+
                         </td>
                     </tr>
-                    
+
                     <!-- Footer -->
                     <tr>
                         <td style="background: linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%); padding: 32px 40px; border-top: 1px solid #e5e7eb;">
@@ -171,11 +171,11 @@
                             </table>
                         </td>
                     </tr>
-                    
+
                 </table>
             </td>
         </tr>
     </table>
-    
+
 </body>
 </html>
