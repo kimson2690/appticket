@@ -48,4 +48,9 @@ class Order extends Model
     {
         return $this->belongsTo(Restaurant::class, 'restaurant_id', 'id');
     }
+
+    public function deliveryLocation(): BelongsTo
+    {
+        return $this->belongsTo(DeliveryLocation::class, 'delivery_location_id', 'id');
+    }
 }

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Wallet, Clock, CheckCircle, XCircle, Package, ArrowUpRight, Sparkles, Activity, AlertCircle } from 'lucide-react';
+import { Wallet, Clock, CheckCircle, XCircle, Package, ArrowUpRight, Sparkles, Activity, AlertCircle, X, Calendar, Eye, ChevronRight, Ticket } from 'lucide-react';
 
 interface TicketBalance {
   employee_name: string;
@@ -13,9 +13,26 @@ interface TicketBalance {
   batches_count: number;
 }
 
+interface BatchDetail {
+  id: string;
+  batch_number: string;
+  total_tickets: number;
+  ticket_value: string;
+  validity_start: string;
+  validity_end: string;
+  assigned_tickets: number;
+  used_tickets: number;
+  remaining_tickets: number;
+  status: string;
+  employee_name: string;
+  created_at: string;
+}
+
 const MyTickets: React.FC = () => {
   const [balance, setBalance] = useState<TicketBalance | null>(null);
   const [loading, setLoading] = useState(true);
+  const [batches, setBatches] = useState<BatchDetail[]>([]);
+  const [modalType, setModalType] = useState<'expired' | 'valid' | null>(null);
 
   const baseUrl = 'http://localhost:8001/api';
 
@@ -39,12 +56,24 @@ const MyTickets: React.FC = () => {
       const balanceData = await balanceRes.json();
 
       if (balanceData.success) setBalance(balanceData.data);
+
+      const batchesRes = await fetch(`${baseUrl}/employee/my-batches`, { headers });
+      const batchesData = await batchesRes.json();
+      if (batchesData.success) setBatches(batchesData.data);
     } catch (error) {
       console.error('Erreur:', error);
     } finally {
       setLoading(false);
     }
   };
+
+  const formatDate = (dateStr: string) => {
+    if (!dateStr) return 'N/A';
+    return new Date(dateStr).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' });
+  };
+
+  const expiredBatches = batches.filter(b => b.status === 'expired');
+  const validBatches = batches.filter(b => b.status === 'active');
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('fr-FR', {
@@ -134,7 +163,7 @@ const MyTickets: React.FC = () => {
       {/* Statistiques rapides avec indicateurs circulaires */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         {/* Tickets expirés */}
-        <div className="group bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-xl hover:border-red-200 transition-all duration-300">
+        <div onClick={() => setModalType('expired')} className="cursor-pointer group bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-xl hover:border-red-200 transition-all duration-300">
           <div className="flex items-center justify-between mb-4">
             <div className="flex-1">
               <div className="flex items-center space-x-2 mb-2">
@@ -165,6 +194,11 @@ const MyTickets: React.FC = () => {
                 </span>
               </div>
             </div>
+          </div>
+          <div className="flex items-center justify-center text-xs text-red-500 font-medium group-hover:text-red-700 transition-colors">
+            <Eye className="w-3.5 h-3.5 mr-1" />
+            Voir les détails
+            <ChevronRight className="w-3.5 h-3.5 ml-0.5" />
           </div>
         </div>
 
@@ -228,7 +262,7 @@ const MyTickets: React.FC = () => {
             </span>
           </div>
           <div className="space-y-3">
-            <div className="group flex items-center justify-between p-5 bg-gradient-to-r from-green-50 to-transparent rounded-xl border border-green-100 hover:shadow-md transition-all duration-200">
+            <div onClick={() => setModalType('valid')} className="cursor-pointer group flex items-center justify-between p-5 bg-gradient-to-r from-green-50 to-transparent rounded-xl border border-green-100 hover:shadow-md transition-all duration-200">
               <div className="flex items-center space-x-4">
                 <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-200">
                   <CheckCircle className="w-6 h-6 text-green-600" />
@@ -238,11 +272,14 @@ const MyTickets: React.FC = () => {
                   <span className="text-xs text-gray-500">Prêts à utiliser</span>
                 </div>
               </div>
-              <div className="text-right">
-                <span className="text-2xl font-bold text-green-600">{balance?.tickets_count.available || 0}</span>
-                <p className="text-xs text-gray-500">
-                  {balance && balance.tickets_count.total > 0 ? Math.round((balance.tickets_count.available / balance.tickets_count.total) * 100) : 0}% du total
-                </p>
+              <div className="flex items-center space-x-3">
+                <div className="text-right">
+                  <span className="text-2xl font-bold text-green-600">{balance?.tickets_count.available || 0}</span>
+                  <p className="text-xs text-gray-500">
+                    {balance && balance.tickets_count.total > 0 ? Math.round((balance.tickets_count.available / balance.tickets_count.total) * 100) : 0}% du total
+                  </p>
+                </div>
+                <ChevronRight className="w-5 h-5 text-green-400 group-hover:text-green-600 transition-colors" />
               </div>
             </div>
             <div className="group flex items-center justify-between p-5 bg-gradient-to-r from-blue-50 to-transparent rounded-xl border border-blue-100 hover:shadow-md transition-all duration-200">
@@ -262,7 +299,7 @@ const MyTickets: React.FC = () => {
                 </p>
               </div>
             </div>
-            <div className="group flex items-center justify-between p-5 bg-gradient-to-r from-red-50 to-transparent rounded-xl border border-red-100 hover:shadow-md transition-all duration-200">
+            <div onClick={() => setModalType('expired')} className="cursor-pointer group flex items-center justify-between p-5 bg-gradient-to-r from-red-50 to-transparent rounded-xl border border-red-100 hover:shadow-md transition-all duration-200">
               <div className="flex items-center space-x-4">
                 <div className="w-12 h-12 bg-red-100 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-200">
                   <Clock className="w-6 h-6 text-red-600" />
@@ -272,11 +309,14 @@ const MyTickets: React.FC = () => {
                   <span className="text-xs text-gray-500">Périmés</span>
                 </div>
               </div>
-              <div className="text-right">
-                <span className="text-2xl font-bold text-red-600">{balance?.tickets_count.expired || 0}</span>
-                <p className="text-xs text-gray-500">
-                  {balance && balance.tickets_count.total > 0 ? Math.round((balance.tickets_count.expired / balance.tickets_count.total) * 100) : 0}% du total
-                </p>
+              <div className="flex items-center space-x-3">
+                <div className="text-right">
+                  <span className="text-2xl font-bold text-red-600">{balance?.tickets_count.expired || 0}</span>
+                  <p className="text-xs text-gray-500">
+                    {balance && balance.tickets_count.total > 0 ? Math.round((balance.tickets_count.expired / balance.tickets_count.total) * 100) : 0}% du total
+                  </p>
+                </div>
+                <ChevronRight className="w-5 h-5 text-red-400 group-hover:text-red-600 transition-colors" />
               </div>
             </div>
           </div>
@@ -306,6 +346,131 @@ const MyTickets: React.FC = () => {
           </div>
         </div>
       </div>
+      {/* Modal Détails */}
+      {modalType && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setModalType(null)}>
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[80vh] overflow-hidden" onClick={e => e.stopPropagation()}>
+            {/* Header Modal */}
+            <div className={`p-6 ${modalType === 'expired' ? 'bg-gradient-to-r from-red-500 to-red-600' : 'bg-gradient-to-r from-green-500 to-green-600'} text-white`}>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  {modalType === 'expired' ? (
+                    <Clock className="w-7 h-7" />
+                  ) : (
+                    <CheckCircle className="w-7 h-7" />
+                  )}
+                  <div>
+                    <h2 className="text-xl font-bold">
+                      {modalType === 'expired' ? 'Tickets Expirés' : 'Tickets Valides'}
+                    </h2>
+                    <p className="text-sm opacity-90">
+                      {modalType === 'expired'
+                        ? `${expiredBatches.length} souche(s) expirée(s)`
+                        : `${validBatches.length} souche(s) active(s)`}
+                    </p>
+                  </div>
+                </div>
+                <button onClick={() => setModalType(null)} className="p-2 hover:bg-white/20 rounded-xl transition-colors">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+
+            {/* Content */}
+            <div className="p-6 overflow-y-auto max-h-[60vh]">
+              {(modalType === 'expired' ? expiredBatches : validBatches).length === 0 ? (
+                <div className="text-center py-12">
+                  <Ticket className={`w-16 h-16 mx-auto mb-4 ${modalType === 'expired' ? 'text-red-200' : 'text-green-200'}`} />
+                  <p className="text-gray-500 text-lg font-medium">
+                    {modalType === 'expired' ? 'Aucun ticket expiré' : 'Aucun ticket valide'}
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {(modalType === 'expired' ? expiredBatches : validBatches).map((batch) => (
+                    <div key={batch.id} className={`rounded-xl border-2 p-5 transition-all hover:shadow-md ${
+                      modalType === 'expired'
+                        ? 'border-red-100 bg-red-50/50'
+                        : 'border-green-100 bg-green-50/50'
+                    }`}>
+                      <div className="flex items-start justify-between mb-3">
+                        <div>
+                          <div className="flex items-center space-x-2 mb-1">
+                            <Package className={`w-4 h-4 ${modalType === 'expired' ? 'text-red-500' : 'text-green-500'}`} />
+                            <span className="font-bold text-gray-900">Souche {batch.batch_number}</span>
+                          </div>
+                          <span className={`inline-block text-xs font-semibold px-2.5 py-1 rounded-full ${
+                            modalType === 'expired'
+                              ? 'bg-red-100 text-red-700'
+                              : 'bg-green-100 text-green-700'
+                          }`}>
+                            {modalType === 'expired' ? 'Expirée' : 'Active'}
+                          </span>
+                        </div>
+                        <div className="text-right">
+                          <p className={`text-2xl font-bold ${modalType === 'expired' ? 'text-red-600' : 'text-green-600'}`}>
+                            {batch.remaining_tickets}
+                          </p>
+                          <p className="text-xs text-gray-500">tickets restants</p>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-3 mt-4">
+                        <div className="bg-white rounded-lg p-3 border border-gray-100">
+                          <p className="text-xs text-gray-500 mb-1">Valeur unitaire</p>
+                          <p className="text-sm font-bold text-gray-900">{formatCurrency(Number(batch.ticket_value))}</p>
+                        </div>
+                        <div className="bg-white rounded-lg p-3 border border-gray-100">
+                          <p className="text-xs text-gray-500 mb-1">Total tickets</p>
+                          <p className="text-sm font-bold text-gray-900">{batch.total_tickets}</p>
+                        </div>
+                        <div className="bg-white rounded-lg p-3 border border-gray-100">
+                          <p className="text-xs text-gray-500 mb-1">Utilisés</p>
+                          <p className="text-sm font-bold text-blue-600">{batch.used_tickets}</p>
+                        </div>
+                        <div className="bg-white rounded-lg p-3 border border-gray-100">
+                          <p className="text-xs text-gray-500 mb-1">Valeur restante</p>
+                          <p className={`text-sm font-bold ${modalType === 'expired' ? 'text-red-600' : 'text-green-600'}`}>
+                            {formatCurrency(batch.remaining_tickets * Number(batch.ticket_value))}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-between mt-4 pt-3 border-t border-gray-200">
+                        <div className="flex items-center space-x-1.5 text-xs text-gray-500">
+                          <Calendar className="w-3.5 h-3.5" />
+                          <span>Du {formatDate(batch.validity_start)}</span>
+                        </div>
+                        <div className="flex items-center space-x-1.5 text-xs text-gray-500">
+                          <Calendar className="w-3.5 h-3.5" />
+                          <span>Au {formatDate(batch.validity_end)}</span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+
+                  {/* Résumé en bas du modal */}
+                  <div className={`rounded-xl p-4 mt-2 ${
+                    modalType === 'expired' ? 'bg-red-100 border border-red-200' : 'bg-green-100 border border-green-200'
+                  }`}>
+                    <div className="flex items-center justify-between">
+                      <span className={`text-sm font-semibold ${modalType === 'expired' ? 'text-red-800' : 'text-green-800'}`}>
+                        Total {modalType === 'expired' ? 'perdu' : 'disponible'}
+                      </span>
+                      <span className={`text-lg font-bold ${modalType === 'expired' ? 'text-red-700' : 'text-green-700'}`}>
+                        {formatCurrency(
+                          (modalType === 'expired' ? expiredBatches : validBatches)
+                            .reduce((sum, b) => sum + b.remaining_tickets * Number(b.ticket_value), 0)
+                        )}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

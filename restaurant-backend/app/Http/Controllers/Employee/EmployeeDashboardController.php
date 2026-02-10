@@ -19,7 +19,7 @@ class EmployeeDashboardController extends Controller
     {
         try {
             $userId = $request->header('X-User-Id');
-            
+
             if (!$userId) {
                 return response()->json(['error' => 'User ID manquant'], 401);
             }
@@ -49,7 +49,7 @@ class EmployeeDashboardController extends Controller
     {
         try {
             $userId = $request->header('X-User-Id');
-            
+
             if (!$userId) {
                 return response()->json(['error' => 'User ID manquant'], 401);
             }
@@ -60,35 +60,27 @@ class EmployeeDashboardController extends Controller
                 return response()->json(['error' => 'Employé non trouvé'], 404);
             }
 
-            // Utiliser le ticket_balance de l'employé (source de vérité pour le montant en F)
-            $ticketBalanceAmount = $employee->ticket_balance ?? 0;
-            
-            // Récupérer toutes les affectations de l'employé via Eloquent
-            $totalTicketsAssigned = UserTicket::where('employee_id', $userId)
-                ->sum('tickets_count');
-            
-            // Calculer la valeur unitaire moyenne des tickets via SQL
-            $stats = UserTicket::where('employee_id', $userId)
-                ->selectRaw('SUM(tickets_count * ticket_value) as total_value')
-                ->selectRaw('SUM(tickets_count) as total_tickets')
-                ->first();
-            
-            $totalValue = $stats->total_value ?? 0;
-            $totalTickets = $stats->total_tickets ?? 0;
-            $averageTicketValue = $totalTickets > 0 ? ($totalValue / $totalTickets) : 500;
+            // Calculer depuis les vraies données des souches
+            $employeeBatches = TicketBatch::where('employee_id', $userId)->get();
 
-            // Convertir le solde en nombre de tickets disponibles
-            $availableTickets = $averageTicketValue > 0 ? floor($ticketBalanceAmount / $averageTicketValue) : 0;
-            
-            // Calculer les tickets utilisés = total - disponibles
-            $usedTickets = $totalTicketsAssigned - $availableTickets;
+            // Tickets disponibles = remaining_tickets des souches actives
+            $availableTickets = $employeeBatches->where('status', 'active')->sum('remaining_tickets');
 
-            // Récupérer les tickets expirés via SQL
-            $expiredTickets = TicketBatch::where('employee_id', $userId)
-                ->where('status', 'expired')
-                ->sum('remaining_tickets') ?? 0;
+            // Tickets utilisés = used_tickets de TOUTES les souches
+            $usedTickets = $employeeBatches->sum('used_tickets');
 
-            $batchesCount = TicketBatch::where('employee_id', $userId)->count();
+            // Tickets expirés = remaining_tickets des souches expirées
+            $expiredTickets = $employeeBatches->where('status', 'expired')->sum('remaining_tickets');
+
+            // Total = disponibles + utilisés + expirés
+            $totalTickets = $availableTickets + $usedTickets + $expiredTickets;
+
+            // Solde monétaire = somme des (remaining_tickets × ticket_value) des souches actives
+            $ticketBalanceAmount = $employeeBatches->where('status', 'active')->sum(function ($batch) {
+                return $batch->remaining_tickets * $batch->ticket_value;
+            });
+
+            $batchesCount = $employeeBatches->count();
 
             return response()->json([
                 'success' => true,
@@ -96,7 +88,7 @@ class EmployeeDashboardController extends Controller
                     'employee_name' => $employee->name,
                     'ticket_balance' => $ticketBalanceAmount,  // Montant en F
                     'tickets_count' => [
-                        'total' => $totalTicketsAssigned,      // Total basé sur les affectations
+                        'total' => $totalTickets,               // Total basé sur les souches
                         'available' => $availableTickets,       // Nombre de tickets disponibles
                         'used' => $usedTickets,                 // Calculé : total - disponibles
                         'expired' => $expiredTickets
@@ -117,7 +109,7 @@ class EmployeeDashboardController extends Controller
     {
         try {
             $userId = $request->header('X-User-Id');
-            
+
             if (!$userId) {
                 return response()->json(['error' => 'User ID manquant'], 401);
             }
@@ -143,7 +135,7 @@ class EmployeeDashboardController extends Controller
     {
         try {
             $userId = $request->header('X-User-Id');
-            
+
             if (!$userId) {
                 return response()->json(['error' => 'User ID manquant'], 401);
             }

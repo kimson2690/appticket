@@ -28,7 +28,7 @@ class OrderController extends Controller
             // Nettoyer toutes les données de la requête AVANT validation
             $cleanedInput = $this->cleanUtf8Recursively($request->all());
             $request->merge($cleanedInput);
-            
+
             $validated = $request->validate([
                 'restaurant_id' => 'required|string',
                 'items' => 'required|array|min:1',
@@ -44,7 +44,7 @@ class OrderController extends Controller
 
             $userId = $request->header('X-User-Id');
             $userNameRaw = $request->header('X-User-Name');
-            
+
             // Nettoyer le nom d'utilisateur immédiatement
             $userName = mb_convert_encoding($userNameRaw ?? '', 'UTF-8', 'UTF-8');
 
@@ -100,7 +100,7 @@ class OrderController extends Controller
 
             // Récupérer le nom du restaurant (priorité au nom envoyé par le frontend)
             $restaurantName = 'Restaurant'; // Valeur par défaut
-            
+
             // Si restaurant_name est fourni dans les items, l'utiliser
             if (!empty($validated['items'][0]['restaurant_name'])) {
                 $restaurantName = $validated['items'][0]['restaurant_name'];
@@ -145,7 +145,7 @@ class OrderController extends Controller
                     'items_count' => count($validated['items'])
                 ]
             ]);
-            
+
             // Charger les informations du lieu de livraison si spécifié
             $deliveryLocation = null;
             if (isset($validated['delivery_location_id'])) {
@@ -160,7 +160,7 @@ class OrderController extends Controller
                     ];
                 }
             }
-            
+
             // Envoyer email de confirmation à l'employé
             try {
                 $orderItemsForEmail = array_map(function($item) {
@@ -170,10 +170,10 @@ class OrderController extends Controller
                         'price' => $item['price'] * $item['quantity']
                     ];
                 }, $validated['items']);
-                
+
                 $mailable = new OrderConfirmation(
-                    $userName, 
-                    $restaurantName, 
+                    $userName,
+                    $restaurantName,
                     $totalAmount,
                     $orderItemsForEmail,
                     $deliveryLocation
@@ -184,7 +184,7 @@ class OrderController extends Controller
             } catch (\Exception $e) {
                 Log::error("Erreur envoi email confirmation commande: " . $e->getMessage());
             }
-            
+
             // Envoyer email et WhatsApp au gestionnaire du restaurant
             try {
                 // Récupérer le gestionnaire du restaurant depuis la BD
@@ -193,7 +193,7 @@ class OrderController extends Controller
                                   $query->where('name', 'Gestionnaire Restaurant');
                               })
                               ->first();
-                
+
                 if ($manager && $manager->email) {
                     $orderItemsForEmail = array_map(function($item) {
                         return [
@@ -201,7 +201,7 @@ class OrderController extends Controller
                             'quantity' => $item['quantity']
                         ];
                     }, $validated['items']);
-                    
+
                     // Envoyer email
                     $mailable = new NewOrderReceived(
                         $userName,
@@ -213,12 +213,12 @@ class OrderController extends Controller
                     $mailable->onQueue(EmailPriority::HIGH);
                     Mail::to($manager->email)->queue($mailable);
                     Log::info("Email de nouvelle commande envoyé au restaurant: {$manager->email}");
-                    
+
                     // Envoyer notification WhatsApp au gestionnaire
                     if (env('WHATSAPP_ENABLED', false) && $manager->phone) {
                         try {
                             $whatsappService = new \App\Services\WhatsAppService();
-                            
+
                             // Préparer les données pour le template
                             $whatsappData = [
                                 'restaurant_name' => $restaurantName,
@@ -235,13 +235,13 @@ class OrderController extends Controller
                                 'notes' => $validated['notes'] ?? null,
                                 'order_id' => $orderId
                             ];
-                            
+
                             // Créer un objet manager compatible
                             $managerData = [
                                 'phone' => $manager->phone,
                                 'name' => $manager->name
                             ];
-                            
+
                             $whatsappService->sendTemplate($manager->phone, 'new_order_restaurant', $whatsappData);
                             Log::info("Notification WhatsApp envoyée au gestionnaire du restaurant: {$manager->phone}");
                         } catch (\Exception $e) {
@@ -281,7 +281,7 @@ class OrderController extends Controller
 
             // Récupérer les commandes avec la relation restaurant via Eloquent
             $employeeOrders = Order::where('employee_id', $userId)
-                ->with('restaurant')
+                ->with(['restaurant', 'deliveryLocation'])
                 ->orderByDesc('created_at')
                 ->get();
 
@@ -340,7 +340,7 @@ class OrderController extends Controller
         if ($data === null) {
             return null;
         }
-        
+
         if (is_array($data)) {
             $cleaned = [];
             foreach ($data as $key => $value) {
@@ -349,7 +349,7 @@ class OrderController extends Controller
             }
             return $cleaned;
         }
-        
+
         if (is_string($data)) {
             // Supprimer les caractères UTF-8 invalides et nettoyer
             $cleaned = mb_convert_encoding($data, 'UTF-8', 'UTF-8');
@@ -357,7 +357,7 @@ class OrderController extends Controller
             $cleaned = preg_replace('/[\x00-\x1F\x7F]/u', '', $cleaned);
             return $cleaned;
         }
-        
+
         return $data;
     }
 }
