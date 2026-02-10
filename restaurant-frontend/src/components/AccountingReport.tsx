@@ -293,6 +293,9 @@ const AccountingReport: React.FC = () => {
               <p className="text-lg font-semibold mt-1">
                 {formatAmount(reportData.summary.tickets_used_amount)}
               </p>
+              <p className="text-green-200 text-xs mt-1">
+                via {reportData.summary.orders_count} commande(s)
+              </p>
             </div>
 
             {/* Employés actifs */}
