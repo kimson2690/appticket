@@ -13,7 +13,6 @@ import {
   AlertTriangle,
   Save,
   Upload,
-  Image as ImageIcon
 } from 'lucide-react';
 import { apiService, type TicketConfiguration as TicketConfigurationType } from '../services/api';
 
@@ -99,11 +98,11 @@ const TicketConfiguration: React.FC = () => {
     setSelectedConfig(config);
     setFormData({
       id: config.id,
-      ticket_value: config.ticket_value,
-      validity_duration_days: config.validity_duration_days,
-      type: config.type,
-      auto_renewal: config.auto_renewal,
-      logo: config.logo || ''
+      ticket_value: parseFloat(String(config.ticket_value)),
+      validity_duration_days: config.validity_days || 30,
+      type: (config as any).type || 'standard',
+      auto_renewal: (config as any).auto_renewal || false,
+      logo: (config as any).logo || ''
     });
     setLogoPreview(config.logo || '');
     setShowModal(true);
@@ -120,7 +119,7 @@ const TicketConfiguration: React.FC = () => {
     try {
       if (selectedConfig) {
         // Mise à jour
-        const updatedConfig = await apiService.updateTicketConfiguration(selectedConfig.id, formData);
+        const updatedConfig = await apiService.updateTicketConfiguration(selectedConfig.id, formData as any);
         const updatedConfigs = configurations.map(config => 
           config.id === selectedConfig.id ? updatedConfig : config
         );
@@ -138,7 +137,7 @@ const TicketConfiguration: React.FC = () => {
           company_id: currentUser.companyId || '1',
           is_active: true
         };
-        const newConfig = await apiService.createTicketConfiguration(configData);
+        const newConfig = await apiService.createTicketConfiguration(configData as any);
         setConfigurations([...configurations, newConfig]);
         
         setNotification({
@@ -358,7 +357,7 @@ const TicketConfiguration: React.FC = () => {
               <p className="text-sm font-medium text-gray-600">Valeur Moyenne</p>
               <p className="text-2xl font-bold text-gray-900">
                 {filteredConfigurations.length > 0 
-                  ? Math.round(filteredConfigurations.reduce((sum, config) => sum + config.ticket_value, 0) / filteredConfigurations.length)
+                  ? Math.round(filteredConfigurations.reduce((sum, config) => sum + parseFloat(String(config.ticket_value)), 0) / filteredConfigurations.length)
                   : 0
                 }F
               </p>
@@ -375,7 +374,7 @@ const TicketConfiguration: React.FC = () => {
               <p className="text-sm font-medium text-gray-600">Durée Moyenne</p>
               <p className="text-2xl font-bold text-gray-900">
                 {filteredConfigurations.length > 0 
-                  ? Math.round(filteredConfigurations.reduce((sum, config) => sum + config.validity_duration_days, 0) / filteredConfigurations.length)
+                  ? Math.round(filteredConfigurations.reduce((sum, config) => sum + (config.validity_days || 0), 0) / filteredConfigurations.length)
                   : 0
                 } jours
               </p>
@@ -436,10 +435,10 @@ const TicketConfiguration: React.FC = () => {
                       </div>
                       <div>
                         <h3 className="font-semibold text-gray-900">
-                          Ticket {getTypeLabel(config.type)}
+                          Ticket {getTypeLabel(config.type || 'standard')}
                         </h3>
-                        <span className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${getTypeColor(config.type)}`}>
-                          {getTypeLabel(config.type)}
+                        <span className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${getTypeColor(config.type || 'standard')}`}>
+                          {getTypeLabel(config.type || 'standard')}
                         </span>
                       </div>
                     </div>
@@ -462,12 +461,12 @@ const TicketConfiguration: React.FC = () => {
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
                       <span className="text-sm text-gray-600">Valeur du ticket</span>
-                      <span className="font-semibold text-gray-900">{config.ticket_value}F</span>
+                      <span className="font-semibold text-gray-900">{parseFloat(String(config.ticket_value))}F</span>
                     </div>
                     
                     <div className="flex items-center justify-between">
                       <span className="text-sm text-gray-600">Durée de validité</span>
-                      <span className="font-semibold text-gray-900">{config.validity_duration_days} jours</span>
+                      <span className="font-semibold text-gray-900">{config.validity_days || '-'} jours</span>
                     </div>
                     
                     <div className="flex items-center justify-between">

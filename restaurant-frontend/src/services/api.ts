@@ -734,6 +734,9 @@ export interface TicketConfiguration {
   weekend_usage: boolean;
   restrictions: string | null;
   status: 'active' | 'inactive'; // Changé de is_active
+  type?: string;
+  auto_renewal?: boolean;
+  logo?: string;
   created_at: string;
   updated_at: string;
 }
