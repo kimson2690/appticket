@@ -393,9 +393,11 @@ const DashboardStats: React.FC = () => {
                     wrapperStyle={{ paddingTop: '20px' }}
                     iconType="line"
                   />
-                  {Object.keys(stats.tickets_by_month_company[0] || {})
-                    .filter(key => key !== 'month')
-                    .map((companyName, index) => (
+                  {(Array.from(new Set(
+                    stats.tickets_by_month_company.flatMap((row: any) => 
+                      Object.keys(row).filter(key => key !== 'month')
+                    )
+                  )) as string[]).map((companyName: string, index: number) => (
                       <Line
                         key={companyName}
                         type="monotone"
@@ -405,6 +407,7 @@ const DashboardStats: React.FC = () => {
                         dot={{ r: 5, strokeWidth: 2, fill: '#fff' }}
                         activeDot={{ r: 7 }}
                         name={companyName}
+                        connectNulls
                       />
                     ))
                   }

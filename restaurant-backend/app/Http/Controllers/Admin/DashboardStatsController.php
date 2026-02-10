@@ -26,7 +26,7 @@ class DashboardStatsController extends Controller
             $totalUsers = Employee::count() + User::count();
             $totalCompanies = Company::count();
             $totalRestaurants = Restaurant::count();
-            $totalOrders = Order::count();
+            $totalOrders = Order::where('status', 'confirmed')->count();
 
             Log::info('📊 [DashboardStats] Données chargées depuis MySQL', [
                 'employees' => Employee::count(),
@@ -243,9 +243,11 @@ class DashboardStatsController extends Controller
                 return response()->json(['error' => 'User ID manquant'], 401);
             }
 
-            // Statistiques générales
-            $totalOrders = Order::where('employee_id', $userId)->count();
-            $totalSpent = Order::where('employee_id', $userId)->sum('total_amount');
+            // Statistiques générales (uniquement commandes confirmées)
+            $totalOrders = Order::where('employee_id', $userId)
+                ->where('status', 'confirmed')->count();
+            $totalSpent = Order::where('employee_id', $userId)
+                ->where('status', 'confirmed')->sum('total_amount');
             $totalAssigned = UserTicket::where('employee_id', $userId)->sum('tickets_count');
 
             // Utilisation mensuelle (6 derniers mois)
@@ -284,14 +286,15 @@ class DashboardStatsController extends Controller
             $startOfMonth = now()->subMonths($i)->startOfMonth();
             $endOfMonth = now()->subMonths($i)->endOfMonth();
 
-            $stats = Order::whereBetween('created_at', [$startOfMonth, $endOfMonth])
+            $stats = Order::where('status', 'confirmed')
+                ->whereBetween('created_at', [$startOfMonth, $endOfMonth])
                 ->selectRaw('COUNT(*) as count, SUM(total_amount) as amount')
                 ->first();
 
             $result[] = [
                 'month' => $startOfMonth->format('M'),
-                'orders' => $stats->count ?? 0,
-                'amount' => $stats->amount ?? 0,
+                'orders' => (int) ($stats->count ?? 0),
+                'amount' => (float) ($stats->amount ?? 0),
             ];
         }
         return $result;
@@ -333,6 +336,7 @@ class DashboardStatsController extends Controller
     private function getOrdersByCompany()
     {
         $stats = Order::join('employees', 'orders.employee_id', '=', 'employees.id')
+            ->where('orders.status', 'confirmed')
             ->select('employees.company_id')
             ->selectRaw('COUNT(orders.id) as orders_count')
             ->selectRaw('SUM(orders.total_amount) as total_amount')
@@ -345,11 +349,12 @@ class DashboardStatsController extends Controller
 
         foreach ($stats as $stat) {
             $company = $companies->get($stat->company_id);
+            if (!$company) continue; // Ignorer les entreprises supprimées
             $result[] = [
                 'company_id' => $stat->company_id,
-                'company_name' => $company->name ?? 'Inconnue',
-                'orders' => $stat->orders_count,
-                'amount' => $stat->total_amount,
+                'company_name' => $company->name,
+                'orders' => (int) $stat->orders_count,
+                'amount' => (float) $stat->total_amount,
             ];
         }
 
@@ -386,7 +391,7 @@ class DashboardStatsController extends Controller
             if (!isset($ticketsByMonth[$ticket->month])) {
                 $ticketsByMonth[$ticket->month] = [];
             }
-            $ticketsByMonth[$ticket->month][$ticket->company_name] = $ticket->total_tickets;
+            $ticketsByMonth[$ticket->month][$ticket->company_name] = (int) $ticket->total_tickets;
         }
 
         // Construire le résultat final avec tous les mois
@@ -514,20 +519,23 @@ class DashboardStatsController extends Controller
      */
     private function getRevenueByCompanyForRestaurant($restaurantId)
     {
-        // Les commandes contiennent directement company_id et company_name
         $stats = Order::where('orders.restaurant_id', $restaurantId)
             ->where('orders.status', 'confirmed')
             ->join('employees', 'orders.employee_id', '=', 'employees.id')
-            ->select('employees.company_name')
+            ->join('companies', 'employees.company_id', '=', 'companies.id')
+            ->select('companies.name as company_name')
+            ->selectRaw('COUNT(orders.id) as orders_count')
             ->selectRaw('SUM(orders.total_amount) as amount')
-            ->groupBy('employees.company_name')
+            ->groupBy('companies.name')
+            ->orderByDesc('amount')
             ->get();
 
         $result = [];
         foreach ($stats as $stat) {
             $result[] = [
-                'name' => $stat->company_name ?? 'Inconnu',
-                'amount' => $stat->amount,
+                'name' => $stat->company_name,
+                'amount' => (float) $stat->amount,
+                'orders' => (int) $stat->orders_count,
             ];
         }
 
@@ -588,12 +596,13 @@ class DashboardStatsController extends Controller
             $endOfMonth = now()->subMonths($i)->endOfMonth();
 
             $amount = Order::where('employee_id', $employeeId)
+                ->where('status', 'confirmed')
                 ->whereBetween('created_at', [$startOfMonth, $endOfMonth])
                 ->sum('total_amount');
 
             $result[] = [
                 'month' => $startOfMonth->format('M'),
-                'amount' => $amount,
+                'amount' => (float) $amount,
             ];
         }
         return $result;

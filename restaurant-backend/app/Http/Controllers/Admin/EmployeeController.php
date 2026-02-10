@@ -43,13 +43,32 @@ class EmployeeController extends Controller
             Log::info('Employés filtrés pour gestionnaire entreprise ID: ' . $userCompanyId);
         }
 
-        $employees = $query->get()->toArray();
+        $employees = $query->get();
 
-        Log::info('Nombre d\'employés récupérés: ' . count($employees));
+        // Calculer le solde réel (tickets valides non expirés) pour chaque employé
+        $now = \Carbon\Carbon::now();
+        $employeeIds = $employees->pluck('id')->toArray();
+        $allBatches = \App\Models\TicketBatch::whereIn('employee_id', $employeeIds)->get();
+
+        $result = $employees->map(function ($emp) use ($allBatches, $now) {
+            $empBatches = $allBatches->filter(fn($b) => (string) $b->employee_id === (string) $emp->id);
+            // Solde réel = souches actives ET non expirées (validity_end >= now)
+            $activeBatches = $empBatches->filter(fn($b) =>
+                $b->status === 'active' && \Carbon\Carbon::parse($b->validity_end)->gte($now)
+            );
+            $validBalance = $activeBatches->sum(fn($b) => (int) $b->remaining_tickets * (float) $b->ticket_value);
+
+            $data = $emp->toArray();
+            $data['valid_balance'] = (float) $validBalance;
+            $data['ticket_balance_cumul'] = (float) $emp->ticket_balance;
+            return $data;
+        })->toArray();
+
+        Log::info('Nombre d\'employés récupérés: ' . count($result));
 
         return response()->json([
             'success' => true,
-            'data' => array_values($employees)
+            'data' => array_values($result)
         ]);
     }
 

@@ -62,22 +62,32 @@ class EmployeeDashboardController extends Controller
 
             // Calculer depuis les vraies données des souches
             $employeeBatches = TicketBatch::where('employee_id', $userId)->get();
+            $now = \Carbon\Carbon::now();
 
-            // Tickets disponibles = remaining_tickets des souches actives
-            $availableTickets = $employeeBatches->where('status', 'active')->sum('remaining_tickets');
+            // Souches vraiment actives = status 'active' ET validity_end >= now
+            $realActiveBatches = $employeeBatches->filter(fn($b) =>
+                $b->status === 'active' && \Carbon\Carbon::parse($b->validity_end)->gte($now)
+            );
+            // Souches expirées = status 'expired' OU (status 'active' mais date dépassée)
+            $realExpiredBatches = $employeeBatches->filter(fn($b) =>
+                $b->status === 'expired' || ($b->status === 'active' && \Carbon\Carbon::parse($b->validity_end)->lt($now))
+            );
+
+            // Tickets disponibles = remaining_tickets des souches vraiment actives
+            $availableTickets = (int) $realActiveBatches->sum('remaining_tickets');
 
             // Tickets utilisés = used_tickets de TOUTES les souches
-            $usedTickets = $employeeBatches->sum('used_tickets');
+            $usedTickets = (int) $employeeBatches->sum('used_tickets');
 
             // Tickets expirés = remaining_tickets des souches expirées
-            $expiredTickets = $employeeBatches->where('status', 'expired')->sum('remaining_tickets');
+            $expiredTickets = (int) $realExpiredBatches->sum('remaining_tickets');
 
             // Total = disponibles + utilisés + expirés
             $totalTickets = $availableTickets + $usedTickets + $expiredTickets;
 
-            // Solde monétaire = somme des (remaining_tickets × ticket_value) des souches actives
-            $ticketBalanceAmount = $employeeBatches->where('status', 'active')->sum(function ($batch) {
-                return $batch->remaining_tickets * $batch->ticket_value;
+            // Solde monétaire = somme des (remaining_tickets × ticket_value) des souches vraiment actives
+            $ticketBalanceAmount = $realActiveBatches->sum(function ($batch) {
+                return (int) $batch->remaining_tickets * (float) $batch->ticket_value;
             });
 
             $batchesCount = $employeeBatches->count();

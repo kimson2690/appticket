@@ -31,6 +31,7 @@ const EmployeeManagement: React.FC = () => {
   const [notification, setNotification] = useState<{ type: 'success' | 'error' | 'info'; message: string; title: string } | null>(null);
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [employeeToReject, setEmployeeToReject] = useState<string | null>(null);
+  const [validTicketBalance, setValidTicketBalance] = useState<number | null>(null);
 
   // Récupération des informations de l'utilisateur connecté
   const currentUser = {
@@ -70,6 +71,16 @@ const EmployeeManagement: React.FC = () => {
       
       setEmployees(employeesData);
       setCompanies(companiesData);
+
+      // Charger le solde valide des tickets (non expirés)
+      if (isCompanyManager) {
+        try {
+          const analytics = await apiService.getTicketAnalytics();
+          setValidTicketBalance(analytics?.summary?.valid_remaining_amount ?? null);
+        } catch {
+          setValidTicketBalance(null);
+        }
+      }
     } catch (err) {
       console.error('Error loading data:', err);
     } finally {
@@ -202,7 +213,7 @@ const EmployeeManagement: React.FC = () => {
   const totalEmployees = filteredEmployees.length;
   const activeEmployees = filteredEmployees.filter(emp => emp.status === 'active').length;
   const pendingEmployees = filteredEmployees.filter(emp => emp.status === 'pending');
-  const totalTickets = filteredEmployees.reduce((sum, emp) => sum + Number(emp.ticket_balance || 0), 0);
+  const totalTickets = filteredEmployees.reduce((sum, emp) => sum + Number((emp as any).valid_balance ?? emp.ticket_balance ?? 0), 0);
 
   // Fonction pour approuver un employé
   const handleApproveEmployee = async (employeeId: string) => {
@@ -395,8 +406,12 @@ const EmployeeManagement: React.FC = () => {
         <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-200">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600">Total Tickets</p>
-              <p className="text-2xl font-bold text-purple-600">{totalTickets.toLocaleString()}</p>
+              <p className="text-sm font-medium text-gray-600">Solde Tickets Valides</p>
+              <p className="text-2xl font-bold text-purple-600">
+                {validTicketBalance !== null
+                  ? Math.round(validTicketBalance).toLocaleString('fr-FR') + ' F'
+                  : Math.round(totalTickets).toLocaleString('fr-FR') + ' F'}
+              </p>
             </div>
             <div className="h-12 w-12 bg-purple-100 rounded-lg flex items-center justify-center">
               <CreditCard className="h-6 w-6 text-purple-600" />
@@ -524,7 +539,7 @@ const EmployeeManagement: React.FC = () => {
                   Poste
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Tickets
+                  Solde (F CFA)
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Statut
@@ -582,7 +597,7 @@ const EmployeeManagement: React.FC = () => {
                     <div className="flex items-center">
                       <CreditCard className="w-4 h-4 text-purple-400 mr-2" />
                       <span className="text-sm font-medium text-purple-600">
-                        {employee.ticket_balance.toLocaleString()}
+                        {Math.round(Number((employee as any).valid_balance ?? employee.ticket_balance)).toLocaleString('fr-FR')} F
                       </span>
                     </div>
                   </td>

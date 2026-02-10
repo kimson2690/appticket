@@ -27,6 +27,7 @@ use App\Http\Controllers\Employee\EmployeeMenuController;
 use App\Http\Controllers\Company\ReportingController;
 use App\Http\Controllers\Company\AccountingReportController;
 use App\Http\Controllers\Company\DeliveryLocationController;
+use App\Http\Controllers\Company\TicketAnalyticsController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\PasswordResetController;
 
@@ -38,25 +39,25 @@ Route::get('/user', function (Request $request) {
 Route::prefix('admin')->group(function () {
     // Rôles
     Route::apiResource('roles', AdminRoleController::class);
-    
+
     // Permissions
     Route::get('permissions', [PermissionController::class, 'index']);
     Route::get('permissions/all', [PermissionController::class, 'all']);
-    
+
     // Gestion des entreprises
     Route::get('/companies', [CompanyController::class, 'index']);
     Route::post('/companies', [CompanyController::class, 'store']);
     Route::get('/companies/{id}', [CompanyController::class, 'show']);
     Route::put('/companies/{id}', [CompanyController::class, 'update']);
     Route::delete('/companies/{id}', [CompanyController::class, 'destroy']);
-    
+
     // Gestion des restaurants
     Route::get('/restaurants', [RestaurantController::class, 'index']);
     Route::post('/restaurants', [RestaurantController::class, 'store']);
     Route::get('/restaurants/{id}', [RestaurantController::class, 'show']);
     Route::put('/restaurants/{id}', [RestaurantController::class, 'update']);
     Route::delete('/restaurants/{id}', [RestaurantController::class, 'destroy']);
-    
+
     // Gestion des plats (menu)
     Route::get('/menu-items', [MenuItemController::class, 'index']);
     Route::post('/menu-items', [MenuItemController::class, 'store']);
@@ -64,7 +65,7 @@ Route::prefix('admin')->group(function () {
     Route::put('/menu-items/{id}', [MenuItemController::class, 'update']);
     Route::delete('/menu-items/{id}', [MenuItemController::class, 'destroy']);
     Route::post('/menu-items/{id}/toggle-availability', [MenuItemController::class, 'toggleAvailability']);
-    
+
     // Gestion des menus composés (menu du jour/semaine)
     Route::get('/daily-menus', [DailyMenuController::class, 'index']);
     Route::post('/daily-menus', [DailyMenuController::class, 'store']);
@@ -72,19 +73,19 @@ Route::prefix('admin')->group(function () {
     Route::put('/daily-menus/{id}', [DailyMenuController::class, 'update']);
     Route::delete('/daily-menus/{id}', [DailyMenuController::class, 'destroy']);
     Route::post('/daily-menus/{id}/toggle-availability', [DailyMenuController::class, 'toggleAvailability']);
-    
+
     // Gestion de la planification hebdomadaire des plats
     Route::get('/weekly-menu', [WeeklyMenuController::class, 'index']);
     Route::post('/weekly-menu', [WeeklyMenuController::class, 'store']);
     Route::get('/weekly-menu/current', [WeeklyMenuController::class, 'show']);
-    
+
     // Gestion des utilisateurs
     Route::get('/users', [UserController::class, 'index']);
     Route::post('/users', [UserController::class, 'store']);
     Route::get('/users/{id}', [UserController::class, 'show']);
     Route::put('/users/{id}', [UserController::class, 'update']);
     Route::delete('/users/{id}', [UserController::class, 'destroy']);
-    
+
     // Gestion des employés
     Route::get('/employees', [EmployeeController::class, 'index']);
     Route::post('/employees', [EmployeeController::class, 'store']);
@@ -93,7 +94,7 @@ Route::prefix('admin')->group(function () {
     Route::delete('/employees/{id}', [EmployeeController::class, 'destroy']);
     Route::post('/employees/{id}/approve', [EmployeeController::class, 'approve']);
     Route::post('/employees/{id}/reject', [EmployeeController::class, 'reject']);
-    
+
     // Configuration des tickets
     Route::get('/ticket-configurations', [TicketConfigurationController::class, 'index']);
     Route::post('/ticket-configurations', [TicketConfigurationController::class, 'store']);
@@ -104,37 +105,37 @@ Route::prefix('admin')->group(function () {
     Route::get('/ticket-configurations/{id}', [TicketConfigurationController::class, 'show']);
     Route::put('/ticket-configurations/{id}', [TicketConfigurationController::class, 'update']);
     Route::delete('/ticket-configurations/{id}', [TicketConfigurationController::class, 'destroy']);
-    
+
     // Souches de tickets
     Route::get('/ticket-batches', [TicketBatchController::class, 'index']);
     Route::post('/ticket-batches', [TicketBatchController::class, 'store']);
     Route::get('/ticket-batches/{id}', [TicketBatchController::class, 'show']);
     Route::delete('/ticket-batches/{id}', [TicketBatchController::class, 'destroy']);
     Route::post('/ticket-batches/{id}/use', [TicketBatchController::class, 'useTicket']);
-    
+
     // Gestion des tickets utilisateurs
     Route::post('/employees/{id}/assign-tickets', [UserTicketController::class, 'assignTickets']);
     Route::post('/employees/{id}/recharge', [UserTicketController::class, 'rechargeBalance']);
     Route::post('/employees/bulk-assign-tickets', [UserTicketController::class, 'bulkAssignTickets']);
     Route::get('/ticket-assignments', [UserTicketController::class, 'getAssignments']);
-    
+
     // Migration des numéros de souches
     Route::post('/migrate-batch-numbers', [MigrateBatchNumbersController::class, 'migrate']);
-    
+
     // Gestion des partenariats entreprise-restaurant
     Route::get('/company-restaurants/partners', [CompanyRestaurantController::class, 'getPartnerRestaurants']);
     Route::get('/company-restaurants/available', [CompanyRestaurantController::class, 'getAvailableRestaurants']);
     Route::post('/company-restaurants/partners', [CompanyRestaurantController::class, 'updatePartnerRestaurants']);
-    
+
     // Gestion des notifications
     Route::get('/notifications', [NotificationController::class, 'index']);
     Route::put('/notifications/{id}/read', [NotificationController::class, 'markAsRead']);
     Route::put('/notifications/mark-all-read', [NotificationController::class, 'markAllAsRead']);
     Route::delete('/notifications/{id}', [NotificationController::class, 'destroy']);
-    
+
     // Statistiques du dashboard
     Route::get('/dashboard/stats', [DashboardStatsController::class, 'getAdminStats']);
-    
+
     // Statistiques globales
     Route::get('/statistics', [StatisticsController::class, 'index']);
 });
@@ -144,14 +145,17 @@ Route::prefix('company')->group(function () {
     // Statistiques de dépenses
     Route::get('/reports/restaurant-expenses', [ReportingController::class, 'getRestaurantExpenses']);
     Route::get('/reports/employee-expenses', [ReportingController::class, 'getEmployeeExpenses']);
-    
+
     // Rapport comptable mensuel
     Route::get('/reports/accounting', [AccountingReportController::class, 'getAccountingReport']);
     Route::post('/reports/accounting/export', [AccountingReportController::class, 'exportAccountingReport']);
-    
+
     // Statistiques du dashboard
     Route::get('/dashboard/stats', [DashboardStatsController::class, 'getCompanyStats']);
-    
+
+    // Analyses des tickets
+    Route::get('/ticket-analytics', [TicketAnalyticsController::class, 'getTicketAnalytics']);
+
     // Gestion des lieux de livraison
     Route::get('/delivery-locations', [DeliveryLocationController::class, 'index']); // Liste tous les lieux
     Route::get('/delivery-locations/active', [DeliveryLocationController::class, 'active']); // Lieux actifs pour employés
@@ -168,11 +172,11 @@ Route::prefix('restaurant')->group(function () {
     Route::get('/orders', [\App\Http\Controllers\Restaurant\OrderManagementController::class, 'index']);
     Route::post('/orders/{id}/validate', [\App\Http\Controllers\Restaurant\OrderManagementController::class, 'validateOrder']);
     Route::post('/orders/{id}/reject', [\App\Http\Controllers\Restaurant\OrderManagementController::class, 'rejectOrder']);
-    
+
     // Statistiques et rapports
     Route::get('/reports/company-orders', [\App\Http\Controllers\Restaurant\RestaurantReportingController::class, 'getCompanyOrders']);
     Route::get('/reports/employee-orders', [\App\Http\Controllers\Restaurant\RestaurantReportingController::class, 'getEmployeeOrders']);
-    
+
     // Statistiques du dashboard
     Route::get('/dashboard/stats', [DashboardStatsController::class, 'getRestaurantStats']);
 });
@@ -184,18 +188,18 @@ Route::prefix('employee')->group(function () {
     Route::get('/ticket-balance', [EmployeeDashboardController::class, 'getTicketBalance']);
     Route::get('/ticket-history', [EmployeeDashboardController::class, 'getTicketHistory']);
     Route::get('/my-batches', [EmployeeDashboardController::class, 'getMyBatches']);
-    
+
     // Restaurants partenaires
     Route::get('/restaurants', [EmployeeRestaurantController::class, 'getAvailableRestaurants']);
-    
+
     // Plats disponibles pour le jour actuel
     Route::get('/menu-items', [EmployeeMenuController::class, 'getAvailableMenuItems']);
-    
+
     // Commandes
     Route::get('/orders', [OrderController::class, 'index']);
     Route::post('/orders', [OrderController::class, 'store']);
     Route::get('/orders/{id}', [OrderController::class, 'show']);
-    
+
     // Statistiques du dashboard
     Route::get('/dashboard/stats', [DashboardStatsController::class, 'getEmployeeStats']);
 });
@@ -213,7 +217,7 @@ Route::post('reset-password', [PasswordResetController::class, 'resetPassword'])
 Route::get('test-email', function (Request $request) {
     try {
         $testEmail = $request->query('email', 'test@example.com');
-        
+
         \Illuminate\Support\Facades\Mail::raw(
             'Ceci est un email de test depuis AppTicket. ' .
             'Si vous recevez cet email, votre configuration mail fonctionne correctement ! ✅' .
@@ -226,9 +230,9 @@ Route::get('test-email', function (Request $request) {
                         ->subject('Test de configuration mail - AppTicket');
             }
         );
-        
+
         $mailer = config('mail.default');
-        
+
         return response()->json([
             'success' => true,
             'message' => 'Email de test envoyé avec succès !',

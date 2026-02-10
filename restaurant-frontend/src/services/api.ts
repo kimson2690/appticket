@@ -662,6 +662,12 @@ class ApiService {
     });
     return response.data;
   }
+
+  // Ticket Analytics API
+  async getTicketAnalytics(): Promise<any> {
+    const response = await this.request<any>('/company/ticket-analytics');
+    return response.data;
+  }
 }
 
 export const apiService = new ApiService();

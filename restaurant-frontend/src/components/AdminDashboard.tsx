@@ -21,6 +21,7 @@ import RestaurantOrderSystem from './RestaurantOrderSystem';
 import OrderManagement from './OrderManagement';
 import NotificationCenter from './NotificationCenter';
 import DashboardStats from './DashboardStats';
+import TicketAnalytics from './TicketAnalytics';
 import { 
   LayoutDashboard, 
   Users, 
@@ -327,11 +328,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
           )}
 
           {activeMenu === 'analytics' && (
-            <div className="text-center py-12">
-              <BarChart3 className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">Analyses Avancées</h3>
-              <p className="text-gray-500">Cette section sera bientôt disponible</p>
-            </div>
+            <TicketAnalytics />
           )}
 
           {activeMenu === 'my-tickets' && (
