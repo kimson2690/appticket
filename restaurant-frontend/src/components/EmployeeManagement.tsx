@@ -21,6 +21,7 @@ import {
   TrendingUp
 } from 'lucide-react';
 import { apiService, type Employee, type Company } from '../services/api';
+import Pagination from './Pagination';
 
 const EmployeeManagement: React.FC = () => {
   const [employees, setEmployees] = useState<Employee[]>([]);
@@ -39,6 +40,7 @@ const EmployeeManagement: React.FC = () => {
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [employeeDetail, setEmployeeDetail] = useState<any>(null);
   const [detailLoading, setDetailLoading] = useState(false);
+  const [empMgmtPage, setEmpMgmtPage] = useState(1);
 
   // Récupération des informations de l'utilisateur connecté
   const currentUser = {
@@ -229,6 +231,9 @@ const EmployeeManagement: React.FC = () => {
   if (selectedCompanyFilter && !isCompanyManager) {
     filteredEmployees = filteredEmployees.filter(emp => String(emp.company_id) === String(selectedCompanyFilter));
   }
+
+  const EMP_MGMT_PER_PAGE = 10;
+  const paginatedFilteredEmployees = filteredEmployees.slice((empMgmtPage - 1) * EMP_MGMT_PER_PAGE, empMgmtPage * EMP_MGMT_PER_PAGE);
 
   // Statistiques basées sur les employés visibles
   const totalEmployees = filteredEmployees.length;
@@ -571,7 +576,7 @@ const EmployeeManagement: React.FC = () => {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {filteredEmployees.map((employee) => (
+              {paginatedFilteredEmployees.map((employee) => (
                 <tr key={employee.id} className="hover:bg-gray-50 cursor-pointer" onClick={() => handleViewDetail(employee.id)}>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
@@ -658,6 +663,12 @@ const EmployeeManagement: React.FC = () => {
             </tbody>
           </table>
         </div>
+        <Pagination
+          currentPage={empMgmtPage}
+          totalItems={filteredEmployees.length}
+          itemsPerPage={EMP_MGMT_PER_PAGE}
+          onPageChange={setEmpMgmtPage}
+        />
       </div>
 
       {/* Create/Edit Modal */}

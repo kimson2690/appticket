@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { History, Package, ShoppingCart, CheckCircle, XCircle, Clock, MapPin, ChevronDown, ChevronUp, Utensils, Ticket, CalendarDays } from 'lucide-react';
+import Pagination from './Pagination';
 
 interface TicketAssignment {
   id: string;
@@ -59,6 +60,9 @@ const MyHistory: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'orders' | 'tickets'>('orders');
   const [expandedOrder, setExpandedOrder] = useState<string | null>(null);
   const [orderFilter, setOrderFilter] = useState<'all' | 'confirmed' | 'rejected' | 'pending'>('all');
+  const [ordersPage, setOrdersPage] = useState(1);
+  const [ticketsPage, setTicketsPage] = useState(1);
+  const ITEMS_PER_PAGE = 10;
 
   const baseUrl = 'http://localhost:8001/api';
 
@@ -163,6 +167,9 @@ const MyHistory: React.FC = () => {
     ? orders
     : orders.filter(o => o.status === orderFilter);
 
+  const paginatedOrders = filteredOrders.slice((ordersPage - 1) * ITEMS_PER_PAGE, ordersPage * ITEMS_PER_PAGE);
+  const paginatedHistory = history.slice((ticketsPage - 1) * ITEMS_PER_PAGE, ticketsPage * ITEMS_PER_PAGE);
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -224,7 +231,7 @@ const MyHistory: React.FC = () => {
           {/* Stats rapides */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
             <button
-              onClick={() => setOrderFilter('all')}
+              onClick={() => { setOrderFilter('all'); setOrdersPage(1); }}
               className={`text-left rounded-xl p-4 border shadow-sm transition-all duration-200 ${
                 orderFilter === 'all'
                   ? 'bg-orange-50 border-orange-300 ring-2 ring-orange-200'
@@ -235,7 +242,7 @@ const MyHistory: React.FC = () => {
               <p className="text-2xl font-bold text-gray-900">{orders.length}</p>
             </button>
             <button
-              onClick={() => setOrderFilter('confirmed')}
+              onClick={() => { setOrderFilter('confirmed'); setOrdersPage(1); }}
               className={`text-left rounded-xl p-4 border shadow-sm transition-all duration-200 ${
                 orderFilter === 'confirmed'
                   ? 'bg-green-50 border-green-300 ring-2 ring-green-200'
@@ -246,7 +253,7 @@ const MyHistory: React.FC = () => {
               <p className="text-2xl font-bold text-green-600">{confirmedOrders}</p>
             </button>
             <button
-              onClick={() => setOrderFilter('rejected')}
+              onClick={() => { setOrderFilter('rejected'); setOrdersPage(1); }}
               className={`text-left rounded-xl p-4 border shadow-sm transition-all duration-200 ${
                 orderFilter === 'rejected'
                   ? 'bg-red-50 border-red-300 ring-2 ring-red-200'
@@ -257,7 +264,7 @@ const MyHistory: React.FC = () => {
               <p className="text-2xl font-bold text-red-600">{rejectedOrders}</p>
             </button>
             <button
-              onClick={() => setOrderFilter('pending')}
+              onClick={() => { setOrderFilter('pending'); setOrdersPage(1); }}
               className={`text-left rounded-xl p-4 border shadow-sm transition-all duration-200 ${
                 orderFilter === 'pending'
                   ? 'bg-yellow-50 border-yellow-300 ring-2 ring-yellow-200'
@@ -293,7 +300,7 @@ const MyHistory: React.FC = () => {
             </div>
           ) : (
             <div className="space-y-4">
-              {filteredOrders.map((order) => {
+              {paginatedOrders.map((order) => {
                 const statusConfig = getStatusConfig(order.status);
                 const isExpanded = expandedOrder === order.id;
                 return (
@@ -441,6 +448,12 @@ const MyHistory: React.FC = () => {
                   </div>
                 );
               })}
+              <Pagination
+                currentPage={ordersPage}
+                totalItems={filteredOrders.length}
+                itemsPerPage={ITEMS_PER_PAGE}
+                onPageChange={setOrdersPage}
+              />
             </div>
           )}
         </div>
@@ -459,7 +472,7 @@ const MyHistory: React.FC = () => {
             </div>
           ) : (
             <div className="space-y-4">
-              {history.map((assignment) => (
+              {paginatedHistory.map((assignment) => (
                 <div key={assignment.id} className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 hover:border-orange-200 transition-colors">
                   <div className="flex items-start justify-between">
                     <div className="flex items-start space-x-4">
@@ -528,6 +541,12 @@ const MyHistory: React.FC = () => {
                   </div>
                 </div>
               ))}
+              <Pagination
+                currentPage={ticketsPage}
+                totalItems={history.length}
+                itemsPerPage={ITEMS_PER_PAGE}
+                onPageChange={setTicketsPage}
+              />
             </div>
           )}
         </div>

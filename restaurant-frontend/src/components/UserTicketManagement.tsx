@@ -12,6 +12,7 @@ import {
   Zap
 } from 'lucide-react';
 import { apiService, type Employee, type TicketBatch, type TicketConfiguration } from '../services/api';
+import Pagination from './Pagination';
 
 const UserTicketManagement: React.FC = () => {
   const [employees, setEmployees] = useState<Employee[]>([]);
@@ -23,6 +24,7 @@ const UserTicketManagement: React.FC = () => {
   const [showBulkModal, setShowBulkModal] = useState(false);
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
   const [notification, setNotification] = useState<{ type: 'success' | 'error' | 'info'; message: string; title: string } | null>(null);
+  const [empPage, setEmpPage] = useState(1);
 
   const [formData, setFormData] = useState({
     tickets_count: 1,
@@ -185,7 +187,9 @@ const UserTicketManagement: React.FC = () => {
     );
   }
 
+  const EMP_PER_PAGE = 10;
   const activeEmployees = employees.filter(e => e.status === 'active');
+  const paginatedEmployees = activeEmployees.slice((empPage - 1) * EMP_PER_PAGE, empPage * EMP_PER_PAGE);
   
   // Calculer les souches actives (status === 'active')
   const activeBatches = batches.filter(b => b.status === 'active');
@@ -355,7 +359,7 @@ const UserTicketManagement: React.FC = () => {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {activeEmployees.map((employee) => (
+              {paginatedEmployees.map((employee) => (
                 <tr key={employee.id} className="hover:bg-gray-50 transition-colors">
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
@@ -405,6 +409,12 @@ const UserTicketManagement: React.FC = () => {
             </tbody>
           </table>
         </div>
+        <Pagination
+          currentPage={empPage}
+          totalItems={activeEmployees.length}
+          itemsPerPage={EMP_PER_PAGE}
+          onPageChange={setEmpPage}
+        />
       </div>
 
       {/* Modal */}

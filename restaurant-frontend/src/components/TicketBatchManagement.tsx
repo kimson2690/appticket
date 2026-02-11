@@ -16,6 +16,7 @@ import {
   DollarSign
 } from 'lucide-react';
 import { apiService, type TicketBatch, type TicketConfiguration } from '../services/api';
+import Pagination from './Pagination';
 
 const TicketBatchManagement: React.FC = () => {
   const [batches, setBatches] = useState<TicketBatch[]>([]);
@@ -31,6 +32,8 @@ const TicketBatchManagement: React.FC = () => {
   const [selectedBatches, setSelectedBatches] = useState<string[]>([]);
   const [showBulkDeleteModal, setShowBulkDeleteModal] = useState(false);
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [batchPage, setBatchPage] = useState(1);
+  const BATCHES_PER_PAGE = 10;
 
   const [formData, setFormData] = useState({
     config_id: '',
@@ -207,7 +210,7 @@ const TicketBatchManagement: React.FC = () => {
   };
 
   // Calculer les souches filtrées par période et statut
-  const filteredBatches = batches.filter((batch) => {
+  const filteredBatchesAll = batches.filter((batch) => {
     // Filtre par statut
     if (statusFilter === 'active' && batch.status !== 'active') return false;
     if (statusFilter === 'expired' && batch.status !== 'expired') return false;
@@ -234,6 +237,9 @@ const TicketBatchManagement: React.FC = () => {
     if (periodFilter === 'all') return true;
     return true;
   });
+
+  const filteredBatches = filteredBatchesAll;
+  const paginatedBatches = filteredBatches.slice((batchPage - 1) * BATCHES_PER_PAGE, batchPage * BATCHES_PER_PAGE);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -480,7 +486,7 @@ const TicketBatchManagement: React.FC = () => {
                     <label className="text-sm text-gray-600">Statut :</label>
                     <div className="flex rounded-lg border border-gray-300 overflow-hidden">
                       <button
-                        onClick={() => setStatusFilter('all')}
+                        onClick={() => { setStatusFilter('all'); setBatchPage(1); }}
                         className={`px-3 py-2 text-sm font-medium transition-colors ${
                           statusFilter === 'all'
                             ? 'bg-orange-500 text-white'
@@ -490,7 +496,7 @@ const TicketBatchManagement: React.FC = () => {
                         Toutes
                       </button>
                       <button
-                        onClick={() => setStatusFilter('active')}
+                        onClick={() => { setStatusFilter('active'); setBatchPage(1); }}
                         className={`px-3 py-2 text-sm font-medium transition-colors border-l border-gray-300 ${
                           statusFilter === 'active'
                             ? 'bg-green-500 text-white'
@@ -503,7 +509,7 @@ const TicketBatchManagement: React.FC = () => {
                         </span>
                       </button>
                       <button
-                        onClick={() => setStatusFilter('expired')}
+                        onClick={() => { setStatusFilter('expired'); setBatchPage(1); }}
                         className={`px-3 py-2 text-sm font-medium transition-colors border-l border-gray-300 ${
                           statusFilter === 'expired'
                             ? 'bg-red-500 text-white'
@@ -523,7 +529,7 @@ const TicketBatchManagement: React.FC = () => {
                     <label className="text-sm text-gray-600">Période :</label>
                     <select
                       value={periodFilter}
-                      onChange={(e) => setPeriodFilter(e.target.value)}
+                      onChange={(e) => { setPeriodFilter(e.target.value); setBatchPage(1); }}
                       className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-orange-500 focus:border-transparent"
                     >
                       <option value="all">Toutes les périodes</option>
@@ -637,7 +643,7 @@ const TicketBatchManagement: React.FC = () => {
             </div>
           ) : (
             <div className="space-y-3">
-              {filteredBatches.map((batch) => (
+              {paginatedBatches.map((batch) => (
                 <div 
                   key={batch.id} 
                   className="group relative bg-gradient-to-br from-white to-gray-50 border-2 border-gray-100 rounded-xl p-4 hover:shadow-xl hover:border-orange-200 transition-all duration-300 hover:-translate-y-1"
@@ -774,6 +780,12 @@ const TicketBatchManagement: React.FC = () => {
                   </div>
                 </div>
               ))}
+              <Pagination
+                currentPage={batchPage}
+                totalItems={filteredBatches.length}
+                itemsPerPage={BATCHES_PER_PAGE}
+                onPageChange={setBatchPage}
+              />
             </div>
           )}
         </div>
