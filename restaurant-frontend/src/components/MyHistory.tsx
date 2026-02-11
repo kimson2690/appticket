@@ -58,6 +58,7 @@ const MyHistory: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'orders' | 'tickets'>('orders');
   const [expandedOrder, setExpandedOrder] = useState<string | null>(null);
+  const [orderFilter, setOrderFilter] = useState<'all' | 'confirmed' | 'rejected' | 'pending'>('all');
 
   const baseUrl = 'http://localhost:8001/api';
 
@@ -158,6 +159,10 @@ const MyHistory: React.FC = () => {
   const rejectedOrders = orders.filter(o => o.status === 'rejected').length;
   const pendingOrders = orders.filter(o => o.status === 'pending').length;
 
+  const filteredOrders = orderFilter === 'all'
+    ? orders
+    : orders.filter(o => o.status === orderFilter);
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -218,35 +223,77 @@ const MyHistory: React.FC = () => {
         <div>
           {/* Stats rapides */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-            <div className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm">
+            <button
+              onClick={() => setOrderFilter('all')}
+              className={`text-left rounded-xl p-4 border shadow-sm transition-all duration-200 ${
+                orderFilter === 'all'
+                  ? 'bg-orange-50 border-orange-300 ring-2 ring-orange-200'
+                  : 'bg-white border-gray-100 hover:border-gray-300'
+              }`}
+            >
               <p className="text-xs text-gray-500 mb-1">Total commandes</p>
               <p className="text-2xl font-bold text-gray-900">{orders.length}</p>
-            </div>
-            <div className="bg-white rounded-xl p-4 border border-green-100 shadow-sm">
+            </button>
+            <button
+              onClick={() => setOrderFilter('confirmed')}
+              className={`text-left rounded-xl p-4 border shadow-sm transition-all duration-200 ${
+                orderFilter === 'confirmed'
+                  ? 'bg-green-50 border-green-300 ring-2 ring-green-200'
+                  : 'bg-white border-green-100 hover:border-green-300'
+              }`}
+            >
               <p className="text-xs text-green-600 mb-1">Validées</p>
               <p className="text-2xl font-bold text-green-600">{confirmedOrders}</p>
-            </div>
-            <div className="bg-white rounded-xl p-4 border border-red-100 shadow-sm">
+            </button>
+            <button
+              onClick={() => setOrderFilter('rejected')}
+              className={`text-left rounded-xl p-4 border shadow-sm transition-all duration-200 ${
+                orderFilter === 'rejected'
+                  ? 'bg-red-50 border-red-300 ring-2 ring-red-200'
+                  : 'bg-white border-red-100 hover:border-red-300'
+              }`}
+            >
               <p className="text-xs text-red-600 mb-1">Rejetées</p>
               <p className="text-2xl font-bold text-red-600">{rejectedOrders}</p>
-            </div>
-            <div className="bg-white rounded-xl p-4 border border-yellow-100 shadow-sm">
+            </button>
+            <button
+              onClick={() => setOrderFilter('pending')}
+              className={`text-left rounded-xl p-4 border shadow-sm transition-all duration-200 ${
+                orderFilter === 'pending'
+                  ? 'bg-yellow-50 border-yellow-300 ring-2 ring-yellow-200'
+                  : 'bg-white border-yellow-100 hover:border-yellow-300'
+              }`}
+            >
               <p className="text-xs text-yellow-600 mb-1">En attente</p>
               <p className="text-2xl font-bold text-yellow-600">{pendingOrders}</p>
-            </div>
+            </button>
           </div>
 
-          {orders.length === 0 ? (
+          {filteredOrders.length === 0 ? (
             <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-12">
               <div className="text-center">
                 <ShoppingCart className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">Aucune commande</h3>
-                <p className="text-gray-500">Vous n'avez pas encore passé de commande</p>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                  {orderFilter === 'all' ? 'Aucune commande' : `Aucune commande ${orderFilter === 'confirmed' ? 'validée' : orderFilter === 'rejected' ? 'rejetée' : 'en attente'}`}
+                </h3>
+                <p className="text-gray-500">
+                  {orderFilter === 'all'
+                    ? "Vous n'avez pas encore passé de commande"
+                    : 'Essayez un autre filtre'}
+                </p>
+                {orderFilter !== 'all' && (
+                  <button
+                    onClick={() => setOrderFilter('all')}
+                    className="mt-4 px-4 py-2 text-sm font-medium text-orange-600 bg-orange-50 rounded-lg hover:bg-orange-100 transition-colors"
+                  >
+                    Voir toutes les commandes
+                  </button>
+                )}
               </div>
             </div>
           ) : (
             <div className="space-y-4">
-              {orders.map((order) => {
+              {filteredOrders.map((order) => {
                 const statusConfig = getStatusConfig(order.status);
                 const isExpanded = expandedOrder === order.id;
                 return (
