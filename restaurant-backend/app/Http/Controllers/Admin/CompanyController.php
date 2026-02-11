@@ -34,6 +34,12 @@ class CompanyController extends Controller
                     // Total des employés
                     $totalEmployees = $dbCount + $jsonCount;
 
+                    // Calculer le vrai solde tickets depuis les souches actives et valides
+                    $ticketBalance = \App\Models\TicketBatch::where('company_id', $company->id)
+                        ->where('status', 'active')
+                        ->where('validity_end', '>=', now())
+                        ->sum('remaining_tickets');
+
                     return [
                         'id' => (string) $company->id,
                         'name' => $company->name,
@@ -47,7 +53,7 @@ class CompanyController extends Controller
                         'description' => $company->description,
                         'status' => $company->status,
                         'employee_count' => $totalEmployees,
-                        'ticket_balance' => $company->ticket_balance ?? 0,
+                        'ticket_balance' => (int) $ticketBalance,
                         'created_at' => $company->created_at->format('Y-m-d'),
                         'updated_at' => $company->updated_at->format('Y-m-d'),
                     ];
@@ -150,6 +156,12 @@ class CompanyController extends Controller
             // Total des employés
             $totalEmployees = $dbCount + $jsonCount;
 
+            // Calculer le vrai solde tickets depuis les souches actives et valides
+            $ticketBalance = \App\Models\TicketBatch::where('company_id', $company->id)
+                ->where('status', 'active')
+                ->where('validity_end', '>=', now())
+                ->sum('remaining_tickets');
+
             return response()->json([
                 'success' => true,
                 'data' => [
@@ -165,7 +177,7 @@ class CompanyController extends Controller
                     'description' => $company->description,
                     'status' => $company->status,
                     'employee_count' => $totalEmployees,
-                    'ticket_balance' => $company->ticket_balance ?? 0,
+                    'ticket_balance' => (int) $ticketBalance,
                     'created_at' => $company->created_at->format('Y-m-d'),
                     'updated_at' => $company->updated_at->format('Y-m-d'),
                 ]
@@ -236,7 +248,10 @@ class CompanyController extends Controller
                     'description' => $company->description,
                     'status' => $company->status,
                     'employee_count' => $totalEmployees,
-                    'ticket_balance' => $company->ticket_balance ?? 0,
+                    'ticket_balance' => (int) \App\Models\TicketBatch::where('company_id', $company->id)
+                        ->where('status', 'active')
+                        ->where('validity_end', '>=', now())
+                        ->sum('remaining_tickets'),
                     'created_at' => $company->created_at->format('Y-m-d'),
                     'updated_at' => $company->updated_at->format('Y-m-d'),
                 ],

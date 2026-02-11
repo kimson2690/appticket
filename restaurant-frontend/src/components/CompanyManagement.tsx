@@ -321,7 +321,8 @@ const CompanyManagement: React.FC = () => {
           </div>
           <div>
             <p className="text-gray-600 text-sm font-medium">Tickets Disponibles</p>
-            <p className="text-3xl font-bold text-gray-900">{companies.reduce((sum, company) => sum + company.ticket_balance, 0)}</p>
+            <p className="text-3xl font-bold text-gray-900">{companies.reduce((sum, company) => sum + company.ticket_balance, 0).toLocaleString('fr-FR')}</p>
+            <p className="text-xs text-gray-400">Souches actives et valides</p>
           </div>
         </div>
 
