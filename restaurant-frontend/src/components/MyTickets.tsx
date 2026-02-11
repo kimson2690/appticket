@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Wallet, Clock, CheckCircle, XCircle, Package, ArrowUpRight, Sparkles, Activity, AlertCircle, X, Calendar, Eye, ChevronRight, Ticket } from 'lucide-react';
+import { Wallet, Clock, CheckCircle, XCircle, Package, ArrowUpRight, Sparkles, Activity, AlertCircle, X, Calendar, Eye, ChevronRight, Ticket, BarChart3, UtensilsCrossed, CalendarCheck, LayoutGrid } from 'lucide-react';
 
 interface TicketBalance {
   employee_name: string;
@@ -119,7 +119,7 @@ const MyTickets: React.FC = () => {
                   <Wallet className="w-9 h-9 text-white" />
                 </div>
                 <div>
-                  <p className="text-orange-100 text-sm font-medium mb-1">💰 Solde Disponible</p>
+                  <p className="text-orange-100 text-sm font-medium mb-1">Solde Disponible</p>
                   <h2 className="text-5xl font-bold tracking-tight">{formatCurrency(balance?.ticket_balance || 0)}</h2>
                 </div>
               </div>
@@ -136,21 +136,30 @@ const MyTickets: React.FC = () => {
           {/* Statistiques en grille améliorée */}
           <div className="grid grid-cols-3 gap-4 md:gap-6">
             <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-4 border border-white/20 hover:bg-white/15 transition-colors duration-200">
-              <p className="text-orange-100 text-xs font-medium mb-2">📋 Total Tickets</p>
+              <div className="flex items-center space-x-1.5 mb-2">
+                <LayoutGrid className="w-3.5 h-3.5 text-orange-200" />
+                <p className="text-orange-100 text-xs font-medium">Total Tickets</p>
+              </div>
               <p className="text-3xl font-bold mb-1">{balance?.tickets_count.total || 0}</p>
               <div className="h-1 w-full bg-white/20 rounded-full mt-2">
                 <div className="h-full bg-white rounded-full" style={{width: '100%'}}></div>
               </div>
             </div>
             <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-4 border border-white/20 hover:bg-white/15 transition-colors duration-200">
-              <p className="text-orange-100 text-xs font-medium mb-2">✅ Disponibles</p>
+              <div className="flex items-center space-x-1.5 mb-2">
+                <CheckCircle className="w-3.5 h-3.5 text-green-300" />
+                <p className="text-orange-100 text-xs font-medium">Disponibles</p>
+              </div>
               <p className="text-3xl font-bold text-green-300 mb-1">{balance?.tickets_count.available || 0}</p>
               <div className="h-1 w-full bg-white/20 rounded-full mt-2">
                 <div className="h-full bg-green-300 rounded-full" style={{width: balance && balance.tickets_count.total > 0 ? `${(balance.tickets_count.available / balance.tickets_count.total) * 100}%` : '0%'}}></div>
               </div>
             </div>
             <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-4 border border-white/20 hover:bg-white/15 transition-colors duration-200">
-              <p className="text-orange-100 text-xs font-medium mb-2">🔄 Utilisés</p>
+              <div className="flex items-center space-x-1.5 mb-2">
+                <Activity className="w-3.5 h-3.5 text-blue-300" />
+                <p className="text-orange-100 text-xs font-medium">Utilisés</p>
+              </div>
               <p className="text-3xl font-bold text-blue-300 mb-1">{balance?.tickets_count.used || 0}</p>
               <div className="h-1 w-full bg-white/20 rounded-full mt-2">
                 <div className="h-full bg-blue-300 rounded-full" style={{width: balance && balance.tickets_count.total > 0 ? `${(balance.tickets_count.used / balance.tickets_count.total) * 100}%` : '0%'}}></div>
@@ -256,7 +265,10 @@ const MyTickets: React.FC = () => {
         {/* Détails des tickets */}
         <div className="lg:col-span-2 bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
           <div className="flex items-center justify-between mb-6">
-            <h3 className="text-xl font-bold text-gray-900">📊 Répartition Détaillée</h3>
+            <div className="flex items-center space-x-2">
+              <BarChart3 className="w-5 h-5 text-orange-500" />
+              <h3 className="text-xl font-bold text-gray-900">Répartition Détaillée</h3>
+            </div>
             <span className="text-xs font-medium text-gray-500 bg-gray-100 px-3 py-1 rounded-full">
               {balance?.tickets_count.total || 0} tickets au total
             </span>
@@ -328,19 +340,28 @@ const MyTickets: React.FC = () => {
             <div className="w-8 h-8 bg-orange-500 rounded-lg flex items-center justify-center">
               <AlertCircle className="w-5 h-5 text-white" />
             </div>
-            <h3 className="text-lg font-bold text-gray-900">💡 Conseils</h3>
+            <h3 className="text-lg font-bold text-gray-900">Conseils</h3>
           </div>
           <div className="space-y-4">
             <div className="bg-white/60 backdrop-blur-sm rounded-xl p-4 border border-orange-200/50">
-              <p className="text-sm font-medium text-gray-800 mb-1">✨ Utilisez vos tickets</p>
+              <div className="flex items-center space-x-2 mb-1">
+                <Sparkles className="w-4 h-4 text-orange-500" />
+                <p className="text-sm font-medium text-gray-800">Utilisez vos tickets</p>
+              </div>
               <p className="text-xs text-gray-600">N'oubliez pas d'utiliser vos tickets avant leur expiration pour ne rien perdre.</p>
             </div>
             <div className="bg-white/60 backdrop-blur-sm rounded-xl p-4 border border-orange-200/50">
-              <p className="text-sm font-medium text-gray-800 mb-1">📅 Vérifiez les dates</p>
+              <div className="flex items-center space-x-2 mb-1">
+                <CalendarCheck className="w-4 h-4 text-orange-500" />
+                <p className="text-sm font-medium text-gray-800">Vérifiez les dates</p>
+              </div>
               <p className="text-xs text-gray-600">Consultez régulièrement vos souches pour connaître les dates d'expiration.</p>
             </div>
             <div className="bg-white/60 backdrop-blur-sm rounded-xl p-4 border border-orange-200/50">
-              <p className="text-sm font-medium text-gray-800 mb-1">🍽️ Commandez facilement</p>
+              <div className="flex items-center space-x-2 mb-1">
+                <UtensilsCrossed className="w-4 h-4 text-orange-500" />
+                <p className="text-sm font-medium text-gray-800">Commandez facilement</p>
+              </div>
               <p className="text-xs text-gray-600">Utilisez la section "Commander" pour utiliser vos tickets en ligne.</p>
             </div>
           </div>
