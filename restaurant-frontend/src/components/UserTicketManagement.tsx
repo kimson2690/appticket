@@ -325,9 +325,9 @@ const UserTicketManagement: React.FC = () => {
               <Wallet className="w-6 h-6 text-green-600" />
             </div>
             <div>
-              <p className="text-sm font-medium text-gray-600">Solde Total</p>
+              <p className="text-sm font-medium text-gray-600">Solde Total Valide</p>
               <p className="text-2xl font-bold text-gray-900">
-                {activeEmployees.reduce((sum, emp) => sum + Number(emp.ticket_balance || 0), 0).toLocaleString()}F
+                {activeEmployees.reduce((sum, emp) => sum + Math.round(Number((emp as any).valid_balance ?? emp.ticket_balance ?? 0)), 0).toLocaleString('fr-FR')}F
               </p>
             </div>
           </div>
@@ -417,7 +417,7 @@ const UserTicketManagement: React.FC = () => {
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
                       <Wallet className="w-4 h-4 text-green-600 mr-2" />
-                      <span className="text-sm font-semibold text-green-600">{employee.ticket_balance}F</span>
+                      <span className="text-sm font-semibold text-green-600">{Math.round(Number((employee as any).valid_balance ?? employee.ticket_balance ?? 0)).toLocaleString('fr-FR')}F</span>
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
@@ -477,7 +477,7 @@ const UserTicketManagement: React.FC = () => {
                   </div>
                   <div>
                     <p className="font-semibold text-gray-900">{selectedEmployee.name}</p>
-                    <p className="text-sm text-gray-600">Solde actuel: {selectedEmployee.ticket_balance}F</p>
+                    <p className="text-sm text-gray-600">Solde actuel: {Math.round(Number((selectedEmployee as any).valid_balance ?? selectedEmployee.ticket_balance ?? 0)).toLocaleString('fr-FR')}F</p>
                   </div>
                 </div>
               </div>
