@@ -307,8 +307,9 @@ const CompanyManagement: React.FC = () => {
             </div>
           </div>
           <div>
-            <p className="text-gray-600 text-sm font-medium">Total Employés</p>
+            <p className="text-gray-600 text-sm font-medium">Total Membres</p>
             <p className="text-3xl font-bold text-gray-900">{companies.reduce((sum, company) => sum + Number(company.employee_count || 0), 0)}</p>
+            <p className="text-xs text-gray-400">Gestionnaires inclus</p>
           </div>
         </div>
 
@@ -359,7 +360,8 @@ const CompanyManagement: React.FC = () => {
                   Statut
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Employés
+                  Membres
+                  <span className="block text-[10px] font-normal normal-case text-gray-400">dont gestionnaire</span>
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Tickets
@@ -415,8 +417,9 @@ const CompanyManagement: React.FC = () => {
                       <span className="ml-1">{getStatusLabel(company.status)}</span>
                     </span>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {company.employee_count.toLocaleString()}
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm font-semibold text-gray-900">{company.employee_count.toLocaleString()}</div>
+                    <div className="text-[10px] text-gray-400">{company.employee_count > 0 ? `${company.employee_count - 1} employé(s) + 1 gestionnaire` : '0'}</div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                     {company.ticket_balance.toLocaleString()}
