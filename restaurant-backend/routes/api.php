@@ -28,6 +28,7 @@ use App\Http\Controllers\Company\ReportingController;
 use App\Http\Controllers\Company\AccountingReportController;
 use App\Http\Controllers\Company\DeliveryLocationController;
 use App\Http\Controllers\Company\TicketAnalyticsController;
+use App\Http\Controllers\Admin\AdvertisementController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\PasswordResetController;
 
@@ -138,7 +139,17 @@ Route::prefix('admin')->group(function () {
 
     // Statistiques globales
     Route::get('/statistics', [StatisticsController::class, 'index']);
+
+    // Gestion des publicités
+    Route::get('/advertisements', [AdvertisementController::class, 'index']);
+    Route::post('/advertisements', [AdvertisementController::class, 'store']);
+    Route::post('/advertisements/{id}', [AdvertisementController::class, 'update']);
+    Route::delete('/advertisements/{id}', [AdvertisementController::class, 'destroy']);
+    Route::post('/advertisements/{id}/toggle-status', [AdvertisementController::class, 'toggleStatus']);
 });
+
+// Publicités actives (accessible par tous les utilisateurs connectés)
+Route::get('/advertisements/active', [AdvertisementController::class, 'active']);
 
 // Routes pour le reporting des entreprises
 Route::prefix('company')->group(function () {

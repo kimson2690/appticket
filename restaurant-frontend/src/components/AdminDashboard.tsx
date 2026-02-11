@@ -22,6 +22,8 @@ import OrderManagement from './OrderManagement';
 import NotificationCenter from './NotificationCenter';
 import DashboardStats from './DashboardStats';
 import TicketAnalytics from './TicketAnalytics';
+import AdvertisementManagement from './AdvertisementManagement';
+import AdSlider from './AdSlider';
 import { 
   LayoutDashboard, 
   Users, 
@@ -42,7 +44,8 @@ import {
   Calendar,
   ShoppingCart,
   MapPin,
-  FileSpreadsheet
+  FileSpreadsheet,
+  Megaphone
 } from 'lucide-react';
 
 interface AdminDashboardProps {
@@ -100,6 +103,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
     { id: 'accounting-report', label: 'Rapport Comptable', icon: FileSpreadsheet, roles: ['Administrateur', 'Gestionnaire Entreprise'] },
     { id: 'delivery-locations', label: 'Lieux de Livraison', icon: MapPin, roles: ['Gestionnaire Entreprise'] },
     { id: 'analytics', label: 'Analyses', icon: BarChart3, roles: ['Gestionnaire Entreprise'] },
+    { id: 'advertisements', label: 'Publicités', icon: Megaphone, roles: ['Administrateur'] },
     { id: 'roles', label: 'Rôles', icon: Ticket, roles: ['Administrateur'] },
     
     // Menus pour les employés
@@ -331,16 +335,35 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
             <TicketAnalytics />
           )}
 
+          {activeMenu === 'advertisements' && (
+            <AdvertisementManagement />
+          )}
+
           {activeMenu === 'my-tickets' && (
-            <MyTickets />
+            <>
+              <AdSlider />
+              <div className="mt-6">
+                <MyTickets />
+              </div>
+            </>
           )}
 
           {activeMenu === 'order-food' && (
-            <RestaurantOrderSystem />
+            <>
+              <AdSlider />
+              <div className="mt-6">
+                <RestaurantOrderSystem />
+              </div>
+            </>
           )}
 
           {activeMenu === 'my-history' && (
-            <MyHistory />
+            <>
+              <AdSlider />
+              <div className="mt-6">
+                <MyHistory />
+              </div>
+            </>
           )}
         </main>
 
