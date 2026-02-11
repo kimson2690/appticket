@@ -316,7 +316,7 @@ const TicketAnalytics: React.FC = () => {
                       )}
                     </td>
                     <td className="px-4 py-3 text-sm text-right font-medium text-gray-900">
-                      {formatAmount(emp.balance)}
+                      {formatAmount(emp.total_received)}
                     </td>
                   </tr>
                 ))}

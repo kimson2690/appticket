@@ -114,6 +114,9 @@ class TicketAnalyticsController extends Controller
                 $empValidRemaining = (int) $empActiveBatches->sum('remaining_tickets');
                 $empExpiredRemaining = (int) $empExpiredBatches->sum('remaining_tickets');
 
+                // Cumul réel reçu = somme (total_tickets × ticket_value) de toutes les souches
+                $empTotalReceived = (float) $empBatches->sum(fn($b) => (int) $b->total_tickets * (float) $b->ticket_value);
+
                 $employeeStats[] = [
                     'name' => $emp->name,
                     'valid_remaining' => $empValidRemaining,
@@ -122,7 +125,7 @@ class TicketAnalyticsController extends Controller
                     'used_amount' => $empUsedAmount,
                     'expired_remaining' => $empExpiredRemaining,
                     'expired_amount' => $empExpiredAmount,
-                    'balance' => (float) $emp->ticket_balance,
+                    'total_received' => $empTotalReceived,
                 ];
             }
 
