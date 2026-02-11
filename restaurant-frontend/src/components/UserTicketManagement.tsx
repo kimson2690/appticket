@@ -13,12 +13,12 @@ import {
   CreditCard,
   Zap
 } from 'lucide-react';
-import { apiService, type Employee, type TicketBatch, type TicketAssignment, type TicketConfiguration } from '../services/api';
+import { apiService, type Employee, type TicketBatch, type TicketConfiguration } from '../services/api';
 
 const UserTicketManagement: React.FC = () => {
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [batches, setBatches] = useState<TicketBatch[]>([]);
-  const [assignments, setAssignments] = useState<TicketAssignment[]>([]);
+  const [assignments, setAssignments] = useState<any[]>([]);
   const [configurations, setConfigurations] = useState<TicketConfiguration[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
@@ -224,8 +224,8 @@ const UserTicketManagement: React.FC = () => {
   // Calculer les souches actives (status === 'active')
   const activeBatches = batches.filter(b => b.status === 'active');
   
-  // Calculer le total de tickets affectés (somme de tous les tickets_count)
-  const totalTicketsAssigned = assignments.reduce((sum, assignment) => sum + assignment.tickets_count, 0);
+  // Calculer le total de tickets affectés (depuis les souches, source de vérité)
+  const totalTicketsAssigned = batches.reduce((sum, b) => sum + b.total_tickets, 0);
 
   return (
     <div className="space-y-6">
