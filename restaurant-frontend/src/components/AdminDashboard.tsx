@@ -99,7 +99,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
     { id: 'reports', label: 'Rapports Dépenses', icon: BarChart3, roles: ['Gestionnaire Entreprise'] },
     { id: 'accounting-report', label: 'Rapport Comptable', icon: FileSpreadsheet, roles: ['Administrateur', 'Gestionnaire Entreprise'] },
     { id: 'delivery-locations', label: 'Lieux de Livraison', icon: MapPin, roles: ['Gestionnaire Entreprise'] },
-    { id: 'analytics', label: 'Analyses', icon: BarChart3, roles: ['Gestionnaire Entreprise', 'Gestionnaire Restaurant'] },
+    { id: 'analytics', label: 'Analyses', icon: BarChart3, roles: ['Gestionnaire Entreprise'] },
     { id: 'roles', label: 'Rôles', icon: Ticket, roles: ['Administrateur'] },
     
     // Menus pour les employés
