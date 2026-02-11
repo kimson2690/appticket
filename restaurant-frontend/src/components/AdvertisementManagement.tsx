@@ -413,6 +413,7 @@ const AdvertisementManagement: React.FC = () => {
                       <Upload className="w-10 h-10 text-gray-400 mx-auto mb-2" />
                       <p className="text-sm text-gray-600 font-medium">Cliquez pour uploader</p>
                       <p className="text-xs text-gray-400 mt-1">JPG, PNG, GIF, WebP, MP4, WebM, MOV (max 50 Mo)</p>
+                      <p className="text-xs text-orange-500 mt-1 font-medium">Taille recommandée : 1200 × 400 px pour un rendu optimal</p>
                       <input
                         type="file"
                         accept="image/jpeg,image/png,image/gif,image/webp,video/mp4,video/webm,video/quicktime"
