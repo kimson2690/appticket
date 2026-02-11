@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Image, Video, Plus, Trash2, Eye, EyeOff, X,
+  Image, Video, Plus, Trash2, Eye, EyeOff, X, Pencil,
   AlertTriangle, CheckCircle, XCircle, Upload,
   GripVertical, ExternalLink, Calendar, Clock
 } from 'lucide-react';
@@ -28,6 +28,7 @@ const AdvertisementManagement: React.FC = () => {
   const [adToDelete, setAdToDelete] = useState<number | null>(null);
   const [notification, setNotification] = useState<{ type: 'success' | 'error'; title: string; message: string } | null>(null);
   const [previewAd, setPreviewAd] = useState<Advertisement | null>(null);
+  const [editingAd, setEditingAd] = useState<Advertisement | null>(null);
 
   const [formData, setFormData] = useState({
     title: '',
@@ -78,9 +79,27 @@ const AdvertisementManagement: React.FC = () => {
     setMediaPreview(url);
   };
 
+  const handleEditAd = (ad: Advertisement) => {
+    setEditingAd(ad);
+    setFormData({
+      title: ad.title,
+      description: ad.description || '',
+      link_url: ad.link_url || '',
+      status: ad.status,
+      display_order: ad.display_order,
+      start_date: ad.start_date ? ad.start_date.split('T')[0] : '',
+      end_date: ad.end_date ? ad.end_date.split('T')[0] : '',
+    });
+    setMediaFile(null);
+    setMediaPreview(ad.media_url);
+    setShowModal(true);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!mediaFile) {
+    const isEditing = !!editingAd;
+
+    if (!isEditing && !mediaFile) {
       setNotification({ type: 'error', title: 'Erreur', message: 'Veuillez sélectionner un fichier média' });
       return;
     }
@@ -90,14 +109,18 @@ const AdvertisementManagement: React.FC = () => {
       const form = new FormData();
       form.append('title', formData.title);
       if (formData.description) form.append('description', formData.description);
-      form.append('media', mediaFile);
+      if (mediaFile) form.append('media', mediaFile);
       if (formData.link_url) form.append('link_url', formData.link_url);
       form.append('status', formData.status);
       form.append('display_order', String(formData.display_order));
       if (formData.start_date) form.append('start_date', formData.start_date);
       if (formData.end_date) form.append('end_date', formData.end_date);
 
-      const res = await fetch(`${baseUrl}/admin/advertisements`, {
+      const url = isEditing
+        ? `${baseUrl}/admin/advertisements/${editingAd.id}`
+        : `${baseUrl}/admin/advertisements`;
+
+      const res = await fetch(url, {
         method: 'POST',
         headers: {
           'X-User-Name': localStorage.getItem('userName') || 'Admin',
@@ -107,12 +130,12 @@ const AdvertisementManagement: React.FC = () => {
 
       const data = await res.json();
       if (data.success) {
-        setNotification({ type: 'success', title: 'Succès', message: 'Publicité créée avec succès' });
+        setNotification({ type: 'success', title: 'Succès', message: isEditing ? 'Publicité mise à jour' : 'Publicité créée avec succès' });
         setShowModal(false);
         resetForm();
         loadAds();
       } else {
-        setNotification({ type: 'error', title: 'Erreur', message: data.message || 'Erreur lors de la création' });
+        setNotification({ type: 'error', title: 'Erreur', message: data.message || 'Erreur lors de l\'opération' });
       }
     } catch (err) {
       setNotification({ type: 'error', title: 'Erreur', message: 'Erreur réseau' });
@@ -153,6 +176,7 @@ const AdvertisementManagement: React.FC = () => {
     setFormData({ title: '', description: '', link_url: '', status: 'active', display_order: 0, start_date: '', end_date: '' });
     setMediaFile(null);
     setMediaPreview(null);
+    setEditingAd(null);
   };
 
   const activeCount = ads.filter(a => a.status === 'active').length;
@@ -337,13 +361,22 @@ const AdvertisementManagement: React.FC = () => {
                     {ad.status === 'active' ? <EyeOff className="w-3 h-3 mr-1" /> : <Eye className="w-3 h-3 mr-1" />}
                     {ad.status === 'active' ? 'Désactiver' : 'Activer'}
                   </button>
-                  <button
-                    onClick={() => { setAdToDelete(ad.id); setShowDeleteModal(true); }}
-                    className="inline-flex items-center px-3 py-1.5 rounded-lg text-xs font-medium bg-red-50 text-red-600 hover:bg-red-100 transition-colors"
-                  >
-                    <Trash2 className="w-3 h-3 mr-1" />
-                    Supprimer
-                  </button>
+                  <div className="flex items-center space-x-2">
+                    <button
+                      onClick={() => handleEditAd(ad)}
+                      className="inline-flex items-center px-3 py-1.5 rounded-lg text-xs font-medium bg-orange-50 text-orange-600 hover:bg-orange-100 transition-colors"
+                    >
+                      <Pencil className="w-3 h-3 mr-1" />
+                      Éditer
+                    </button>
+                    <button
+                      onClick={() => { setAdToDelete(ad.id); setShowDeleteModal(true); }}
+                      className="inline-flex items-center px-3 py-1.5 rounded-lg text-xs font-medium bg-red-50 text-red-600 hover:bg-red-100 transition-colors"
+                    >
+                      <Trash2 className="w-3 h-3 mr-1" />
+                      Supprimer
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -357,8 +390,8 @@ const AdvertisementManagement: React.FC = () => {
           <div className="bg-white rounded-2xl max-w-xl w-full max-h-[90vh] overflow-y-auto">
             <div className="border-b border-gray-200 px-6 py-4">
               <div className="flex items-center justify-between">
-                <h2 className="text-xl font-semibold text-gray-900">Nouvelle Publicité</h2>
-                <button onClick={() => setShowModal(false)} className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+                <h2 className="text-xl font-semibold text-gray-900">{editingAd ? 'Modifier la Publicité' : 'Nouvelle Publicité'}</h2>
+                <button onClick={() => { setShowModal(false); resetForm(); }} className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
                   <X className="w-5 h-5 text-gray-500" />
                 </button>
               </div>
@@ -391,11 +424,11 @@ const AdvertisementManagement: React.FC = () => {
 
               {/* Upload média */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Média (Image ou Vidéo) *</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{editingAd ? 'Média (laisser vide pour garder l\'actuel)' : 'Média (Image ou Vidéo) *'}</label>
                 <div className="border-2 border-dashed border-gray-300 rounded-xl p-6 text-center hover:border-orange-400 transition-colors">
                   {mediaPreview ? (
                     <div className="space-y-3">
-                      {mediaFile?.type.startsWith('video') ? (
+                      {(mediaFile?.type.startsWith('video')) || (!mediaFile && editingAd?.media_type === 'video') ? (
                         <video src={mediaPreview} className="max-h-48 mx-auto rounded-lg" controls />
                       ) : (
                         <img src={mediaPreview} alt="Preview" className="max-h-48 mx-auto rounded-lg object-cover" />
@@ -405,7 +438,7 @@ const AdvertisementManagement: React.FC = () => {
                         onClick={() => { setMediaFile(null); setMediaPreview(null); }}
                         className="text-sm text-red-500 hover:text-red-700"
                       >
-                        Supprimer et choisir un autre fichier
+                        {editingAd && !mediaFile ? 'Changer le média' : 'Supprimer et choisir un autre fichier'}
                       </button>
                     </div>
                   ) : (
@@ -488,7 +521,7 @@ const AdvertisementManagement: React.FC = () => {
               <div className="flex justify-end space-x-3 pt-2">
                 <button
                   type="button"
-                  onClick={() => setShowModal(false)}
+                  onClick={() => { setShowModal(false); resetForm(); }}
                   className="px-5 py-2.5 border border-gray-300 rounded-xl text-gray-700 hover:bg-gray-50 transition-colors font-medium"
                 >
                   Annuler
@@ -506,7 +539,7 @@ const AdvertisementManagement: React.FC = () => {
                   ) : (
                     <>
                       <Upload className="w-4 h-4" />
-                      <span>Publier</span>
+                      <span>{editingAd ? 'Mettre à jour' : 'Publier'}</span>
                     </>
                   )}
                 </button>
