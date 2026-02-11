@@ -30,6 +30,7 @@ const TicketBatchManagement: React.FC = () => {
   const [customEndDate, setCustomEndDate] = useState<string>('');
   const [selectedBatches, setSelectedBatches] = useState<string[]>([]);
   const [showBulkDeleteModal, setShowBulkDeleteModal] = useState(false);
+  const [statusFilter, setStatusFilter] = useState<string>('all');
 
   const [formData, setFormData] = useState({
     config_id: '',
@@ -205,8 +206,12 @@ const TicketBatchManagement: React.FC = () => {
     setShowBulkDeleteModal(false);
   };
 
-  // Calculer les souches filtrées par période
+  // Calculer les souches filtrées par période et statut
   const filteredBatches = batches.filter((batch) => {
+    // Filtre par statut
+    if (statusFilter === 'active' && batch.status !== 'active') return false;
+    if (statusFilter === 'expired' && batch.status !== 'expired') return false;
+
     const createdDate = new Date(batch.created_at);
     const today = new Date();
     const daysDiff = Math.floor((today.getTime() - createdDate.getTime()) / (1000 * 60 * 60 * 24));
@@ -216,7 +221,7 @@ const TicketBatchManagement: React.FC = () => {
       if (customStartDate && customEndDate) {
         const startDate = new Date(customStartDate);
         const endDate = new Date(customEndDate);
-        endDate.setHours(23, 59, 59, 999); // Inclure toute la journée de fin
+        endDate.setHours(23, 59, 59, 999);
         return createdDate >= startDate && createdDate <= endDate;
       }
       return true;
@@ -347,75 +352,118 @@ const TicketBatchManagement: React.FC = () => {
       </div>
 
       {/* Statistiques */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+      {(() => {
+        const totalTickets = batches.reduce((sum, b) => sum + b.total_tickets, 0);
+        const ticketsConsommes = batches.reduce((sum, b) => sum + b.used_tickets, 0);
+        const ticketsPerdus = batches.filter(b => b.status === 'expired').reduce((sum, b) => sum + b.remaining_tickets, 0);
+        const ticketsDisponibles = totalTickets - ticketsConsommes - ticketsPerdus;
+        const montantPerdu = batches.filter(b => b.status === 'expired').reduce((sum, b) => sum + b.remaining_tickets * b.ticket_value, 0);
+        const montantDisponible = batches.filter(b => b.status === 'active').reduce((sum, b) => sum + b.remaining_tickets * b.ticket_value, 0);
+        const montantConsomme = batches.reduce((sum, b) => sum + b.used_tickets * b.ticket_value, 0);
+
+        return (<>
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+        <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
           <div className="flex items-center space-x-3">
             <div className="p-3 bg-blue-100 rounded-xl">
               <Package className="w-6 h-6 text-blue-600" />
             </div>
             <div>
-              <p className="text-sm font-medium text-gray-600">Total Souches</p>
-              <p className="text-2xl font-bold text-gray-900">{batches.length}</p>
+              <p className="text-sm font-medium text-gray-600">Tickets Générés</p>
+              <p className="text-2xl font-bold text-gray-900">{totalTickets}</p>
+              <p className="text-xs text-gray-400">{batches.length} souches</p>
             </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-          <div className="flex items-center space-x-3">
-            <div className="p-3 bg-green-100 rounded-xl">
-              <Ticket className="w-6 h-6 text-green-600" />
-            </div>
-            <div>
-              <p className="text-sm font-medium text-gray-600">Tickets Totaux</p>
-              <p className="text-2xl font-bold text-gray-900">
-                {batches.reduce((sum, batch) => sum + batch.total_tickets, 0)}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+        <div className="bg-white rounded-2xl p-5 shadow-sm border border-orange-200">
           <div className="flex items-center space-x-3">
             <div className="p-3 bg-orange-100 rounded-xl">
               <TrendingUp className="w-6 h-6 text-orange-600" />
             </div>
             <div>
-              <p className="text-sm font-medium text-gray-600">Consommés</p>
-              <p className="text-2xl font-bold text-gray-900">
-                {batches.reduce((sum, batch) => sum + batch.used_tickets, 0)}
-              </p>
+              <p className="text-sm font-medium text-gray-600">Tickets Consommés</p>
+              <p className="text-2xl font-bold text-orange-600">{ticketsConsommes}</p>
+              <p className="text-xs text-orange-400">{Math.round(montantConsomme).toLocaleString('fr-FR')} F</p>
             </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+        <div className="bg-white rounded-2xl p-5 shadow-sm border border-green-200">
           <div className="flex items-center space-x-3">
             <div className="p-3 bg-green-100 rounded-xl">
-              <Clock className="w-6 h-6 text-green-600" />
+              <CheckCircle className="w-6 h-6 text-green-600" />
             </div>
             <div>
-              <p className="text-sm font-medium text-gray-600">Restants</p>
-              <p className="text-2xl font-bold text-gray-900">
-                {batches.reduce((sum, batch) => sum + batch.remaining_tickets, 0)}
-              </p>
+              <p className="text-sm font-medium text-gray-600">Tickets Disponibles</p>
+              <p className="text-2xl font-bold text-green-700">{ticketsDisponibles}</p>
+              <p className="text-xs text-green-500">{Math.round(montantDisponible).toLocaleString('fr-FR')} F</p>
             </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+        <div className="bg-white rounded-2xl p-5 shadow-sm border border-red-200">
           <div className="flex items-center space-x-3">
-            <div className="p-3 bg-purple-100 rounded-xl">
-              <Package className="w-6 h-6 text-purple-600" />
+            <div className="p-3 bg-red-100 rounded-xl">
+              <AlertTriangle className="w-6 h-6 text-red-500" />
             </div>
             <div>
-              <p className="text-sm font-medium text-gray-600">Souches Actives</p>
-              <p className="text-2xl font-bold text-gray-900">
-                {batches.filter(b => b.status === 'active').length}
+              <p className="text-sm font-medium text-gray-600">Tickets Perdus</p>
+              <p className="text-2xl font-bold text-red-700">{ticketsPerdus}</p>
+              <p className="text-xs text-red-500">{Math.round(montantPerdu).toLocaleString('fr-FR')} F</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
+          <div className="flex items-center space-x-3">
+            <div className="p-3 bg-indigo-100 rounded-xl">
+              <Ticket className="w-6 h-6 text-indigo-600" />
+            </div>
+            <div>
+              <p className="text-sm font-medium text-gray-600">Taux d'utilisation</p>
+              <p className="text-2xl font-bold text-indigo-700">
+                {totalTickets > 0 ? Math.round((ticketsConsommes / totalTickets) * 100) : 0}%
               </p>
+              <p className="text-xs text-gray-400">{ticketsConsommes} / {totalTickets}</p>
             </div>
           </div>
         </div>
       </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="bg-white rounded-2xl p-5 shadow-sm border border-green-200">
+          <div className="flex items-center space-x-3">
+            <div className="p-3 bg-green-100 rounded-xl">
+              <CheckCircle className="w-6 h-6 text-green-600" />
+            </div>
+            <div>
+              <p className="text-sm font-medium text-gray-600">Souches Actives</p>
+              <p className="text-2xl font-bold text-green-700">
+                {batches.filter(b => b.status === 'active').length}
+              </p>
+              <p className="text-xs text-green-500">sur {batches.length} souches</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-2xl p-5 shadow-sm border border-red-200">
+          <div className="flex items-center space-x-3">
+            <div className="p-3 bg-red-100 rounded-xl">
+              <XCircle className="w-6 h-6 text-red-600" />
+            </div>
+            <div>
+              <p className="text-sm font-medium text-gray-600">Souches Expirées</p>
+              <p className="text-2xl font-bold text-red-700">
+                {batches.filter(b => b.status === 'expired').length}
+              </p>
+              <p className="text-xs text-red-500">sur {batches.length} souches</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      </>);
+      })()}
 
       {/* Liste des souches */}
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100">
@@ -424,21 +472,67 @@ const TicketBatchManagement: React.FC = () => {
             <div className="flex items-center justify-between">
               <h2 className="text-lg font-semibold text-gray-900">Souches Créées</h2>
               
-              {/* Filtre par période */}
+              {/* Filtres */}
               {batches.length > 0 && (
-                <div className="flex items-center space-x-2">
-                  <label className="text-sm text-gray-600">Période :</label>
-                  <select
-                    value={periodFilter}
-                    onChange={(e) => setPeriodFilter(e.target.value)}
-                    className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                  >
-                    <option value="all">Toutes les périodes</option>
-                    <option value="today">Aujourd'hui</option>
-                    <option value="week">7 derniers jours</option>
-                    <option value="month">30 derniers jours</option>
-                    <option value="custom">Période personnalisée</option>
-                  </select>
+                <div className="flex items-center space-x-4">
+                  {/* Filtre par statut */}
+                  <div className="flex items-center space-x-2">
+                    <label className="text-sm text-gray-600">Statut :</label>
+                    <div className="flex rounded-lg border border-gray-300 overflow-hidden">
+                      <button
+                        onClick={() => setStatusFilter('all')}
+                        className={`px-3 py-2 text-sm font-medium transition-colors ${
+                          statusFilter === 'all'
+                            ? 'bg-orange-500 text-white'
+                            : 'bg-white text-gray-600 hover:bg-gray-50'
+                        }`}
+                      >
+                        Toutes
+                      </button>
+                      <button
+                        onClick={() => setStatusFilter('active')}
+                        className={`px-3 py-2 text-sm font-medium transition-colors border-l border-gray-300 ${
+                          statusFilter === 'active'
+                            ? 'bg-green-500 text-white'
+                            : 'bg-white text-gray-600 hover:bg-gray-50'
+                        }`}
+                      >
+                        <span className="flex items-center gap-1">
+                          <CheckCircle className="w-3.5 h-3.5" />
+                          Actives ({batches.filter(b => b.status === 'active').length})
+                        </span>
+                      </button>
+                      <button
+                        onClick={() => setStatusFilter('expired')}
+                        className={`px-3 py-2 text-sm font-medium transition-colors border-l border-gray-300 ${
+                          statusFilter === 'expired'
+                            ? 'bg-red-500 text-white'
+                            : 'bg-white text-gray-600 hover:bg-gray-50'
+                        }`}
+                      >
+                        <span className="flex items-center gap-1">
+                          <XCircle className="w-3.5 h-3.5" />
+                          Expirées ({batches.filter(b => b.status === 'expired').length})
+                        </span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Filtre par période */}
+                  <div className="flex items-center space-x-2">
+                    <label className="text-sm text-gray-600">Période :</label>
+                    <select
+                      value={periodFilter}
+                      onChange={(e) => setPeriodFilter(e.target.value)}
+                      className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                    >
+                      <option value="all">Toutes les périodes</option>
+                      <option value="today">Aujourd'hui</option>
+                      <option value="week">7 derniers jours</option>
+                      <option value="month">30 derniers jours</option>
+                      <option value="custom">Période personnalisée</option>
+                    </select>
+                  </div>
                 </div>
               )}
             </div>

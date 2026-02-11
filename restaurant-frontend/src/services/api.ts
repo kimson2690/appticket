@@ -663,6 +663,12 @@ class ApiService {
     return response.data;
   }
 
+  // Employee detail with batches
+  async getEmployeeDetail(id: string): Promise<any> {
+    const response = await this.request<any>(`/admin/employees/${id}`);
+    return response.data;
+  }
+
   // Ticket Analytics API
   async getTicketAnalytics(): Promise<any> {
     const response = await this.request<any>('/company/ticket-analytics');

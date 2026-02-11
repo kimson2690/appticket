@@ -223,9 +223,72 @@ class EmployeeController extends Controller
                 ], 404);
             }
 
+            $now = \Carbon\Carbon::now();
+
+            // Souches de tickets
+            $batches = \App\Models\TicketBatch::where('employee_id', $id)
+                ->orderByDesc('created_at')
+                ->get()
+                ->map(function ($b) use ($now) {
+                    $end = \Carbon\Carbon::parse($b->validity_end);
+                    $isReallyActive = $b->status === 'active' && $end->gte($now);
+                    $isExpired = $b->status === 'expired' || ($b->status === 'active' && $end->lt($now));
+
+                    return [
+                        'id' => $b->id,
+                        'batch_number' => $b->batch_number,
+                        'total_tickets' => (int) $b->total_tickets,
+                        'used_tickets' => (int) $b->used_tickets,
+                        'remaining_tickets' => (int) $b->remaining_tickets,
+                        'ticket_value' => (float) $b->ticket_value,
+                        'total_amount' => (float) ((int) $b->total_tickets * (float) $b->ticket_value),
+                        'remaining_amount' => (float) ((int) $b->remaining_tickets * (float) $b->ticket_value),
+                        'status' => $b->status,
+                        'real_status' => $isReallyActive ? 'active' : ($isExpired ? 'expired' : $b->status),
+                        'validity_start' => $b->validity_start,
+                        'validity_end' => $b->validity_end,
+                        'days_left' => $isReallyActive ? max(0, (int) $now->diffInDays($end, false)) : 0,
+                        'created_at' => $b->created_at,
+                    ];
+                });
+
+            // Solde réel (souches actives et non expirées)
+            $validBalance = $batches->where('real_status', 'active')->sum('remaining_amount');
+
+            // Dernières commandes
+            $orders = \App\Models\Order::where('employee_id', $id)
+                ->orderByDesc('created_at')
+                ->limit(20)
+                ->get()
+                ->map(function ($o) {
+                    return [
+                        'id' => $o->id,
+                        'restaurant_id' => $o->restaurant_id,
+                        'total_amount' => (float) $o->total_amount,
+                        'status' => $o->status,
+                        'items' => $o->items,
+                        'created_at' => $o->created_at,
+                    ];
+                });
+
+            $data = $employee->toArray();
+            $data['valid_balance'] = (float) $validBalance;
+            $data['batches'] = $batches->values()->toArray();
+            $data['recent_orders'] = $orders->values()->toArray();
+            $data['stats'] = [
+                'total_batches' => $batches->count(),
+                'active_batches' => $batches->where('real_status', 'active')->count(),
+                'expired_batches' => $batches->where('real_status', 'expired')->count(),
+                'total_tickets_received' => (int) $batches->sum('total_tickets'),
+                'total_tickets_used' => (int) $batches->sum('used_tickets'),
+                'total_tickets_remaining' => (int) $batches->where('real_status', 'active')->sum('remaining_tickets'),
+                'total_orders' => \App\Models\Order::where('employee_id', $id)->where('status', 'confirmed')->count(),
+                'total_spent' => (float) \App\Models\Order::where('employee_id', $id)->where('status', 'confirmed')->sum('total_amount'),
+            ];
+
             return response()->json([
                 'success' => true,
-                'data' => $employee->toArray()
+                'data' => $data
             ]);
 
         } catch (\Exception $e) {
