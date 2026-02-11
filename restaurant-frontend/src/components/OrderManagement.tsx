@@ -3,6 +3,7 @@ import {
   Package, CheckCircle, XCircle, Clock, User, 
   DollarSign, Calendar, AlertCircle, RefreshCw, Search, MapPin
 } from 'lucide-react';
+import Pagination from './Pagination';
 
 interface OrderItem {
   item_id: string;
@@ -65,6 +66,8 @@ const OrderManagement: React.FC = () => {
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [orderToReject, setOrderToReject] = useState<string | null>(null);
   const [rejectionReason, setRejectionReason] = useState('');
+  const [orderPage, setOrderPage] = useState(1);
+  const ORDERS_PER_PAGE = 10;
 
   useEffect(() => {
     loadOrders();
@@ -123,6 +126,7 @@ const OrderManagement: React.FC = () => {
     }
 
     setFilteredOrders(filtered);
+    setOrderPage(1);
   };
 
   const handleValidateOrder = async (orderId: string) => {
@@ -407,7 +411,7 @@ const OrderManagement: React.FC = () => {
               </p>
             </div>
           ) : (
-            filteredOrders.map((order) => (
+            filteredOrders.slice((orderPage - 1) * ORDERS_PER_PAGE, orderPage * ORDERS_PER_PAGE).map((order) => (
               <div key={order.id} className="bg-white rounded-lg border border-gray-200 hover:border-orange-300 hover:shadow-md transition-all">
                 <div className="p-4">
                   {/* En-tête compact */}
@@ -550,6 +554,12 @@ const OrderManagement: React.FC = () => {
               </div>
             ))
           )}
+          <Pagination
+            currentPage={orderPage}
+            totalItems={filteredOrders.length}
+            itemsPerPage={ORDERS_PER_PAGE}
+            onPageChange={setOrderPage}
+          />
         </div>
       </div>
     </div>
