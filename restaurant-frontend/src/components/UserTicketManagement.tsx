@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Wallet, 
-  Plus, 
   Users,
   Package,
   CheckCircle,
@@ -9,7 +8,6 @@ import {
   X,
   AlertTriangle,
   TrendingUp,
-  DollarSign,
   CreditCard,
   Zap
 } from 'lucide-react';
@@ -23,7 +21,6 @@ const UserTicketManagement: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [showBulkModal, setShowBulkModal] = useState(false);
-  const [modalType, setModalType] = useState<'assign' | 'recharge'>('assign');
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
   const [notification, setNotification] = useState<{ type: 'success' | 'error' | 'info'; message: string; title: string } | null>(null);
 
@@ -68,7 +65,6 @@ const UserTicketManagement: React.FC = () => {
 
   const handleAssignTickets = (employee: Employee) => {
     setSelectedEmployee(employee);
-    setModalType('assign');
     setFormData({
       tickets_count: 1,
       batch_id: '',
@@ -76,21 +72,6 @@ const UserTicketManagement: React.FC = () => {
       ticket_value: 500,
       validity_days: 30,
       amount: 0,
-      notes: ''
-    });
-    setShowModal(true);
-  };
-
-  const handleRechargeBalance = (employee: Employee) => {
-    setSelectedEmployee(employee);
-    setModalType('recharge');
-    setFormData({
-      tickets_count: 1,
-      batch_id: '',
-      config_id: '',
-      ticket_value: 500,
-      validity_days: 30,
-      amount: 500,
       notes: ''
     });
     setShowModal(true);
@@ -150,35 +131,20 @@ const UserTicketManagement: React.FC = () => {
     if (!selectedEmployee) return;
 
     try {
-      if (modalType === 'assign') {
-        const updatedEmployee = await apiService.assignTicketsToEmployee(selectedEmployee.id, {
-          tickets_count: formData.tickets_count,
-          ticket_value: formData.ticket_value,
-          validity_days: formData.validity_days,
-          notes: formData.notes || undefined
-        });
-        
-        setEmployees(employees.map(emp => emp.id === updatedEmployee.id ? updatedEmployee : emp));
-        
-        setNotification({
-          type: 'success',
-          title: 'Tickets affectés',
-          message: `${formData.tickets_count} ticket(s) affecté(s) à ${selectedEmployee.name}.`
-        });
-      } else {
-        const updatedEmployee = await apiService.rechargeEmployeeBalance(selectedEmployee.id, {
-          amount: formData.amount,
-          notes: formData.notes || undefined
-        });
-        
-        setEmployees(employees.map(emp => emp.id === updatedEmployee.id ? updatedEmployee : emp));
-        
-        setNotification({
-          type: 'success',
-          title: 'Solde rechargé',
-          message: `Solde de ${selectedEmployee.name} rechargé de ${formData.amount}F.`
-        });
-      }
+      const updatedEmployee = await apiService.assignTicketsToEmployee(selectedEmployee.id, {
+        tickets_count: formData.tickets_count,
+        ticket_value: formData.ticket_value,
+        validity_days: formData.validity_days,
+        notes: formData.notes || undefined
+      });
+      
+      setEmployees(employees.map(emp => emp.id === updatedEmployee.id ? updatedEmployee : emp));
+      
+      setNotification({
+        type: 'success',
+        title: 'Tickets affectés',
+        message: `${formData.tickets_count} ticket(s) affecté(s) à ${selectedEmployee.name}.`
+      });
       
       await loadData();
       setShowModal(false);
@@ -293,7 +259,7 @@ const UserTicketManagement: React.FC = () => {
         <div>
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Gestion des Tickets Employés</h1>
           <p className="text-gray-600">
-            Affectez des tickets ou rechargez le solde de vos employés
+            Affectez des tickets à vos employés
           </p>
         </div>
         <button
@@ -432,13 +398,6 @@ const UserTicketManagement: React.FC = () => {
                         <CreditCard className="w-3 h-3" />
                         <span>Affecter</span>
                       </button>
-                      <button
-                        onClick={() => handleRechargeBalance(employee)}
-                        className="px-3 py-1.5 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors text-xs font-medium flex items-center space-x-1"
-                      >
-                        <Plus className="w-3 h-3" />
-                        <span>Recharger</span>
-                      </button>
                     </div>
                   </td>
                 </tr>
@@ -455,7 +414,7 @@ const UserTicketManagement: React.FC = () => {
             <div className="border-b border-gray-200 px-6 py-4">
               <div className="flex items-center justify-between">
                 <h2 className="text-xl font-semibold text-gray-900">
-                  {modalType === 'assign' ? 'Affecter des Tickets' : 'Recharger le Solde'}
+                  Affecter des Tickets
                 </h2>
                 <button
                   onClick={() => setShowModal(false)}
@@ -482,90 +441,65 @@ const UserTicketManagement: React.FC = () => {
                 </div>
               </div>
 
-              {modalType === 'assign' ? (
-                <>
-                  {/* Nombre de tickets */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Nombre de tickets *
-                    </label>
-                    <input
-                      type="number"
-                      value={formData.tickets_count}
-                      onChange={(e) => setFormData({ ...formData, tickets_count: Number(e.target.value) })}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                      min="1"
-                      required
-                    />
-                  </div>
+              {/* Nombre de tickets */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Nombre de tickets *
+                </label>
+                <input
+                  type="number"
+                  value={formData.tickets_count}
+                  onChange={(e) => setFormData({ ...formData, tickets_count: Number(e.target.value) })}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                  min="1"
+                  required
+                />
+              </div>
 
-                  {/* Valeur du ticket */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Valeur du ticket (F CFA) *
-                    </label>
-                    <select
-                      value={formData.ticket_value}
-                      onChange={(e) => setFormData({ ...formData, ticket_value: Number(e.target.value) })}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                      required
-                    >
-                      {configurations.length > 0 ? (
-                        configurations.map((config) => (
-                          <option key={config.id} value={config.ticket_value}>
-                            {config.ticket_value}F - {config.company_name}
-                          </option>
-                        ))
-                      ) : (
-                        <option value="500">500F - standard</option>
-                      )}
-                    </select>
-                    <p className="mt-1 text-xs text-gray-500">
-                      Valeurs paramétrées par votre entreprise
-                    </p>
-                  </div>
+              {/* Valeur du ticket */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Valeur du ticket (F CFA) *
+                </label>
+                <select
+                  value={formData.ticket_value}
+                  onChange={(e) => setFormData({ ...formData, ticket_value: Number(e.target.value) })}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                  required
+                >
+                  {configurations.length > 0 ? (
+                    configurations.map((config) => (
+                      <option key={config.id} value={config.ticket_value}>
+                        {config.ticket_value}F - {config.company_name}
+                      </option>
+                    ))
+                  ) : (
+                    <option value="500">500F - standard</option>
+                  )}
+                </select>
+                <p className="mt-1 text-xs text-gray-500">
+                  Valeurs paramétrées par votre entreprise
+                </p>
+              </div>
 
-                  {/* Nombre de jours de validité */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Validité (jours) *
-                    </label>
-                    <input
-                      type="number"
-                      value={formData.validity_days}
-                      onChange={(e) => setFormData({ ...formData, validity_days: Number(e.target.value) })}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                      min="1"
-                      max="365"
-                      required
-                    />
-                    <p className="mt-1 text-xs text-gray-500">
-                      Les tickets seront valables {formData.validity_days} jour(s) à partir d'aujourd'hui
-                    </p>
-                  </div>
-                </>
-              ) : (
-                <>
-                  {/* Montant */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Montant (F CFA) *
-                    </label>
-                    <div className="relative">
-                      <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-                      <input
-                        type="number"
-                        value={formData.amount}
-                        onChange={(e) => setFormData({ ...formData, amount: Number(e.target.value) })}
-                        className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                        min="1"
-                        step="50"
-                        required
-                      />
-                    </div>
-                  </div>
-                </>
-              )}
+              {/* Nombre de jours de validité */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Validité (jours) *
+                </label>
+                <input
+                  type="number"
+                  value={formData.validity_days}
+                  onChange={(e) => setFormData({ ...formData, validity_days: Number(e.target.value) })}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                  min="1"
+                  max="365"
+                  required
+                />
+                <p className="mt-1 text-xs text-gray-500">
+                  Les tickets seront valables {formData.validity_days} jour(s) à partir d'aujourd'hui
+                </p>
+              </div>
 
               {/* Notes */}
               <div>
@@ -594,7 +528,7 @@ const UserTicketManagement: React.FC = () => {
                   type="submit"
                   className="px-6 py-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600 font-medium transition-colors"
                 >
-                  {modalType === 'assign' ? 'Affecter' : 'Recharger'}
+                  Affecter
                 </button>
               </div>
             </form>
