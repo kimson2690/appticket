@@ -90,7 +90,7 @@ class EmployeeDashboardController extends Controller
                 return (int) $batch->remaining_tickets * (float) $batch->ticket_value;
             });
 
-            $batchesCount = $employeeBatches->count();
+            $activeBatchesCount = $realActiveBatches->count();
 
             return response()->json([
                 'success' => true,
@@ -103,7 +103,7 @@ class EmployeeDashboardController extends Controller
                         'used' => $usedTickets,                 // Calculé : total - disponibles
                         'expired' => $expiredTickets
                     ],
-                    'batches_count' => $batchesCount
+                    'batches_count' => $activeBatchesCount
                 ]
             ]);
         } catch (\Exception $e) {
