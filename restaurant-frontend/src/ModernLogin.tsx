@@ -46,6 +46,7 @@ const ModernLogin: React.FC<ModernLoginProps> = ({ onShowRegister }) => {
       localStorage.setItem('restaurantId', response.user.restaurant_id?.toString() || ''); // FIX: Ajout restaurantId pour les gestionnaires
       localStorage.setItem('restaurantName', response.user.restaurant_name || '');
       localStorage.setItem('authToken', response.token);
+      localStorage.setItem('mustChangePassword', response.user.must_change_password ? 'true' : 'false');
       
       if (rememberMe) {
         localStorage.setItem('rememberMe', 'true');

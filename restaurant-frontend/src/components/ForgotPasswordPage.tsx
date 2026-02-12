@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Mail, ArrowLeft, CheckCircle, XCircle } from 'lucide-react';
+import { Mail, ArrowLeft, CheckCircle, AlertTriangle, Shield, Sparkles } from 'lucide-react';
 import { forgotPassword } from '../services/api';
 
 const ForgotPasswordPage: React.FC = () => {
@@ -47,107 +47,156 @@ const ForgotPasswordPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-orange-50 via-white to-orange-50 px-4 py-8">
-      {/* Notification Toast */}
-      {notification && (
-        <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-50 animate-slide-down">
-          <div className={`flex items-center gap-3 px-6 py-4 rounded-lg shadow-2xl backdrop-blur-sm border-l-4 ${
-            notification.type === 'success'
-              ? 'bg-green-50 border-green-500 text-green-800'
-              : 'bg-red-50 border-red-500 text-red-800'
-          }`}>
-            {notification.type === 'success' ? (
-              <CheckCircle className="w-6 h-6 flex-shrink-0" />
-            ) : (
-              <XCircle className="w-6 h-6 flex-shrink-0" />
-            )}
-            <p className="font-medium">{notification.message}</p>
-            <button
-              onClick={() => setNotification(null)}
-              className="ml-4 text-gray-500 hover:text-gray-700"
-            >
-              ×
-            </button>
-          </div>
-        </div>
-      )}
+    <div className="min-h-screen relative overflow-hidden">
+      {/* Fond dégradé */}
+      <div className="absolute inset-0 bg-gradient-to-br from-slate-950 via-indigo-950 to-slate-900">
+        <div className="absolute top-0 -left-40 w-96 h-96 bg-orange-500/20 rounded-full blur-3xl animate-pulse" style={{ animationDuration: '4s' }}></div>
+        <div className="absolute top-1/4 -right-40 w-96 h-96 bg-purple-500/20 rounded-full blur-3xl animate-pulse" style={{ animationDuration: '5s', animationDelay: '1s' }}></div>
+        <div className="absolute bottom-0 left-1/4 w-96 h-96 bg-blue-500/20 rounded-full blur-3xl animate-pulse" style={{ animationDuration: '6s', animationDelay: '2s' }}></div>
+      </div>
 
-      <div className="max-w-md w-full">
-        {/* Header */}
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-orange-500 rounded-full mb-4">
-            <Mail className="w-8 h-8 text-white" />
-          </div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            Mot de passe oublié ?
-          </h1>
-          <p className="text-gray-600">
-            Pas de problème ! Entrez votre email et nous vous enverrons un lien pour réinitialiser votre mot de passe.
-          </p>
-        </div>
+      {/* Grille */}
+      <div className="absolute inset-0 opacity-10">
+        <div className="absolute inset-0" style={{
+          backgroundImage: `
+            linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px)
+          `,
+          backgroundSize: '50px 50px'
+        }}></div>
+      </div>
 
-        {/* Form Card */}
-        <div className="bg-white rounded-2xl shadow-xl p-8">
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Email Input */}
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
-                Adresse Email
-              </label>
+      <div className="relative flex items-center justify-center min-h-screen px-6 py-12">
+        <div className="w-full max-w-md">
+          {/* Card */}
+          <div className="rounded-3xl bg-white/10 backdrop-blur-2xl p-8 md:p-10 border border-white/20 shadow-2xl" style={{
+            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5), inset 0 1px 0 0 rgba(255, 255, 255, 0.1)'
+          }}>
+            {/* Logo */}
+            <div className="mb-8 flex items-center gap-4">
               <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Mail className="h-5 w-5 text-gray-400" />
-                </div>
-                <input
-                  type="email"
-                  id="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                  placeholder="votre.email@exemple.com"
-                  required
+                <img 
+                  src="/AppTicket.png" 
+                  alt="AppTicket Logo" 
+                  className="h-14 w-14 object-contain"
+                  style={{ filter: 'drop-shadow(0 0 20px rgba(249, 115, 22, 0.3))' }}
                 />
+                <Sparkles className="absolute -top-1 -right-1 h-3.5 w-3.5 text-yellow-400 animate-pulse" />
+              </div>
+              <div>
+                <span className="text-xl font-bold bg-gradient-to-r from-white to-orange-200 bg-clip-text text-transparent">AppTicket</span>
+                <p className="text-xs text-white/60">Récupération de compte</p>
               </div>
             </div>
 
-            {/* Submit Button */}
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-orange-500 text-white font-medium rounded-lg hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {loading ? (
-                <>
-                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                  Envoi en cours...
-                </>
-              ) : (
-                <>
-                  <Mail className="w-5 h-5" />
-                  Envoyer le lien de réinitialisation
-                </>
-              )}
-            </button>
-          </form>
+            {/* Header */}
+            <div className="mb-8">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="p-2.5 rounded-xl bg-orange-500/20 border border-orange-500/30">
+                  <Shield className="w-5 h-5 text-orange-400" />
+                </div>
+                <div>
+                  <h1 className="text-2xl font-bold text-white">Mot de passe oublié ?</h1>
+                </div>
+              </div>
+              <p className="text-white/60 text-sm leading-relaxed">
+                Pas de problème ! Entrez votre email et nous vous enverrons un lien pour réinitialiser votre mot de passe.
+              </p>
+            </div>
 
-          {/* Back to Login Link */}
-          <div className="mt-6 text-center">
-            <Link
-              to="/login"
-              className="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-orange-600 transition-colors"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              Retour à la connexion
-            </Link>
+            {/* Success state */}
+            {notification?.type === 'success' ? (
+              <div className="text-center py-8">
+                <div className="w-16 h-16 rounded-full bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center mx-auto mb-4">
+                  <CheckCircle className="w-8 h-8 text-emerald-400" />
+                </div>
+                <h2 className="text-xl font-bold text-white mb-2">Email envoyé !</h2>
+                <p className="text-white/60 text-sm leading-relaxed mb-6">{notification.message}</p>
+                <Link
+                  to="/login"
+                  className="text-sm text-white/50 hover:text-white/80 transition-colors inline-flex items-center gap-1.5"
+                >
+                  <ArrowLeft className="w-3.5 h-3.5" />
+                  Retour à la connexion
+                </Link>
+              </div>
+            ) : (
+              <form onSubmit={handleSubmit} className="space-y-5">
+                {/* Error */}
+                {notification?.type === 'error' && (
+                  <div className="flex items-start gap-3 p-3 rounded-xl bg-red-500/10 border border-red-500/20">
+                    <AlertTriangle className="w-4 h-4 text-red-400 flex-shrink-0 mt-0.5" />
+                    <p className="text-sm text-red-300">{notification.message}</p>
+                  </div>
+                )}
+
+                {/* Email Input */}
+                <div>
+                  <label className="mb-2 block text-xs font-semibold text-white/80 uppercase tracking-wider">
+                    Adresse Email
+                  </label>
+                  <div className="relative">
+                    <Mail className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 h-4.5 w-4.5 text-orange-400" />
+                    <input
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="votre.email@exemple.com"
+                      className="w-full rounded-2xl border-2 border-white/10 bg-white/5 px-12 py-3.5 text-white text-sm placeholder:text-white/40 outline-none focus:border-orange-500/50 focus:bg-white/10 focus:ring-4 focus:ring-orange-500/20"
+                      required
+                    />
+                  </div>
+                </div>
+
+                {/* Info note */}
+                <div className="rounded-xl bg-blue-500/10 border border-blue-500/20 p-3">
+                  <p className="text-xs text-blue-300 leading-relaxed">
+                    <strong>Note :</strong> Le lien de réinitialisation est valide pendant 1 heure. Si vous ne recevez pas l'email, vérifiez votre dossier spam.
+                  </p>
+                </div>
+
+                {/* Submit */}
+                <button
+                  type="submit"
+                  disabled={loading || !email}
+                  className="mt-6 w-full relative group rounded-2xl bg-gradient-to-r from-orange-500 to-orange-600 px-6 py-3.5 text-center text-sm font-bold text-white shadow-lg shadow-orange-500/50 transition-all hover:shadow-xl hover:shadow-orange-500/60 hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:hover:shadow-lg overflow-hidden"
+                >
+                  <span className="absolute inset-0 bg-gradient-to-r from-orange-400 to-orange-500 opacity-0 group-hover:opacity-100 transition-opacity"></span>
+                  <span className="relative flex items-center justify-center gap-2">
+                    {loading ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                        Envoi en cours...
+                      </>
+                    ) : (
+                      <>
+                        <Mail className="h-4 w-4" />
+                        Envoyer le lien de réinitialisation
+                      </>
+                    )}
+                  </span>
+                </button>
+
+                {/* Back to login */}
+                <div className="text-center pt-2">
+                  <Link
+                    to="/login"
+                    className="text-sm text-white/50 hover:text-white/80 transition-colors inline-flex items-center gap-1.5"
+                  >
+                    <ArrowLeft className="w-3.5 h-3.5" />
+                    Retour à la connexion
+                  </Link>
+                </div>
+              </form>
+            )}
           </div>
-        </div>
 
-        {/* Info Box */}
-        <div className="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
-          <p className="text-sm text-blue-800">
-            <strong>Note :</strong> Le lien de réinitialisation est valide pendant 1 heure. 
-            Si vous ne recevez pas l'email dans quelques minutes, vérifiez votre dossier spam.
-          </p>
+          {/* Footer */}
+          <div className="mt-6 text-center">
+            <p className="text-white/40 text-xs">
+              Développé avec <span className="text-orange-400">❤️</span> par <span className="text-white/70 font-semibold">KIMA T ARMEL</span>
+            </p>
+          </div>
         </div>
       </div>
     </div>

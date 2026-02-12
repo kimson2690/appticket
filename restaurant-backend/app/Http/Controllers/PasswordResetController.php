@@ -3,19 +3,17 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Models\Employee;
+use App\Models\PasswordResetToken;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use App\Mail\PasswordReset;
-use App\Helpers\EmailPriority;
 
 class PasswordResetController extends Controller
 {
-    private $resetTokensFile = 'password_reset_tokens.json';
-    private $employeesFile = 'employees.json';
-
     /**
      * Demande de réinitialisation de mot de passe
      */
@@ -27,32 +25,28 @@ class PasswordResetController extends Controller
             ]);
 
             $email = $validated['email'];
-            $user = null;
             $userName = null;
             $userType = null;
 
-            // Chercher d'abord dans la table users
+            // Chercher d'abord dans la table users (admins, gestionnaires)
             $dbUser = User::where('email', $email)->first();
-            
+
             if ($dbUser) {
-                $user = $dbUser;
                 $userName = $dbUser->name;
                 $userType = 'user';
-                Log::info("Utilisateur trouvé dans la base de données: $email");
+                Log::info("Utilisateur trouvé dans la table users: $email");
             } else {
-                // Chercher dans employees.json
-                $employees = $this->loadEmployees();
-                $employee = collect($employees)->firstWhere('email', $email);
-                
+                // Chercher dans la table employees (MySQL)
+                $employee = Employee::where('email', $email)->first();
+
                 if ($employee) {
-                    $user = $employee;
-                    $userName = $employee['name'];
+                    $userName = $employee->name;
                     $userType = 'employee';
-                    Log::info("Employé trouvé dans employees.json: $email");
+                    Log::info("Employé trouvé dans la table employees: $email");
                 }
             }
 
-            if (!$user) {
+            if (!$userType) {
                 // Ne pas révéler si l'email existe ou non (sécurité)
                 Log::warning("Tentative de reset pour email inexistant: $email");
                 return response()->json([
@@ -63,18 +57,24 @@ class PasswordResetController extends Controller
 
             // Générer un token unique
             $token = Str::random(60);
-            $expiresAt = now()->addHours(1)->toDateTimeString();
+            $expiresAt = now()->addHours(1);
 
-            // Sauvegarder le token
-            $this->saveResetToken($email, $token, $userType, $expiresAt);
+            // Sauvegarder le token en MySQL
+            PasswordResetToken::where('email', $email)->delete();
+            PasswordResetToken::create([
+                'email' => $email,
+                'token' => $token,
+                'expires_at' => $expiresAt,
+                'user_type' => $userType
+            ]);
 
             // Créer l'URL de réinitialisation
             $resetUrl = env('FRONTEND_URL', 'http://localhost:5173') . '/reset-password?token=' . $token . '&email=' . urlencode($email);
 
-            // Envoyer l'email
-            Mail::to($email)->queue(new PasswordReset($userName, $token, $resetUrl));
-            
-            Log::info("Email de réinitialisation envoyé à: $email, Token: $token");
+            // Envoyer l'email (send synchrone, plus fiable que queue)
+            Mail::to($email)->send(new PasswordReset($userName, $token, $resetUrl));
+
+            Log::info("Email de réinitialisation envoyé à: $email");
 
             return response()->json([
                 'success' => true,
@@ -83,7 +83,11 @@ class PasswordResetController extends Controller
 
         } catch (\Exception $e) {
             Log::error('Erreur demande réinitialisation: ' . $e->getMessage());
-            return response()->json(['error' => 'Erreur serveur'], 500);
+            Log::error('Stack trace: ' . $e->getTraceAsString());
+            return response()->json([
+                'success' => false,
+                'error' => 'Erreur serveur: ' . $e->getMessage()
+            ], 500);
         }
     }
 
@@ -103,49 +107,64 @@ class PasswordResetController extends Controller
             $token = $validated['token'];
             $newPassword = $validated['password'];
 
-            // Vérifier le token
-            $resetTokenData = $this->verifyResetToken($email, $token);
-            
-            if (!$resetTokenData) {
+            // Vérifier le token en MySQL
+            $tokenRecord = PasswordResetToken::where('email', $email)
+                ->where('token', $token)
+                ->first();
+
+            if (!$tokenRecord) {
                 return response()->json([
+                    'success' => false,
                     'error' => 'Token invalide ou expiré'
                 ], 400);
             }
 
-            $userType = $resetTokenData['user_type'];
+            // Vérifier l'expiration
+            if ($tokenRecord->expires_at && $tokenRecord->expires_at->isPast()) {
+                PasswordResetToken::where('email', $email)->delete();
+                return response()->json([
+                    'success' => false,
+                    'error' => 'Token expiré. Veuillez faire une nouvelle demande.'
+                ], 400);
+            }
+
+            $userType = $tokenRecord->user_type ?? 'user';
 
             // Mettre à jour le mot de passe selon le type d'utilisateur
             if ($userType === 'user') {
-                // Utilisateur dans la base de données
                 $user = User::where('email', $email)->first();
-                
+
                 if (!$user) {
-                    return response()->json(['error' => 'Utilisateur non trouvé'], 404);
+                    return response()->json([
+                        'success' => false,
+                        'error' => 'Utilisateur non trouvé'
+                    ], 404);
                 }
 
                 $user->password = Hash::make($newPassword);
                 $user->save();
-                
-                Log::info("Mot de passe réinitialisé pour utilisateur DB: $email");
-            } else {
-                // Employé dans employees.json
-                $employees = $this->loadEmployees();
-                $employeeIndex = collect($employees)->search(function ($emp) use ($email) {
-                    return $emp['email'] === $email;
-                });
 
-                if ($employeeIndex === false) {
-                    return response()->json(['error' => 'Employé non trouvé'], 404);
+                Log::info("Mot de passe réinitialisé pour utilisateur: $email");
+            } else {
+                // Employé dans la table employees (MySQL)
+                $employee = Employee::where('email', $email)->first();
+
+                if (!$employee) {
+                    return response()->json([
+                        'success' => false,
+                        'error' => 'Employé non trouvé'
+                    ], 404);
                 }
 
-                $employees[$employeeIndex]['password'] = Hash::make($newPassword);
-                $this->saveEmployees($employees);
-                
-                Log::info("Mot de passe réinitialisé pour employé JSON: $email");
+                $employee->password = Hash::make($newPassword);
+                $employee->must_change_password = false;
+                $employee->save();
+
+                Log::info("Mot de passe réinitialisé pour employé: $email");
             }
 
             // Supprimer le token utilisé
-            $this->deleteResetToken($email);
+            PasswordResetToken::where('email', $email)->delete();
 
             return response()->json([
                 'success' => true,
@@ -154,72 +173,10 @@ class PasswordResetController extends Controller
 
         } catch (\Exception $e) {
             Log::error('Erreur réinitialisation mot de passe: ' . $e->getMessage());
-            return response()->json(['error' => 'Erreur serveur'], 500);
+            return response()->json([
+                'success' => false,
+                'error' => 'Erreur serveur'
+            ], 500);
         }
-    }
-
-    /**
-     * Sauvegarder un token de réinitialisation
-     */
-    private function saveResetToken($email, $token, $userType, $expiresAt)
-    {
-        // Supprimer les anciens tokens pour cet email
-        \App\Models\PasswordResetToken::where('email', $email)->delete();
-
-        // Créer le nouveau token en MySQL
-        \App\Models\PasswordResetToken::create([
-            'email' => $email,
-            'token' => $token,
-            'expires_at' => $expiresAt
-        ]);
-    }
-
-    /**
-     * Vérifier un token de réinitialisation
-     */
-    private function verifyResetToken($email, $token)
-    {
-        // Chercher le token en MySQL
-        $tokenData = \App\Models\PasswordResetToken::where('email', $email)
-            ->where('token', $token)
-            ->first();
-
-        if (!$tokenData) {
-            return null;
-        }
-
-        // Vérifier l'expiration
-        if ($tokenData->expires_at->isPast()) {
-            Log::warning("Token expiré pour: $email");
-            return null;
-        }
-
-        return $tokenData->toArray();
-    }
-
-    /**
-     * Supprimer un token de réinitialisation
-     */
-    private function deleteResetToken($email)
-    {
-        // Supprimer les tokens en MySQL
-        \App\Models\PasswordResetToken::where('email', $email)->delete();
-    }
-
-    /**
-     * Charger les employés depuis MySQL
-     */
-    private function loadEmployees()
-    {
-        return \App\Models\Employee::all()->toArray();
-    }
-
-    /**
-     * Sauvegarder les employés
-     */
-    private function saveEmployees($employees)
-    {
-        $filePath = storage_path('app/' . $this->employeesFile);
-        file_put_contents($filePath, json_encode($employees, JSON_PRETTY_PRINT));
     }
 }

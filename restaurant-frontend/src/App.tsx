@@ -2,11 +2,13 @@ import React, { useState, useEffect } from 'react'
 import { BrowserRouter as Router } from 'react-router-dom'
 import AuthPages from './AuthPages'
 import AdminDashboard from './components/AdminDashboard'
+import ForcePasswordChange from './components/ForcePasswordChange'
 import { NotificationProvider } from './contexts/NotificationContext'
 
 function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userRole, setUserRole] = useState<string | null>(null);
+  const [mustChangePassword, setMustChangePassword] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -25,8 +27,11 @@ function App() {
         }
       });
       
+      const mustChange = localStorage.getItem('mustChangePassword') === 'true';
+      
       setIsLoggedIn(loggedIn);
       setUserRole(role);
+      setMustChangePassword(loggedIn && mustChange);
       setIsLoading(false);
     };
 
@@ -44,9 +49,11 @@ function App() {
     localStorage.removeItem('userCompanyName');
     localStorage.removeItem('authToken');
     localStorage.removeItem('rememberMe');
+    localStorage.removeItem('mustChangePassword');
     
     setIsLoggedIn(false);
     setUserRole(null);
+    setMustChangePassword(false);
   };
 
   // Écran de chargement
@@ -68,8 +75,16 @@ function App() {
       defaultDuration={4000}
       defaultPosition="top-right"
     >
-      {/* Si l'utilisateur est connecté, afficher AdminDashboard (pour tous les rôles) */}
-      {isLoggedIn && userRole ? (
+      {/* Si l'utilisateur doit changer son mot de passe */}
+      {isLoggedIn && mustChangePassword ? (
+        <ForcePasswordChange
+          onPasswordChanged={() => {
+            setMustChangePassword(false);
+            localStorage.setItem('mustChangePassword', 'false');
+          }}
+          onLogout={handleLogout}
+        />
+      ) : isLoggedIn && userRole ? (
         <Router>
           <AdminDashboard onLogout={handleLogout} />
         </Router>

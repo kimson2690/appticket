@@ -371,6 +371,32 @@ class ApiService {
     return data; // L'API de login retourne directement { success, user, token }
   }
 
+  async changePassword(employeeId: string, currentPassword: string, newPassword: string, newPasswordConfirmation: string): Promise<{ success: boolean; message: string }> {
+    const url = `${API_BASE_URL}/change-password`;
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
+      body: JSON.stringify({
+        employee_id: employeeId,
+        current_password: currentPassword,
+        new_password: newPassword,
+        new_password_confirmation: newPasswordConfirmation,
+      }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.message || `HTTP error! status: ${response.status}`);
+    }
+
+    return data;
+  }
+
   // Ticket Configuration API
   async getTicketConfigurations(): Promise<TicketConfiguration[]> {
     const response = await this.request<TicketConfiguration[]>('/admin/ticket-configurations');

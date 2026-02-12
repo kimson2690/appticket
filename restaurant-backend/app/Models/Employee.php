@@ -12,7 +12,7 @@ class Employee extends Model
     protected $primaryKey = 'id';
     public $incrementing = false;
     protected $keyType = 'string';
-    
+
     protected $fillable = [
         'id',
         'name',
@@ -26,16 +26,18 @@ class Employee extends Model
         'employee_number',
         'ticket_balance',
         'status',
+        'must_change_password',
         'hire_date'
     ];
-    
+
     protected $hidden = [
         'password'
     ];
-    
+
     protected $casts = [
         'ticket_balance' => 'decimal:2',
-        'hire_date' => 'date'
+        'hire_date' => 'date',
+        'must_change_password' => 'boolean'
     ];
 
     public function company(): BelongsTo

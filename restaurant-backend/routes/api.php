@@ -218,6 +218,7 @@ Route::prefix('employee')->group(function () {
 // Routes publiques pour l'authentification
 Route::post('login', [AuthController::class, 'login']);
 Route::post('logout', [AuthController::class, 'logout']);
+Route::post('change-password', [AuthController::class, 'changePassword']);
 Route::get('me', [AuthController::class, 'me']);
 
 // Routes de réinitialisation de mot de passe

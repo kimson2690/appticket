@@ -126,6 +126,9 @@ class EmployeeController extends Controller
             $companyName = $this->getCompanyName($company_id);
 
             // Créer l'employé en MySQL
+            // Si créé par un gestionnaire (status=active), forcer le changement de mot de passe à la première connexion
+            $mustChangePassword = ($status === 'active');
+
             $employee = \App\Models\Employee::create([
                 'id' => 'emp_' . time() . '_' . rand(1000, 9999),
                 'name' => $name,
@@ -139,6 +142,7 @@ class EmployeeController extends Controller
                 'employee_number' => $employee_number,
                 'ticket_balance' => (int) $ticket_balance,
                 'status' => $status,
+                'must_change_password' => $mustChangePassword,
                 'hire_date' => $hire_date,
             ]);
 

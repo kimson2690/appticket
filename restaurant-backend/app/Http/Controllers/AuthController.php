@@ -31,7 +31,7 @@ class AuthController extends Controller
 
             if ($user) {
                 Log::info('Utilisateur trouvé dans users table');
-                
+
                 // Vérifier le mot de passe
                 if (!Hash::check($credentials['password'], $user->password)) {
                     return response()->json([
@@ -72,12 +72,12 @@ class AuthController extends Controller
 
             // Si pas trouvé dans users, chercher dans employees (MySQL)
             Log::info('Utilisateur non trouvé dans users, recherche dans employees MySQL');
-            
+
             $employee = \App\Models\Employee::where('email', $credentials['email'])->first();
-            
+
             if ($employee) {
                 Log::info('Employé trouvé dans MySQL');
-                
+
                 // Vérifier le mot de passe
                 if ($employee->password && !Hash::check($credentials['password'], $employee->password)) {
                     return response()->json([
@@ -88,10 +88,10 @@ class AuthController extends Controller
 
                 // Vérifier le statut
                 if ($employee->status !== 'active') {
-                    $message = $employee->status === 'pending' 
+                    $message = $employee->status === 'pending'
                         ? 'Votre demande est en attente de validation par le gestionnaire.'
                         : 'Compte désactivé. Contactez l\'administrateur.';
-                    
+
                     return response()->json([
                         'success' => false,
                         'message' => $message
@@ -114,7 +114,8 @@ class AuthController extends Controller
                         'company_name' => $employee->company_name ?? null,
                         'restaurant_id' => null,
                         'restaurant_name' => null,
-                        'status' => $employee->status
+                        'status' => $employee->status,
+                        'must_change_password' => (bool) $employee->must_change_password
                     ],
                     'token' => $token
                 ]);
@@ -153,6 +154,70 @@ class AuthController extends Controller
             'success' => true,
             'message' => 'Déconnexion réussie'
         ]);
+    }
+
+    /**
+     * Changer le mot de passe (première connexion employé)
+     */
+    public function changePassword(Request $request): JsonResponse
+    {
+        try {
+            $request->validate([
+                'employee_id' => 'required|string',
+                'current_password' => 'required|string',
+                'new_password' => 'required|string|min:6|confirmed',
+            ]);
+
+            $employee = \App\Models\Employee::find($request->employee_id);
+
+            if (!$employee) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Employé non trouvé'
+                ], 404);
+            }
+
+            // Vérifier le mot de passe actuel
+            if (!Hash::check($request->current_password, $employee->password)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Le mot de passe actuel est incorrect'
+                ], 401);
+            }
+
+            // Vérifier que le nouveau mot de passe est différent de l'ancien
+            if (Hash::check($request->new_password, $employee->password)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Le nouveau mot de passe doit être différent de l\'ancien'
+                ], 422);
+            }
+
+            // Mettre à jour le mot de passe et désactiver le flag
+            $employee->password = Hash::make($request->new_password);
+            $employee->must_change_password = false;
+            $employee->save();
+
+            Log::info('Mot de passe changé pour employé: ' . $employee->id);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Mot de passe modifié avec succès'
+            ]);
+
+        } catch (ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Données invalides',
+                'errors' => $e->errors()
+            ], 422);
+        } catch (\Exception $e) {
+            Log::error('Erreur changement mot de passe: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Erreur lors du changement de mot de passe'
+            ], 500);
+        }
     }
 
     /**
