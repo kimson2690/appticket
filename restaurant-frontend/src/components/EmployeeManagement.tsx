@@ -20,7 +20,8 @@ import {
   Calendar,
   TrendingUp,
   CalendarDays,
-  ChevronDown
+  ChevronDown,
+  Filter
 } from 'lucide-react';
 import { apiService, type Employee, type Company } from '../services/api';
 import Pagination from './Pagination';
@@ -43,6 +44,8 @@ const EmployeeManagement: React.FC = () => {
   const [employeeDetail, setEmployeeDetail] = useState<any>(null);
   const [detailLoading, setDetailLoading] = useState(false);
   const [empMgmtPage, setEmpMgmtPage] = useState(1);
+  const [selectedDepartmentFilter, setSelectedDepartmentFilter] = useState<string>('');
+  const [selectedPositionFilter, setSelectedPositionFilter] = useState<string>('');
 
   // Récupération des informations de l'utilisateur connecté
   const currentUser = {
@@ -233,6 +236,25 @@ const EmployeeManagement: React.FC = () => {
   if (selectedCompanyFilter && !isCompanyManager) {
     filteredEmployees = filteredEmployees.filter(emp => String(emp.company_id) === String(selectedCompanyFilter));
   }
+
+  // Appliquer le filtre par département
+  if (selectedDepartmentFilter) {
+    filteredEmployees = filteredEmployees.filter(emp => emp.department === selectedDepartmentFilter);
+  }
+
+  // Appliquer le filtre par poste
+  if (selectedPositionFilter) {
+    filteredEmployees = filteredEmployees.filter(emp => emp.position === selectedPositionFilter);
+  }
+
+  // Extraire les valeurs uniques de département et poste (depuis les employés visibles avant filtre dept/poste)
+  const basEmployees = isCompanyManager && currentUser.companyId
+    ? employees.filter(emp => String(emp.company_id) === String(currentUser.companyId))
+    : selectedCompanyFilter && !isCompanyManager
+      ? employees.filter(emp => String(emp.company_id) === String(selectedCompanyFilter))
+      : employees;
+  const uniqueDepartments = [...new Set(basEmployees.map(emp => emp.department).filter(Boolean))] as string[];
+  const uniquePositions = [...new Set(basEmployees.map(emp => emp.position).filter(Boolean))] as string[];
 
   const EMP_MGMT_PER_PAGE = 10;
   const paginatedFilteredEmployees = filteredEmployees.slice((empMgmtPage - 1) * EMP_MGMT_PER_PAGE, empMgmtPage * EMP_MGMT_PER_PAGE);
@@ -485,6 +507,51 @@ const EmployeeManagement: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Filtres Département / Poste */}
+      <div className="flex flex-wrap items-center gap-3 mb-4">
+        <div className="flex items-center gap-2 text-sm text-gray-500">
+          <Filter className="w-4 h-4" />
+          <span className="font-medium">Filtrer :</span>
+        </div>
+        <div className="relative">
+          <select
+            value={selectedDepartmentFilter}
+            onChange={(e) => { setSelectedDepartmentFilter(e.target.value); setEmpMgmtPage(1); }}
+            className="appearance-none bg-white border border-gray-200 rounded-xl px-4 py-2 pr-9 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-orange-500/30 focus:border-orange-400 transition-colors"
+          >
+            <option value="">Tous les départements</option>
+            {uniqueDepartments.sort().map(dept => (
+              <option key={dept} value={dept}>{dept}</option>
+            ))}
+          </select>
+          <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+        </div>
+        <div className="relative">
+          <select
+            value={selectedPositionFilter}
+            onChange={(e) => { setSelectedPositionFilter(e.target.value); setEmpMgmtPage(1); }}
+            className="appearance-none bg-white border border-gray-200 rounded-xl px-4 py-2 pr-9 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-orange-500/30 focus:border-orange-400 transition-colors"
+          >
+            <option value="">Tous les postes</option>
+            {uniquePositions.sort().map(pos => (
+              <option key={pos} value={pos}>{pos}</option>
+            ))}
+          </select>
+          <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+        </div>
+        {(selectedDepartmentFilter || selectedPositionFilter) && (
+          <button
+            onClick={() => { setSelectedDepartmentFilter(''); setSelectedPositionFilter(''); setEmpMgmtPage(1); }}
+            className="text-xs text-orange-600 hover:text-orange-700 font-medium px-3 py-2 bg-orange-50 rounded-xl border border-orange-200 transition-colors"
+          >
+            Réinitialiser les filtres
+          </button>
+        )}
+        <span className="text-xs text-gray-400 ml-auto">
+          {filteredEmployees.length} employé{filteredEmployees.length > 1 ? 's' : ''}
+        </span>
+      </div>
 
       {/* Employees Table */}
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">

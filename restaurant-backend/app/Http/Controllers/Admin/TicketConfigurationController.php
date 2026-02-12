@@ -114,7 +114,10 @@ class TicketConfigurationController extends Controller
                 'end_time' => $request->input('end_time', null),
                 'weekend_usage' => (bool) $request->input('weekend_usage', true),
                 'restrictions' => $request->input('restrictions', null),
-                'status' => $request->input('is_active', true) ? 'active' : 'inactive'
+                'status' => $request->input('is_active', true) ? 'active' : 'inactive',
+                'type' => $request->input('type', 'standard'),
+                'auto_renewal' => (bool) $request->input('auto_renewal', false),
+                'logo' => $request->input('logo', null)
             ]);
 
             Log::info('Configuration de ticket sauvegardée:', $config->toArray());
@@ -208,6 +211,9 @@ class TicketConfigurationController extends Controller
             if ($request->has('weekend_usage')) $updateData['weekend_usage'] = (bool) $request->input('weekend_usage');
             if ($request->filled('restrictions')) $updateData['restrictions'] = $request->input('restrictions');
             if ($request->has('is_active')) $updateData['status'] = $request->input('is_active') ? 'active' : 'inactive';
+            if ($request->has('type')) $updateData['type'] = $request->input('type');
+            if ($request->has('auto_renewal')) $updateData['auto_renewal'] = (bool) $request->input('auto_renewal');
+            if ($request->has('logo')) $updateData['logo'] = $request->input('logo');
 
             $config->update($updateData);
             $config->refresh();

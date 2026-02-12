@@ -10,7 +10,7 @@ class TicketConfiguration extends Model
     protected $primaryKey = 'id';
     public $incrementing = false;
     protected $keyType = 'string';
-    
+
     protected $fillable = [
         'id',
         'company_id',
@@ -25,7 +25,10 @@ class TicketConfiguration extends Model
         'end_time',
         'weekend_usage',
         'restrictions',
-        'status'
+        'status',
+        'type',
+        'auto_renewal',
+        'logo'
     ];
 
     protected $casts = [
@@ -33,6 +36,7 @@ class TicketConfiguration extends Model
         'max_order_amount' => 'decimal:2',
         'rollover_unused' => 'boolean',
         'weekend_usage' => 'boolean',
-        'allowed_days' => 'array'
+        'allowed_days' => 'array',
+        'auto_renewal' => 'boolean'
     ];
 }
