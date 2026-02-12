@@ -58,6 +58,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [activeMenu, setActiveMenu] = useState('dashboard');
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [searchFocused, setSearchFocused] = useState(false);
 
   // Récupération des informations de l'utilisateur connecté
   const currentUser = {
@@ -223,12 +225,54 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
               </button>
               
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 z-10" />
                 <input
                   type="text"
-                  placeholder="Rechercher..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  onFocus={() => setSearchFocused(true)}
+                  onBlur={() => setTimeout(() => setSearchFocused(false), 200)}
+                  placeholder="Rechercher une page..."
                   className="pl-10 pr-4 py-2 w-80 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
                 />
+                {searchFocused && searchTerm.trim().length > 0 && (
+                  <div className="absolute top-full left-0 mt-2 w-80 bg-white rounded-xl shadow-lg border border-gray-200 py-2 z-50 max-h-72 overflow-y-auto">
+                    {menuItems.filter(item =>
+                      item.label.toLowerCase().includes(searchTerm.toLowerCase())
+                    ).length > 0 ? (
+                      menuItems.filter(item =>
+                        item.label.toLowerCase().includes(searchTerm.toLowerCase())
+                      ).map((item) => {
+                        const Icon = item.icon;
+                        const isActive = activeMenu === item.id;
+                        return (
+                          <button
+                            key={item.id}
+                            onMouseDown={(e) => {
+                              e.preventDefault();
+                              setActiveMenu(item.id);
+                              navigate(`/admin/${item.id}`);
+                              setSearchTerm('');
+                              setSearchFocused(false);
+                            }}
+                            className={`w-full flex items-center gap-3 px-4 py-2.5 text-left transition-colors ${
+                              isActive ? 'bg-orange-50 text-orange-600' : 'hover:bg-gray-50 text-gray-700'
+                            }`}
+                          >
+                            <Icon className={`w-4 h-4 flex-shrink-0 ${isActive ? 'text-orange-500' : 'text-gray-400'}`} />
+                            <span className="text-sm font-medium">{item.label}</span>
+                            {isActive && <span className="ml-auto text-[10px] font-bold text-orange-400 uppercase">Actif</span>}
+                          </button>
+                        );
+                      })
+                    ) : (
+                      <div className="px-4 py-6 text-center">
+                        <Search className="w-8 h-8 text-gray-300 mx-auto mb-2" />
+                        <p className="text-sm text-gray-500">Aucun résultat pour « {searchTerm} »</p>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
 

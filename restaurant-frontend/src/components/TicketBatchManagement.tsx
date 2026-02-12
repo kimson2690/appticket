@@ -270,89 +270,70 @@ const TicketBatchManagement: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-96">
+      <div className="flex items-center justify-center h-96">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto mb-4"></div>
-          <p className="text-gray-600">Chargement des souches...</p>
+          <div className="relative w-16 h-16 mx-auto mb-4">
+            <div className="absolute inset-0 rounded-full border-4 border-orange-100"></div>
+            <div className="absolute inset-0 rounded-full border-4 border-orange-500 border-t-transparent animate-spin"></div>
+          </div>
+          <p className="text-gray-500 font-medium">Chargement des souches...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
+    <div className="max-w-7xl mx-auto space-y-6">
       {/* Notification Toast */}
       {notification && (
-        <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[60] animate-slide-down">
-          <div className={`flex items-start space-x-4 rounded-2xl p-5 shadow-2xl backdrop-blur-sm min-w-[400px] max-w-2xl ${
-            notification.type === 'success' 
-              ? 'bg-green-50/95 border-2 border-green-200' 
-              : notification.type === 'error'
-              ? 'bg-red-50/95 border-2 border-red-200'
-              : 'bg-blue-50/95 border-2 border-blue-200'
-          }`}>
-            {notification.type === 'success' ? (
-              <CheckCircle className="w-6 h-6 text-green-600 flex-shrink-0 mt-0.5" />
-            ) : notification.type === 'error' ? (
-              <XCircle className="w-6 h-6 text-red-600 flex-shrink-0 mt-0.5" />
-            ) : (
-              <AlertTriangle className="w-6 h-6 text-blue-600 flex-shrink-0 mt-0.5" />
-            )}
-            <div className="flex-1">
-              <h3 className={`font-semibold mb-1 ${
-                notification.type === 'success' 
-                  ? 'text-green-900' 
-                  : notification.type === 'error'
-                  ? 'text-red-900'
-                  : 'text-blue-900'
-              }`}>
-                {notification.title}
-              </h3>
-              <p className={`text-sm ${
-                notification.type === 'success' 
-                  ? 'text-green-800' 
-                  : notification.type === 'error'
-                  ? 'text-red-800'
-                  : 'text-blue-800'
-              }`}>
-                {notification.message}
-              </p>
+        <div className={`fixed top-4 right-4 z-50 max-w-md w-full rounded-2xl shadow-lg border p-4 backdrop-blur-sm ${
+          notification.type === 'success' ? 'bg-emerald-50/95 border-emerald-200' :
+          notification.type === 'error' ? 'bg-red-50/95 border-red-200' : 'bg-blue-50/95 border-blue-200'
+        }`}>
+          <div className="flex items-start gap-3">
+            <div className={`p-1.5 rounded-lg flex-shrink-0 ${
+              notification.type === 'success' ? 'bg-emerald-100' :
+              notification.type === 'error' ? 'bg-red-100' : 'bg-blue-100'
+            }`}>
+              {notification.type === 'success' ? (
+                <CheckCircle className="w-4 h-4 text-emerald-600" />
+              ) : notification.type === 'error' ? (
+                <XCircle className="w-4 h-4 text-red-600" />
+              ) : (
+                <AlertTriangle className="w-4 h-4 text-blue-600" />
+              )}
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className={`text-xs font-bold ${
+                notification.type === 'success' ? 'text-emerald-800' :
+                notification.type === 'error' ? 'text-red-800' : 'text-blue-800'
+              }`}>{notification.title}</p>
+              <p className={`text-xs mt-0.5 ${
+                notification.type === 'success' ? 'text-emerald-600' :
+                notification.type === 'error' ? 'text-red-600' : 'text-blue-600'
+              }`}>{notification.message}</p>
             </div>
             <button
               onClick={() => setNotification(null)}
-              className={`p-1 rounded-lg transition-colors ${
-                notification.type === 'success' 
-                  ? 'hover:bg-green-100' 
-                  : notification.type === 'error'
-                  ? 'hover:bg-red-100'
-                  : 'hover:bg-blue-100'
-              }`}
+              className="flex-shrink-0 p-1 hover:bg-white/50 rounded-lg"
             >
-              <X className={`w-5 h-5 ${
-                notification.type === 'success' 
-                  ? 'text-green-600' 
-                  : notification.type === 'error'
-                  ? 'text-red-600'
-                  : 'text-blue-600'
-              }`} />
+              <X className="w-3.5 h-3.5 text-gray-400" />
             </button>
           </div>
         </div>
       )}
 
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Souches de Tickets</h1>
-          <p className="text-gray-600">
-            Générez des tickets en lot pour votre entreprise
-          </p>
+          <h1 className="text-2xl font-bold text-gray-900">Souches de Tickets</h1>
+          <p className="text-sm text-gray-400 mt-0.5">Générez des tickets en lot pour votre entreprise</p>
         </div>
         <button
           onClick={handleCreateBatch}
-          className="bg-orange-500 hover:bg-orange-600 text-white px-6 py-3 rounded-xl font-medium flex items-center space-x-2 transition-colors"
+          className="bg-orange-500 hover:bg-orange-600 text-white px-5 py-2.5 rounded-xl text-sm font-semibold flex items-center gap-2 transition-colors shadow-sm shadow-orange-100"
         >
-          <Plus className="w-5 h-5" />
+          <Plus className="w-4 h-4" />
           <span>Nouvelle Souche</span>
         </button>
       </div>
@@ -368,102 +349,102 @@ const TicketBatchManagement: React.FC = () => {
         const montantConsomme = batches.reduce((sum, b) => sum + b.used_tickets * b.ticket_value, 0);
 
         return (<>
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-        <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
-          <div className="flex items-center space-x-3">
-            <div className="p-3 bg-blue-100 rounded-xl">
-              <Package className="w-6 h-6 text-blue-600" />
-            </div>
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 hover:shadow-md transition-shadow">
+          <div className="flex items-start justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600">Tickets Générés</p>
-              <p className="text-2xl font-bold text-gray-900">{totalTickets}</p>
-              <p className="text-xs text-gray-400">{batches.length} souches</p>
+              <p className="text-xs text-gray-500 font-medium">Tickets Générés</p>
+              <p className="text-3xl font-extrabold text-gray-900 mt-1">{totalTickets}</p>
+              <p className="text-[10px] text-gray-400 mt-0.5">{batches.length} souches</p>
+            </div>
+            <div className="p-2.5 rounded-xl bg-blue-50 text-blue-600">
+              <Package className="w-5 h-5" />
             </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl p-5 shadow-sm border border-orange-200">
-          <div className="flex items-center space-x-3">
-            <div className="p-3 bg-orange-100 rounded-xl">
-              <TrendingUp className="w-6 h-6 text-orange-600" />
-            </div>
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 hover:shadow-md transition-shadow">
+          <div className="flex items-start justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600">Tickets Consommés</p>
-              <p className="text-2xl font-bold text-orange-600">{ticketsConsommes}</p>
-              <p className="text-xs text-orange-400">{Math.round(montantConsomme).toLocaleString('fr-FR')} F</p>
+              <p className="text-xs text-gray-500 font-medium">Tickets Consommés</p>
+              <p className="text-3xl font-extrabold text-orange-600 mt-1">{ticketsConsommes}</p>
+              <p className="text-[10px] text-orange-400 mt-0.5">{Math.round(montantConsomme).toLocaleString('fr-FR')} F</p>
+            </div>
+            <div className="p-2.5 rounded-xl bg-orange-50 text-orange-600">
+              <TrendingUp className="w-5 h-5" />
             </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl p-5 shadow-sm border border-green-200">
-          <div className="flex items-center space-x-3">
-            <div className="p-3 bg-green-100 rounded-xl">
-              <CheckCircle className="w-6 h-6 text-green-600" />
-            </div>
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 hover:shadow-md transition-shadow">
+          <div className="flex items-start justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600">Tickets Disponibles</p>
-              <p className="text-2xl font-bold text-green-700">{ticketsDisponibles}</p>
-              <p className="text-xs text-green-500">{Math.round(montantDisponible).toLocaleString('fr-FR')} F</p>
+              <p className="text-xs text-gray-500 font-medium">Tickets Disponibles</p>
+              <p className="text-3xl font-extrabold text-emerald-600 mt-1">{ticketsDisponibles}</p>
+              <p className="text-[10px] text-emerald-400 mt-0.5">{Math.round(montantDisponible).toLocaleString('fr-FR')} F</p>
+            </div>
+            <div className="p-2.5 rounded-xl bg-emerald-50 text-emerald-600">
+              <CheckCircle className="w-5 h-5" />
             </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl p-5 shadow-sm border border-red-200">
-          <div className="flex items-center space-x-3">
-            <div className="p-3 bg-red-100 rounded-xl">
-              <AlertTriangle className="w-6 h-6 text-red-500" />
-            </div>
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 hover:shadow-md transition-shadow">
+          <div className="flex items-start justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600">Tickets Perdus</p>
-              <p className="text-2xl font-bold text-red-700">{ticketsPerdus}</p>
-              <p className="text-xs text-red-500">{Math.round(montantPerdu).toLocaleString('fr-FR')} F</p>
+              <p className="text-xs text-gray-500 font-medium">Tickets Perdus</p>
+              <p className="text-3xl font-extrabold text-red-500 mt-1">{ticketsPerdus}</p>
+              <p className="text-[10px] text-red-400 mt-0.5">{Math.round(montantPerdu).toLocaleString('fr-FR')} F</p>
+            </div>
+            <div className="p-2.5 rounded-xl bg-red-50 text-red-500">
+              <AlertTriangle className="w-5 h-5" />
             </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
-          <div className="flex items-center space-x-3">
-            <div className="p-3 bg-indigo-100 rounded-xl">
-              <Ticket className="w-6 h-6 text-indigo-600" />
-            </div>
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 hover:shadow-md transition-shadow">
+          <div className="flex items-start justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600">Taux d'utilisation</p>
-              <p className="text-2xl font-bold text-indigo-700">
+              <p className="text-xs text-gray-500 font-medium">Taux d'utilisation</p>
+              <p className="text-3xl font-extrabold text-indigo-600 mt-1">
                 {totalTickets > 0 ? Math.round((ticketsConsommes / totalTickets) * 100) : 0}%
               </p>
-              <p className="text-xs text-gray-400">{ticketsConsommes} / {totalTickets}</p>
+              <p className="text-[10px] text-gray-400 mt-0.5">{ticketsConsommes} / {totalTickets}</p>
+            </div>
+            <div className="p-2.5 rounded-xl bg-indigo-50 text-indigo-600">
+              <Ticket className="w-5 h-5" />
             </div>
           </div>
         </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="bg-white rounded-2xl p-5 shadow-sm border border-green-200">
-          <div className="flex items-center space-x-3">
-            <div className="p-3 bg-green-100 rounded-xl">
-              <CheckCircle className="w-6 h-6 text-green-600" />
+        <div className="bg-emerald-50 rounded-2xl border border-emerald-200 p-5">
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 bg-emerald-100 rounded-xl">
+              <CheckCircle className="w-5 h-5 text-emerald-600" />
             </div>
             <div>
-              <p className="text-sm font-medium text-gray-600">Souches Actives</p>
-              <p className="text-2xl font-bold text-green-700">
+              <p className="text-xs text-emerald-700 font-medium">Souches Actives</p>
+              <p className="text-2xl font-extrabold text-emerald-800">
                 {batches.filter(b => b.status === 'active').length}
               </p>
-              <p className="text-xs text-green-500">sur {batches.length} souches</p>
+              <p className="text-[10px] text-emerald-500">sur {batches.length} souches</p>
             </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl p-5 shadow-sm border border-red-200">
-          <div className="flex items-center space-x-3">
-            <div className="p-3 bg-red-100 rounded-xl">
-              <XCircle className="w-6 h-6 text-red-600" />
+        <div className="bg-red-50 rounded-2xl border border-red-200 p-5">
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 bg-red-100 rounded-xl">
+              <XCircle className="w-5 h-5 text-red-600" />
             </div>
             <div>
-              <p className="text-sm font-medium text-gray-600">Souches Expirées</p>
-              <p className="text-2xl font-bold text-red-700">
+              <p className="text-xs text-red-700 font-medium">Souches Expirées</p>
+              <p className="text-2xl font-extrabold text-red-800">
                 {batches.filter(b => b.status === 'expired').length}
               </p>
-              <p className="text-xs text-red-500">sur {batches.length} souches</p>
+              <p className="text-[10px] text-red-500">sur {batches.length} souches</p>
             </div>
           </div>
         </div>
@@ -471,23 +452,23 @@ const TicketBatchManagement: React.FC = () => {
       </>);
       })()}
 
-      {/* Liste des souches */}
+      {/* Filtres et liste des souches */}
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100">
-        <div className="px-6 py-4 border-b border-gray-100">
-          <div className="space-y-4 mb-4">
-            <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-gray-900">Souches Créées</h2>
+        <div className="px-5 py-4 border-b border-gray-100">
+          <div className="space-y-3 mb-3">
+            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
+              <h2 className="text-lg font-bold text-gray-900">Souches Créées</h2>
               
               {/* Filtres */}
               {batches.length > 0 && (
-                <div className="flex items-center space-x-4">
+                <div className="flex flex-wrap items-center gap-3">
                   {/* Filtre par statut */}
-                  <div className="flex items-center space-x-2">
-                    <label className="text-sm text-gray-600">Statut :</label>
-                    <div className="flex rounded-lg border border-gray-300 overflow-hidden">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-gray-500 font-medium">Statut :</span>
+                    <div className="flex rounded-xl border border-gray-200 overflow-hidden">
                       <button
                         onClick={() => { setStatusFilter('all'); setBatchPage(1); }}
-                        className={`px-3 py-2 text-sm font-medium transition-colors ${
+                        className={`px-3 py-1.5 text-xs font-semibold transition-colors ${
                           statusFilter === 'all'
                             ? 'bg-orange-500 text-white'
                             : 'bg-white text-gray-600 hover:bg-gray-50'
@@ -497,27 +478,27 @@ const TicketBatchManagement: React.FC = () => {
                       </button>
                       <button
                         onClick={() => { setStatusFilter('active'); setBatchPage(1); }}
-                        className={`px-3 py-2 text-sm font-medium transition-colors border-l border-gray-300 ${
+                        className={`px-3 py-1.5 text-xs font-semibold transition-colors border-l border-gray-200 ${
                           statusFilter === 'active'
-                            ? 'bg-green-500 text-white'
+                            ? 'bg-emerald-500 text-white'
                             : 'bg-white text-gray-600 hover:bg-gray-50'
                         }`}
                       >
                         <span className="flex items-center gap-1">
-                          <CheckCircle className="w-3.5 h-3.5" />
+                          <CheckCircle className="w-3 h-3" />
                           Actives ({batches.filter(b => b.status === 'active').length})
                         </span>
                       </button>
                       <button
                         onClick={() => { setStatusFilter('expired'); setBatchPage(1); }}
-                        className={`px-3 py-2 text-sm font-medium transition-colors border-l border-gray-300 ${
+                        className={`px-3 py-1.5 text-xs font-semibold transition-colors border-l border-gray-200 ${
                           statusFilter === 'expired'
                             ? 'bg-red-500 text-white'
                             : 'bg-white text-gray-600 hover:bg-gray-50'
                         }`}
                       >
                         <span className="flex items-center gap-1">
-                          <XCircle className="w-3.5 h-3.5" />
+                          <XCircle className="w-3 h-3" />
                           Expirées ({batches.filter(b => b.status === 'expired').length})
                         </span>
                       </button>
@@ -525,12 +506,12 @@ const TicketBatchManagement: React.FC = () => {
                   </div>
 
                   {/* Filtre par période */}
-                  <div className="flex items-center space-x-2">
-                    <label className="text-sm text-gray-600">Période :</label>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-gray-500 font-medium">Période :</span>
                     <select
                       value={periodFilter}
                       onChange={(e) => { setPeriodFilter(e.target.value); setBatchPage(1); }}
-                      className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                      className="px-3 py-1.5 border border-gray-200 rounded-xl text-xs font-medium focus:ring-2 focus:ring-orange-500 focus:border-orange-300"
                     >
                       <option value="all">Toutes les périodes</option>
                       <option value="today">Aujourd'hui</option>
@@ -545,26 +526,26 @@ const TicketBatchManagement: React.FC = () => {
             
             {/* Sélection de dates personnalisées */}
             {periodFilter === 'custom' && (
-              <div className="flex items-center space-x-3 bg-orange-50 border border-orange-200 rounded-lg p-3">
-                <Calendar className="w-5 h-5 text-orange-600" />
-                <div className="flex items-center space-x-2 flex-1">
-                  <div className="flex items-center space-x-2">
-                    <label className="text-sm font-medium text-gray-700">Du :</label>
+              <div className="flex flex-wrap items-center gap-3 bg-orange-50 border border-orange-200 rounded-xl p-3">
+                <Calendar className="w-4 h-4 text-orange-600 flex-shrink-0" />
+                <div className="flex flex-wrap items-center gap-2 flex-1">
+                  <div className="flex items-center gap-1.5">
+                    <label className="text-xs font-medium text-gray-700">Du :</label>
                     <input
                       type="date"
                       value={customStartDate}
                       onChange={(e) => setCustomStartDate(e.target.value)}
-                      className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                      className="px-2.5 py-1.5 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-orange-500 focus:border-orange-300"
                     />
                   </div>
-                  <span className="text-gray-500">→</span>
-                  <div className="flex items-center space-x-2">
-                    <label className="text-sm font-medium text-gray-700">Au :</label>
+                  <span className="text-gray-400 text-xs">→</span>
+                  <div className="flex items-center gap-1.5">
+                    <label className="text-xs font-medium text-gray-700">Au :</label>
                     <input
                       type="date"
                       value={customEndDate}
                       onChange={(e) => setCustomEndDate(e.target.value)}
-                      className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                      className="px-2.5 py-1.5 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-orange-500 focus:border-orange-300"
                     />
                   </div>
                 </div>
@@ -574,7 +555,7 @@ const TicketBatchManagement: React.FC = () => {
                       setCustomStartDate('');
                       setCustomEndDate('');
                     }}
-                    className="text-sm text-orange-600 hover:text-orange-700 font-medium"
+                    className="text-xs text-orange-600 hover:text-orange-700 font-semibold"
                   >
                     Réinitialiser
                   </button>
@@ -586,18 +567,18 @@ const TicketBatchManagement: React.FC = () => {
           {/* Actions de sélection multiple */}
           {filteredBatches.length > 0 && (
             <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-4">
-                <label className="flex items-center space-x-2 cursor-pointer">
+              <div className="flex items-center gap-3">
+                <label className="flex items-center gap-2 cursor-pointer">
                   <input
                     type="checkbox"
                     checked={selectedBatches.length === filteredBatches.length && filteredBatches.length > 0}
                     onChange={handleSelectAll}
                     className="w-4 h-4 text-orange-500 border-gray-300 rounded focus:ring-orange-500"
                   />
-                  <span className="text-sm text-gray-600">Tout sélectionner</span>
+                  <span className="text-xs text-gray-600 font-medium">Tout sélectionner</span>
                 </label>
                 {selectedBatches.length > 0 && (
-                  <span className="text-sm text-gray-600">
+                  <span className="text-xs text-gray-500">
                     {selectedBatches.length} sélectionnée(s)
                   </span>
                 )}
@@ -606,9 +587,9 @@ const TicketBatchManagement: React.FC = () => {
               {selectedBatches.length > 0 && (
                 <button
                   onClick={handleBulkDelete}
-                  className="flex items-center space-x-2 px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg font-medium transition-colors"
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-red-500 hover:bg-red-600 text-white rounded-xl text-xs font-semibold transition-colors shadow-sm shadow-red-100"
                 >
-                  <Trash2 className="w-4 h-4" />
+                  <Trash2 className="w-3.5 h-3.5" />
                   <span>Supprimer ({selectedBatches.length})</span>
                 </button>
               )}
@@ -616,165 +597,166 @@ const TicketBatchManagement: React.FC = () => {
           )}
         </div>
         
-        <div className="p-6">
+        <div className="p-5">
           {batches.length === 0 ? (
-            <div className="text-center py-12">
-              <Package className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">Aucune souche</h3>
-              <p className="text-gray-600 mb-6">Créez votre première souche de tickets.</p>
+            <div className="text-center py-16">
+              <div className="w-16 h-16 bg-gray-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                <Package className="w-8 h-8 text-gray-300" />
+              </div>
+              <h3 className="text-base font-bold text-gray-900 mb-1">Aucune souche</h3>
+              <p className="text-sm text-gray-400 mb-6">Créez votre première souche de tickets</p>
               <button
                 onClick={handleCreateBatch}
-                className="bg-orange-500 hover:bg-orange-600 text-white px-6 py-3 rounded-xl font-medium transition-colors"
+                className="bg-orange-500 hover:bg-orange-600 text-white px-5 py-2.5 rounded-xl text-sm font-semibold transition-colors"
               >
                 Créer une souche
               </button>
             </div>
           ) : filteredBatches.length === 0 ? (
-            <div className="text-center py-12">
-              <Package className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">Aucune souche pour cette période</h3>
-              <p className="text-gray-600 mb-6">Aucune souche ne correspond aux critères de filtrage sélectionnés.</p>
+            <div className="text-center py-16">
+              <div className="w-16 h-16 bg-gray-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                <Package className="w-8 h-8 text-gray-300" />
+              </div>
+              <h3 className="text-base font-bold text-gray-900 mb-1">Aucune souche pour cette période</h3>
+              <p className="text-sm text-gray-400 mb-6">Aucune souche ne correspond aux critères sélectionnés</p>
               <button
                 onClick={() => setPeriodFilter('all')}
-                className="bg-orange-500 hover:bg-orange-600 text-white px-6 py-3 rounded-xl font-medium transition-colors"
+                className="bg-orange-500 hover:bg-orange-600 text-white px-5 py-2.5 rounded-xl text-sm font-semibold transition-colors"
               >
                 Afficher toutes les souches
               </button>
             </div>
           ) : (
-            <div className="space-y-3">
+            <div className="space-y-4">
               {paginatedBatches.map((batch) => (
                 <div 
                   key={batch.id} 
-                  className="group relative bg-gradient-to-br from-white to-gray-50 border-2 border-gray-100 rounded-xl p-4 hover:shadow-xl hover:border-orange-200 transition-all duration-300 hover:-translate-y-1"
+                  className="bg-white border border-gray-100 rounded-2xl p-5 hover:shadow-md hover:border-gray-200 transition-all group"
                 >
-                  {/* Badge de statut flottant */}
-                  <div className="absolute top-3 right-3 flex items-center space-x-2">
-                    <span className={`px-4 py-1.5 rounded-full text-xs font-bold shadow-sm ${getStatusColor(batch.status)}`}>
-                      {getStatusLabel(batch.status)}
-                    </span>
-                    <button
-                      onClick={() => handleDeleteBatch(batch.id)}
-                      className="p-2.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all hover:scale-110"
-                    >
-                      <Trash2 className="w-5 h-5" />
-                    </button>
-                  </div>
-
-                  {/* Header avec checkbox et badges */}
-                  <div className="flex items-start space-x-3 mb-4">
+                  {/* Header: checkbox + info + status + delete */}
+                  <div className="flex items-start gap-3 mb-4">
                     <div className="pt-0.5">
                       <input
                         type="checkbox"
                         checked={selectedBatches.includes(batch.id)}
                         onChange={() => handleSelectBatch(batch.id)}
-                        className="w-4 h-4 text-orange-500 border-gray-300 rounded-md focus:ring-2 focus:ring-orange-500 cursor-pointer transition-transform hover:scale-110"
+                        className="w-4 h-4 text-orange-500 border-gray-300 rounded focus:ring-orange-500 cursor-pointer"
                       />
                     </div>
                     
-                    <div className="flex-1">
-                      <div className="flex items-center space-x-2 mb-2">
-                        <div className="flex items-center space-x-1.5">
-                          <Package className="w-4 h-4 text-orange-500" />
-                          <h3 className="font-bold text-gray-900 text-lg">
-                            {batch.batch_number || `Souche #${batch.id.split('_')[1]}`}
-                          </h3>
-                        </div>
-                        <span className={`px-2 py-0.5 rounded-md text-xs font-bold uppercase tracking-wide ${getTypeColor(batch.type)}`}>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1.5">
+                        <Package className="w-4 h-4 text-orange-500 flex-shrink-0" />
+                        <h3 className="font-bold text-gray-900 text-sm truncate">
+                          {batch.batch_number || `Souche #${batch.id.split('_')[1]}`}
+                        </h3>
+                        <span className={`px-2 py-0.5 rounded-lg text-[10px] font-bold uppercase ${getTypeColor(batch.type)}`}>
                           {batch.type}
                         </span>
                       </div>
                       
                       {/* Métadonnées */}
-                      <div className="space-y-1">
-                        <div className="flex items-center text-xs text-gray-600">
-                          <Calendar className="w-3 h-3 mr-1.5 text-gray-400" />
-                          <span>Créée par <span className="font-semibold text-gray-900">{batch.created_by}</span> le {new Date(batch.created_at).toLocaleDateString('fr-FR')}</span>
+                      <div className="space-y-0.5">
+                        <div className="flex items-center text-xs text-gray-500">
+                          <Calendar className="w-3 h-3 mr-1.5 text-gray-400 flex-shrink-0" />
+                          <span>Créée par <span className="font-semibold text-gray-700">{batch.created_by}</span> le {new Date(batch.created_at).toLocaleDateString('fr-FR')}</span>
                         </div>
                         {batch.employee_name && (
-                          <div className="flex items-center text-xs">
-                            <Users className="w-3 h-3 mr-1.5 text-blue-500" />
-                            <span className="text-gray-600">Attribuée à</span>
-                            <span className="ml-1.5 px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded font-semibold">
+                          <div className="flex items-center text-xs text-gray-500">
+                            <Users className="w-3 h-3 mr-1.5 text-blue-500 flex-shrink-0" />
+                            <span>Attribuée à</span>
+                            <span className="ml-1 px-1.5 py-0.5 bg-blue-50 text-blue-700 rounded-md text-[10px] font-bold border border-blue-200">
                               {batch.employee_name}
                             </span>
                           </div>
                         )}
                       </div>
                     </div>
+
+                    <div className="flex items-center gap-1.5 flex-shrink-0">
+                      <span className={`px-2.5 py-1 rounded-lg text-[10px] font-bold ${getStatusColor(batch.status)}`}>
+                        {getStatusLabel(batch.status)}
+                      </span>
+                      <button
+                        onClick={() => handleDeleteBatch(batch.id)}
+                        className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-colors opacity-0 group-hover:opacity-100"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
                   </div>
 
-                  {/* Statistiques avec cartes */}
+                  {/* Statistiques mini-cartes */}
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-3">
-                    <div className="bg-white rounded-lg p-2.5 border border-gray-100 hover:border-gray-200 transition-colors">
-                      <div className="flex items-center justify-between mb-1">
-                        <p className="text-[10px] font-medium text-gray-500 uppercase tracking-wide">Total</p>
+                    <div className="bg-gray-50 rounded-xl p-3 border border-gray-100">
+                      <div className="flex items-center justify-between mb-0.5">
+                        <p className="text-[10px] font-bold text-gray-500 uppercase">Total</p>
                         <Ticket className="w-3 h-3 text-gray-400" />
                       </div>
-                      <p className="text-xl font-bold text-gray-900">{batch.total_tickets}</p>
+                      <p className="text-lg font-extrabold text-gray-900">{batch.total_tickets}</p>
                     </div>
-                    <div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-lg p-2.5 border border-orange-200">
-                      <div className="flex items-center justify-between mb-1">
-                        <p className="text-[10px] font-medium text-orange-700 uppercase tracking-wide">Consommés</p>
-                        <TrendingUp className="w-3 h-3 text-orange-500" />
+                    <div className="bg-orange-50 rounded-xl p-3 border border-orange-100">
+                      <div className="flex items-center justify-between mb-0.5">
+                        <p className="text-[10px] font-bold text-orange-600 uppercase">Consommés</p>
+                        <TrendingUp className="w-3 h-3 text-orange-400" />
                       </div>
-                      <p className="text-xl font-bold text-orange-600">{batch.used_tickets}</p>
+                      <p className="text-lg font-extrabold text-orange-600">{batch.used_tickets}</p>
                     </div>
-                    <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-lg p-2.5 border border-green-200">
-                      <div className="flex items-center justify-between mb-1">
-                        <p className="text-[10px] font-medium text-green-700 uppercase tracking-wide">Restants</p>
-                        <CheckCircle className="w-3 h-3 text-green-500" />
+                    <div className="bg-emerald-50 rounded-xl p-3 border border-emerald-100">
+                      <div className="flex items-center justify-between mb-0.5">
+                        <p className="text-[10px] font-bold text-emerald-600 uppercase">Restants</p>
+                        <CheckCircle className="w-3 h-3 text-emerald-400" />
                       </div>
-                      <p className="text-xl font-bold text-green-600">{batch.remaining_tickets}</p>
+                      <p className="text-lg font-extrabold text-emerald-600">{batch.remaining_tickets}</p>
                     </div>
-                    <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg p-2.5 border border-purple-200">
-                      <div className="flex items-center justify-between mb-1">
-                        <p className="text-[10px] font-medium text-purple-700 uppercase tracking-wide">Valeur</p>
-                        <DollarSign className="w-3 h-3 text-purple-500" />
+                    <div className="bg-purple-50 rounded-xl p-3 border border-purple-100">
+                      <div className="flex items-center justify-between mb-0.5">
+                        <p className="text-[10px] font-bold text-purple-600 uppercase">Valeur</p>
+                        <DollarSign className="w-3 h-3 text-purple-400" />
                       </div>
-                      <p className="text-xl font-bold text-purple-600">{batch.ticket_value}F</p>
+                      <p className="text-lg font-extrabold text-purple-600">{batch.ticket_value}F</p>
                     </div>
                   </div>
 
                   {/* Période de validité */}
-                  <div className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-lg p-2.5 mb-3 border border-gray-200">
+                  <div className="bg-gray-50 rounded-xl p-2.5 mb-3 border border-gray-100">
                     <div className="flex items-center justify-between text-xs">
-                      <div className="flex items-center">
-                        <Clock className="w-3 h-3 mr-1.5 text-gray-500" />
-                        <span className="text-gray-600">Du</span>
-                        <span className="mx-1.5 px-2 py-0.5 bg-white rounded-md font-semibold text-gray-900 text-xs">
+                      <div className="flex items-center gap-1.5">
+                        <Clock className="w-3 h-3 text-gray-400" />
+                        <span className="text-gray-500">Du</span>
+                        <span className="px-2 py-0.5 bg-white rounded-lg font-bold text-gray-900 border border-gray-200 text-[11px]">
                           {new Date(batch.validity_start).toLocaleDateString('fr-FR')}
                         </span>
                       </div>
-                      <span className="text-gray-400 text-sm">→</span>
-                      <div className="flex items-center">
-                        <span className="text-gray-600">Au</span>
-                        <span className="mx-1.5 px-2 py-0.5 bg-white rounded-md font-semibold text-gray-900 text-xs">
+                      <span className="text-gray-300">→</span>
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-gray-500">Au</span>
+                        <span className="px-2 py-0.5 bg-white rounded-lg font-bold text-gray-900 border border-gray-200 text-[11px]">
                           {new Date(batch.validity_end).toLocaleDateString('fr-FR')}
                         </span>
                       </div>
                     </div>
                   </div>
 
-                  {/* Barre de progression améliorée */}
-                  <div className="bg-white rounded-lg p-2.5 border border-gray-100">
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center">
-                        <TrendingUp className="w-3 h-3 mr-1.5 text-orange-500" />
-                        <span className="text-xs font-semibold text-gray-700">Consommation</span>
+                  {/* Barre de progression */}
+                  <div className="bg-gray-50 rounded-xl p-3 border border-gray-100">
+                    <div className="flex items-center justify-between mb-1.5">
+                      <div className="flex items-center gap-1.5">
+                        <TrendingUp className="w-3 h-3 text-orange-500" />
+                        <span className="text-xs font-bold text-gray-700">Consommation</span>
                       </div>
-                      <span className="text-lg font-bold text-orange-600">
+                      <span className="text-sm font-extrabold text-orange-600">
                         {Math.round((batch.used_tickets / batch.total_tickets) * 100)}%
                       </span>
                     </div>
                     <div className="relative w-full bg-gray-200 rounded-full h-2 overflow-hidden">
                       <div 
-                        className="absolute top-0 left-0 h-full bg-gradient-to-r from-orange-400 to-orange-600 rounded-full transition-all duration-500"
+                        className="absolute top-0 left-0 h-full bg-gradient-to-r from-orange-400 to-orange-500 rounded-full transition-all duration-500"
                         style={{ width: `${(batch.used_tickets / batch.total_tickets) * 100}%` }}
                       ></div>
                     </div>
-                    <p className="text-[10px] text-gray-500 mt-1 flex items-center">
-                      <CheckCircle className="w-2.5 h-2.5 mr-1" />
+                    <p className="text-[10px] text-gray-400 mt-1 flex items-center gap-1">
+                      <CheckCircle className="w-2.5 h-2.5" />
                       {batch.used_tickets} / {batch.total_tickets} tickets
                     </p>
                   </div>
@@ -793,24 +775,24 @@ const TicketBatchManagement: React.FC = () => {
 
       {/* Modal de création */}
       {showModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl max-w-2xl w-full">
-            <div className="border-b border-gray-200 px-6 py-4">
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl max-w-2xl w-full shadow-2xl border border-gray-100">
+            <div className="border-b border-gray-100 px-6 py-4 rounded-t-2xl">
               <div className="flex items-center justify-between">
-                <h2 className="text-xl font-semibold text-gray-900">Nouvelle Souche de Tickets</h2>
+                <h2 className="text-lg font-bold text-gray-900">Nouvelle Souche de Tickets</h2>
                 <button
                   onClick={() => setShowModal(false)}
-                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                  className="p-2 hover:bg-gray-100 rounded-xl transition-colors"
                 >
-                  <X className="w-5 h-5 text-gray-500" />
+                  <X className="w-4 h-4 text-gray-500" />
                 </button>
               </div>
             </div>
 
-            <form onSubmit={handleSubmit} className="p-6 space-y-6">
+            <form onSubmit={handleSubmit} className="p-6 space-y-5">
               {/* Configuration */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-xs font-medium text-gray-700 mb-1.5">
                   Configuration de tickets *
                 </label>
                 <select
@@ -828,7 +810,7 @@ const TicketBatchManagement: React.FC = () => {
                       validity_end: endDate.toISOString().split('T')[0]
                     });
                   }}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                  className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-300"
                   required
                 >
                   <option value="">Sélectionnez une configuration</option>
@@ -842,7 +824,7 @@ const TicketBatchManagement: React.FC = () => {
 
               {/* Nombre de tickets */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-xs font-medium text-gray-700 mb-1.5">
                   Nombre de tickets dans la souche *
                 </label>
                 <div className="relative">
@@ -851,20 +833,20 @@ const TicketBatchManagement: React.FC = () => {
                     type="number"
                     value={formData.total_tickets}
                     onChange={(e) => setFormData({ ...formData, total_tickets: Number(e.target.value) })}
-                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                    className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-300"
                     placeholder="20"
                     min="1"
                     max="1000"
                     required
                   />
                 </div>
-                <p className="mt-2 text-sm text-gray-500">Exemple: 20 tickets = 1 souche de 20 tickets</p>
+                <p className="mt-1.5 text-[10px] text-gray-400">Exemple: 20 tickets = 1 souche de 20 tickets</p>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* Date de début */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-xs font-medium text-gray-700 mb-1.5">
                     Date de début de validité *
                   </label>
                   <div className="relative">
@@ -885,7 +867,7 @@ const TicketBatchManagement: React.FC = () => {
                           validity_end: endDate.toISOString().split('T')[0]
                         });
                       }}
-                      className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                      className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-300"
                       required
                     />
                   </div>
@@ -893,7 +875,7 @@ const TicketBatchManagement: React.FC = () => {
 
                 {/* Date de fin */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-xs font-medium text-gray-700 mb-1.5">
                     Date de fin de validité *
                   </label>
                   <div className="relative">
@@ -904,25 +886,25 @@ const TicketBatchManagement: React.FC = () => {
                       value={formData.validity_end}
                       min={formData.validity_start}
                       onChange={(e) => setFormData({ ...formData, validity_end: e.target.value })}
-                      className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                      className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-300"
                     />
                   </div>
-                  <p className="mt-2 text-sm text-gray-500">Modifiable manuellement ou calculée automatiquement</p>
+                  <p className="mt-1.5 text-[10px] text-gray-400">Modifiable manuellement ou calculée automatiquement</p>
                 </div>
               </div>
 
               {/* Boutons d'action */}
-              <div className="flex items-center justify-end space-x-4 pt-6 border-t border-gray-200">
+              <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-100">
                 <button
                   type="button"
                   onClick={() => setShowModal(false)}
-                  className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-medium transition-colors"
+                  className="px-5 py-2.5 border border-gray-200 text-gray-700 rounded-xl text-sm font-semibold hover:bg-gray-50 transition-colors"
                 >
                   Annuler
                 </button>
                 <button
                   type="submit"
-                  className="px-6 py-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600 font-medium transition-colors flex items-center space-x-2"
+                  className="px-5 py-2.5 bg-orange-500 text-white rounded-xl text-sm font-semibold hover:bg-orange-600 transition-colors flex items-center gap-2 shadow-sm shadow-orange-100"
                 >
                   <Package className="w-4 h-4" />
                   <span>Générer la souche</span>
@@ -935,31 +917,31 @@ const TicketBatchManagement: React.FC = () => {
 
       {/* Modal de confirmation de suppression individuelle */}
       {showDeleteModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6">
-            <div className="flex items-center justify-center w-12 h-12 mx-auto mb-4 bg-red-100 rounded-full">
-              <AlertTriangle className="w-6 h-6 text-red-600" />
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl border border-gray-100">
+            <div className="flex items-center justify-center w-12 h-12 mx-auto mb-4 bg-red-50 rounded-2xl">
+              <AlertTriangle className="w-6 h-6 text-red-500" />
             </div>
-            <h3 className="text-lg font-semibold text-gray-900 text-center mb-2">
+            <h3 className="text-base font-bold text-gray-900 text-center mb-1">
               Supprimer la souche
             </h3>
-            <p className="text-gray-600 text-center mb-6">
+            <p className="text-sm text-gray-500 text-center mb-6">
               Êtes-vous sûr de vouloir supprimer cette souche de tickets ? 
-              Cette action est <strong>irréversible</strong>.
+              Cette action est <strong className="text-gray-700">irréversible</strong>.
             </p>
-            <div className="flex space-x-3">
+            <div className="flex gap-3">
               <button
                 onClick={() => {
                   setShowDeleteModal(false);
                   setBatchToDelete(null);
                 }}
-                className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-medium transition-colors"
+                className="flex-1 px-4 py-2.5 border border-gray-200 text-gray-700 rounded-xl text-sm font-semibold hover:bg-gray-50 transition-colors"
               >
                 Annuler
               </button>
               <button
                 onClick={handleConfirmDelete}
-                className="flex-1 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 font-medium transition-colors"
+                className="flex-1 px-4 py-2.5 bg-red-500 text-white rounded-xl text-sm font-semibold hover:bg-red-600 transition-colors shadow-sm shadow-red-100"
               >
                 Supprimer
               </button>
@@ -970,28 +952,28 @@ const TicketBatchManagement: React.FC = () => {
 
       {/* Modal de confirmation de suppression multiple */}
       {showBulkDeleteModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6">
-            <div className="flex items-center justify-center w-12 h-12 mx-auto mb-4 bg-red-100 rounded-full">
-              <AlertTriangle className="w-6 h-6 text-red-600" />
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl border border-gray-100">
+            <div className="flex items-center justify-center w-12 h-12 mx-auto mb-4 bg-red-50 rounded-2xl">
+              <AlertTriangle className="w-6 h-6 text-red-500" />
             </div>
-            <h3 className="text-lg font-semibold text-gray-900 text-center mb-2">
+            <h3 className="text-base font-bold text-gray-900 text-center mb-1">
               Supprimer {selectedBatches.length} souche(s)
             </h3>
-            <p className="text-gray-600 text-center mb-6">
-              Êtes-vous sûr de vouloir supprimer <strong>{selectedBatches.length} souche(s)</strong> de tickets ? 
-              Cette action est <strong>irréversible</strong> et supprimera toutes les souches sélectionnées.
+            <p className="text-sm text-gray-500 text-center mb-6">
+              Êtes-vous sûr de vouloir supprimer <strong className="text-gray-700">{selectedBatches.length} souche(s)</strong> de tickets ? 
+              Cette action est <strong className="text-gray-700">irréversible</strong>.
             </p>
-            <div className="flex space-x-3">
+            <div className="flex gap-3">
               <button
                 onClick={() => setShowBulkDeleteModal(false)}
-                className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-medium transition-colors"
+                className="flex-1 px-4 py-2.5 border border-gray-200 text-gray-700 rounded-xl text-sm font-semibold hover:bg-gray-50 transition-colors"
               >
                 Annuler
               </button>
               <button
                 onClick={handleConfirmBulkDelete}
-                className="flex-1 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 font-medium transition-colors"
+                className="flex-1 px-4 py-2.5 bg-red-500 text-white rounded-xl text-sm font-semibold hover:bg-red-600 transition-colors shadow-sm shadow-red-100"
               >
                 Supprimer tout
               </button>

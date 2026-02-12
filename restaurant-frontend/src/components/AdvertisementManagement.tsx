@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import {
   Image, Video, Plus, Trash2, Eye, EyeOff, X, Pencil,
   AlertTriangle, CheckCircle, XCircle, Upload,
-  GripVertical, ExternalLink, Calendar, Clock
+  GripVertical, ExternalLink, Calendar, Clock, CalendarDays
 } from 'lucide-react';
 
 interface Advertisement {
@@ -184,103 +184,115 @@ const AdvertisementManagement: React.FC = () => {
   const imageCount = ads.filter(a => a.media_type === 'image').length;
   const videoCount = ads.filter(a => a.media_type === 'video').length;
 
+  const dateStr = new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
+
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-96">
+      <div className="flex items-center justify-center h-96">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto mb-4"></div>
-          <p className="text-gray-600">Chargement des publicités...</p>
+          <div className="relative w-16 h-16 mx-auto mb-4">
+            <div className="absolute inset-0 rounded-full border-4 border-orange-100"></div>
+            <div className="absolute inset-0 rounded-full border-4 border-orange-500 border-t-transparent animate-spin"></div>
+          </div>
+          <p className="text-gray-500 font-medium">Chargement des publicités...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
+    <div className="max-w-7xl mx-auto space-y-6">
       {/* Notification */}
       {notification && (
-        <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[60] animate-slide-down">
-          <div className={`flex items-center space-x-3 px-6 py-4 rounded-2xl shadow-2xl border ${
-            notification.type === 'success'
-              ? 'bg-green-50 border-green-200 text-green-800'
-              : 'bg-red-50 border-red-200 text-red-800'
+        <div className="fixed top-4 right-4 z-[60]">
+          <div className={`flex items-center gap-3 px-4 py-3 rounded-2xl shadow-lg border ${
+            notification.type === 'success' ? 'bg-emerald-50 border-emerald-200' : 'bg-red-50 border-red-200'
           }`}>
-            {notification.type === 'success' ? <CheckCircle className="w-5 h-5" /> : <XCircle className="w-5 h-5" />}
-            <div>
-              <p className="font-semibold text-sm">{notification.title}</p>
-              <p className="text-sm opacity-80">{notification.message}</p>
+            <div className={`p-1.5 rounded-lg ${notification.type === 'success' ? 'bg-emerald-100' : 'bg-red-100'}`}>
+              {notification.type === 'success'
+                ? <CheckCircle className="w-4 h-4 text-emerald-600" />
+                : <XCircle className="w-4 h-4 text-red-600" />}
             </div>
+            <div>
+              <p className={`text-xs font-bold ${notification.type === 'success' ? 'text-emerald-800' : 'text-red-800'}`}>{notification.title}</p>
+              <p className={`text-xs ${notification.type === 'success' ? 'text-emerald-600' : 'text-red-600'}`}>{notification.message}</p>
+            </div>
+            <button onClick={() => setNotification(null)} className="p-1 hover:bg-white/50 rounded-lg ml-2">
+              <X className="w-3.5 h-3.5 text-gray-400" />
+            </button>
           </div>
         </div>
       )}
 
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Gestion des Publicités</h1>
-          <p className="text-gray-500 mt-1">Gérez les bannières publicitaires visibles par tous les employés</p>
+          <p className="text-sm text-gray-400 mt-0.5">Gérez les bannières publicitaires visibles par tous les employés</p>
         </div>
-        <button
-          onClick={() => { resetForm(); setShowModal(true); }}
-          className="flex items-center space-x-2 bg-orange-500 hover:bg-orange-600 text-white px-5 py-2.5 rounded-xl font-medium transition-colors shadow-sm"
-        >
-          <Plus className="w-5 h-5" />
-          <span>Nouvelle Publicité</span>
-        </button>
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 bg-white border border-gray-200 rounded-xl px-4 py-2 shadow-sm">
+            <CalendarDays className="w-4 h-4 text-gray-400" />
+            <span className="text-sm text-gray-600 font-medium">{dateStr}</span>
+          </div>
+          <button
+            onClick={() => { resetForm(); setShowModal(true); }}
+            className="flex items-center gap-2 px-4 py-2.5 bg-orange-500 text-white rounded-xl text-sm font-semibold hover:bg-orange-600 transition-colors shadow-sm shadow-orange-100"
+          >
+            <Plus className="w-4 h-4" />
+            Nouvelle Publicité
+          </button>
+        </div>
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm">
-          <p className="text-xs text-gray-500 mb-1">Total</p>
-          <p className="text-2xl font-bold text-gray-900">{ads.length}</p>
-        </div>
-        <div className="bg-white rounded-xl p-4 border border-green-100 shadow-sm">
-          <p className="text-xs text-green-600 mb-1">Actives</p>
-          <p className="text-2xl font-bold text-green-600">{activeCount}</p>
-        </div>
-        <div className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm">
-          <div className="flex items-center space-x-3">
-            <div>
-              <p className="text-xs text-gray-500 mb-1">Images</p>
-              <p className="text-2xl font-bold text-blue-600">{imageCount}</p>
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {[
+          { label: 'Total', value: ads.length, icon: Image, color: 'bg-gray-50 text-gray-600' },
+          { label: 'Actives', value: activeCount, icon: CheckCircle, color: 'bg-emerald-50 text-emerald-600' },
+          { label: 'Images', value: imageCount, icon: Image, color: 'bg-blue-50 text-blue-600' },
+          { label: 'Vidéos', value: videoCount, icon: Video, color: 'bg-purple-50 text-purple-600' },
+        ].map((s, i) => (
+          <div key={i} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 hover:shadow-md transition-shadow group">
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="text-xs text-gray-500 font-medium">{s.label}</p>
+                <p className="text-3xl font-extrabold text-gray-900 mt-1">{s.value}</p>
+              </div>
+              <div className={`p-2.5 rounded-xl ${s.color} group-hover:scale-110 transition-transform`}>
+                <s.icon className="w-5 h-5" />
+              </div>
             </div>
           </div>
-        </div>
-        <div className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm">
-          <div className="flex items-center space-x-3">
-            <div>
-              <p className="text-xs text-gray-500 mb-1">Vidéos</p>
-              <p className="text-2xl font-bold text-purple-600">{videoCount}</p>
-            </div>
-          </div>
-        </div>
+        ))}
       </div>
 
-      {/* Liste des publicités */}
+      {/* Ad Cards */}
       {ads.length === 0 ? (
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-12 text-center">
-          <Image className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">Aucune publicité</h3>
-          <p className="text-gray-500 mb-4">Créez votre première publicité pour la diffuser aux employés</p>
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-16 text-center">
+          <div className="w-16 h-16 bg-gray-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <Image className="w-8 h-8 text-gray-300" />
+          </div>
+          <h3 className="text-base font-bold text-gray-900 mb-1">Aucune publicité</h3>
+          <p className="text-sm text-gray-400 mb-5">Créez votre première publicité pour la diffuser aux employés</p>
           <button
             onClick={() => { resetForm(); setShowModal(true); }}
-            className="inline-flex items-center space-x-2 bg-orange-500 hover:bg-orange-600 text-white px-5 py-2.5 rounded-xl font-medium transition-colors"
+            className="inline-flex items-center gap-2 bg-orange-500 hover:bg-orange-600 text-white px-5 py-2.5 rounded-xl text-sm font-semibold transition-colors shadow-sm shadow-orange-100"
           >
             <Plus className="w-4 h-4" />
-            <span>Créer une publicité</span>
+            Créer une publicité
           </button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
           {ads.map((ad) => (
             <div
               key={ad.id}
-              className={`bg-white rounded-2xl shadow-sm border-2 overflow-hidden transition-all hover:shadow-lg ${
-                ad.status === 'active' ? 'border-green-200' : 'border-gray-200 opacity-75'
+              className={`bg-white rounded-2xl border overflow-hidden transition-all hover:shadow-lg group/card ${
+                ad.status === 'active' ? 'border-gray-100 shadow-sm' : 'border-gray-200 opacity-70'
               }`}
             >
-              {/* Media preview */}
+              {/* Media */}
               <div className="relative aspect-video bg-gray-100 cursor-pointer group" onClick={() => setPreviewAd(ad)}>
                 {ad.media_type === 'image' ? (
                   <img src={ad.media_url} alt={ad.title} className="w-full h-full object-cover" />
@@ -288,29 +300,30 @@ const AdvertisementManagement: React.FC = () => {
                   <video src={ad.media_url} className="w-full h-full object-cover" muted />
                 )}
                 <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center">
-                  <Eye className="w-8 h-8 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                  <Eye className="w-7 h-7 text-white opacity-0 group-hover:opacity-100 transition-opacity drop-shadow-lg" />
                 </div>
                 {/* Type badge */}
-                <div className="absolute top-2 left-2">
-                  <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                    ad.media_type === 'image' ? 'bg-blue-100 text-blue-700' : 'bg-purple-100 text-purple-700'
+                <div className="absolute top-2.5 left-2.5">
+                  <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-bold border backdrop-blur-sm ${
+                    ad.media_type === 'image' ? 'bg-blue-50/90 border-blue-200 text-blue-700' : 'bg-purple-50/90 border-purple-200 text-purple-700'
                   }`}>
-                    {ad.media_type === 'image' ? <Image className="w-3 h-3 mr-1" /> : <Video className="w-3 h-3 mr-1" />}
+                    {ad.media_type === 'image' ? <Image className="w-3 h-3" /> : <Video className="w-3 h-3" />}
                     {ad.media_type === 'image' ? 'Image' : 'Vidéo'}
                   </span>
                 </div>
                 {/* Status badge */}
-                <div className="absolute top-2 right-2">
-                  <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-bold ${
-                    ad.status === 'active' ? 'bg-green-500 text-white' : 'bg-gray-400 text-white'
+                <div className="absolute top-2.5 right-2.5">
+                  <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-bold ${
+                    ad.status === 'active' ? 'bg-emerald-500 text-white' : 'bg-gray-500 text-white'
                   }`}>
+                    <span className={`w-1.5 h-1.5 rounded-full ${ad.status === 'active' ? 'bg-white' : 'bg-gray-300'}`}></span>
                     {ad.status === 'active' ? 'Active' : 'Inactive'}
                   </span>
                 </div>
                 {/* Order badge */}
-                <div className="absolute bottom-2 left-2">
-                  <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-black/50 text-white">
-                    <GripVertical className="w-3 h-3 mr-1" />
+                <div className="absolute bottom-2.5 left-2.5">
+                  <span className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-bold bg-black/50 text-white backdrop-blur-sm">
+                    <GripVertical className="w-3 h-3" />
                     Ordre: {ad.display_order}
                   </span>
                 </div>
@@ -318,23 +331,22 @@ const AdvertisementManagement: React.FC = () => {
 
               {/* Info */}
               <div className="p-4">
-                <h3 className="font-semibold text-gray-900 text-lg mb-1 truncate">{ad.title}</h3>
+                <h3 className="font-bold text-gray-900 text-sm mb-0.5 truncate">{ad.title}</h3>
                 {ad.description && (
-                  <p className="text-sm text-gray-500 mb-3 line-clamp-2">{ad.description}</p>
+                  <p className="text-xs text-gray-400 mb-2.5 line-clamp-2">{ad.description}</p>
                 )}
 
-                {/* Dates */}
                 {(ad.start_date || ad.end_date) && (
-                  <div className="flex items-center text-xs text-gray-400 mb-3 space-x-3">
+                  <div className="flex items-center flex-wrap gap-2 text-[10px] text-gray-400 mb-2.5">
                     {ad.start_date && (
-                      <span className="flex items-center">
-                        <Calendar className="w-3 h-3 mr-1" />
+                      <span className="flex items-center gap-1 bg-gray-50 px-2 py-1 rounded-lg">
+                        <Calendar className="w-3 h-3" />
                         Début: {new Date(ad.start_date).toLocaleDateString('fr-FR')}
                       </span>
                     )}
                     {ad.end_date && (
-                      <span className="flex items-center">
-                        <Clock className="w-3 h-3 mr-1" />
+                      <span className="flex items-center gap-1 bg-gray-50 px-2 py-1 rounded-lg">
+                        <Clock className="w-3 h-3" />
                         Fin: {new Date(ad.end_date).toLocaleDateString('fr-FR')}
                       </span>
                     )}
@@ -342,39 +354,37 @@ const AdvertisementManagement: React.FC = () => {
                 )}
 
                 {ad.link_url && (
-                  <a href={ad.link_url} target="_blank" rel="noreferrer" className="inline-flex items-center text-xs text-orange-500 hover:text-orange-600 mb-3">
-                    <ExternalLink className="w-3 h-3 mr-1" />
+                  <a href={ad.link_url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-[10px] text-orange-500 hover:text-orange-600 font-medium mb-2.5">
+                    <ExternalLink className="w-3 h-3" />
                     Lien externe
                   </a>
                 )}
 
                 {/* Actions */}
-                <div className="flex items-center justify-between pt-3 border-t border-gray-100">
+                <div className="flex items-center justify-between pt-3 border-t border-gray-50">
                   <button
                     onClick={() => handleToggleStatus(ad.id)}
-                    className={`inline-flex items-center px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                    className={`inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-[10px] font-semibold border transition-colors ${
                       ad.status === 'active'
-                        ? 'bg-yellow-50 text-yellow-700 hover:bg-yellow-100'
-                        : 'bg-green-50 text-green-700 hover:bg-green-100'
+                        ? 'bg-amber-50 border-amber-200 text-amber-700 hover:bg-amber-100'
+                        : 'bg-emerald-50 border-emerald-200 text-emerald-700 hover:bg-emerald-100'
                     }`}
                   >
-                    {ad.status === 'active' ? <EyeOff className="w-3 h-3 mr-1" /> : <Eye className="w-3 h-3 mr-1" />}
+                    {ad.status === 'active' ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
                     {ad.status === 'active' ? 'Désactiver' : 'Activer'}
                   </button>
-                  <div className="flex items-center space-x-2">
+                  <div className="flex items-center gap-1.5">
                     <button
                       onClick={() => handleEditAd(ad)}
-                      className="inline-flex items-center px-3 py-1.5 rounded-lg text-xs font-medium bg-orange-50 text-orange-600 hover:bg-orange-100 transition-colors"
+                      className="p-2 bg-blue-50 text-blue-600 rounded-xl hover:bg-blue-100 border border-blue-200 transition-colors"
                     >
-                      <Pencil className="w-3 h-3 mr-1" />
-                      Éditer
+                      <Pencil className="w-3.5 h-3.5" />
                     </button>
                     <button
                       onClick={() => { setAdToDelete(ad.id); setShowDeleteModal(true); }}
-                      className="inline-flex items-center px-3 py-1.5 rounded-lg text-xs font-medium bg-red-50 text-red-600 hover:bg-red-100 transition-colors"
+                      className="p-2 bg-red-50 text-red-600 rounded-xl hover:bg-red-100 border border-red-200 transition-colors"
                     >
-                      <Trash2 className="w-3 h-3 mr-1" />
-                      Supprimer
+                      <Trash2 className="w-3.5 h-3.5" />
                     </button>
                   </div>
                 </div>
@@ -384,163 +394,125 @@ const AdvertisementManagement: React.FC = () => {
         </div>
       )}
 
-      {/* Modal Création */}
+      {/* Create/Edit Modal */}
       {showModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl max-w-xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="border-b border-gray-200 px-6 py-4">
-              <div className="flex items-center justify-between">
-                <h2 className="text-xl font-semibold text-gray-900">{editingAd ? 'Modifier la Publicité' : 'Nouvelle Publicité'}</h2>
-                <button onClick={() => { setShowModal(false); resetForm(); }} className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
-                  <X className="w-5 h-5 text-gray-500" />
-                </button>
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={() => { setShowModal(false); resetForm(); }}>
+          <div className="bg-white rounded-2xl shadow-2xl max-w-xl w-full max-h-[90vh] overflow-hidden" onClick={e => e.stopPropagation()}>
+            <div className="bg-gradient-to-r from-orange-500 to-orange-600 p-5 text-white">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
+                  {editingAd ? <Pencil className="w-5 h-5" /> : <Plus className="w-5 h-5" />}
+                </div>
+                <div>
+                  <h2 className="text-lg font-bold">{editingAd ? 'Modifier la Publicité' : 'Nouvelle Publicité'}</h2>
+                  <p className="text-sm text-orange-100">Remplissez les informations de la publicité</p>
+                </div>
               </div>
             </div>
-            <form onSubmit={handleSubmit} className="p-6 space-y-5">
-              {/* Titre */}
+
+            <form onSubmit={handleSubmit} className="p-5 space-y-4 overflow-y-auto max-h-[calc(90vh-140px)]">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Titre *</label>
-                <input
-                  type="text"
-                  value={formData.title}
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Titre *</label>
+                <input type="text" value={formData.title} required
                   onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                  placeholder="Ex: Promotion du mois"
-                  required
-                />
+                  className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-300"
+                  placeholder="Ex: Promotion du mois" />
               </div>
 
-              {/* Description */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
-                <textarea
-                  value={formData.description}
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Description</label>
+                <textarea value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                  rows={2}
-                  placeholder="Description optionnelle"
-                />
+                  className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-300"
+                  rows={2} placeholder="Description optionnelle" />
               </div>
 
-              {/* Upload média */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">{editingAd ? 'Média (laisser vide pour garder l\'actuel)' : 'Média (Image ou Vidéo) *'}</label>
-                <div className="border-2 border-dashed border-gray-300 rounded-xl p-6 text-center hover:border-orange-400 transition-colors">
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                  {editingAd ? 'Média (laisser vide pour garder l\'actuel)' : 'Média (Image ou Vidéo) *'}
+                </label>
+                <div className="border-2 border-dashed border-gray-200 rounded-xl p-5 text-center hover:border-orange-300 transition-colors">
                   {mediaPreview ? (
                     <div className="space-y-3">
                       {(mediaFile?.type.startsWith('video')) || (!mediaFile && editingAd?.media_type === 'video') ? (
-                        <video src={mediaPreview} className="max-h-48 mx-auto rounded-lg" controls />
+                        <video src={mediaPreview} className="max-h-40 mx-auto rounded-xl" controls />
                       ) : (
-                        <img src={mediaPreview} alt="Preview" className="max-h-48 mx-auto rounded-lg object-cover" />
+                        <img src={mediaPreview} alt="Preview" className="max-h-40 mx-auto rounded-xl object-cover" />
                       )}
-                      <button
-                        type="button"
+                      <button type="button"
                         onClick={() => { setMediaFile(null); setMediaPreview(null); }}
-                        className="text-sm text-red-500 hover:text-red-700"
-                      >
-                        {editingAd && !mediaFile ? 'Changer le média' : 'Supprimer et choisir un autre fichier'}
+                        className="text-xs text-red-500 hover:text-red-700 font-medium">
+                        {editingAd && !mediaFile ? 'Changer le média' : 'Supprimer et choisir un autre'}
                       </button>
                     </div>
                   ) : (
                     <label className="cursor-pointer block">
-                      <Upload className="w-10 h-10 text-gray-400 mx-auto mb-2" />
-                      <p className="text-sm text-gray-600 font-medium">Cliquez pour uploader</p>
-                      <p className="text-xs text-gray-400 mt-1">JPG, PNG, GIF, WebP, MP4, WebM, MOV (max 50 Mo)</p>
-                      <p className="text-xs text-orange-500 mt-1 font-medium">Taille recommandée : 1200 × 400 px pour un rendu optimal</p>
-                      <input
-                        type="file"
+                      <div className="w-10 h-10 bg-gray-50 rounded-xl flex items-center justify-center mx-auto mb-2">
+                        <Upload className="w-5 h-5 text-gray-400" />
+                      </div>
+                      <p className="text-xs text-gray-600 font-medium">Cliquez pour uploader</p>
+                      <p className="text-[10px] text-gray-400 mt-1">JPG, PNG, GIF, WebP, MP4, WebM, MOV (max 50 Mo)</p>
+                      <p className="text-[10px] text-orange-500 mt-1 font-medium">Taille recommandée : 1200 × 400 px</p>
+                      <input type="file"
                         accept="image/jpeg,image/png,image/gif,image/webp,video/mp4,video/webm,video/quicktime"
-                        onChange={handleFileChange}
-                        className="hidden"
-                      />
+                        onChange={handleFileChange} className="hidden" />
                     </label>
                   )}
                 </div>
               </div>
 
-              {/* Lien URL */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Lien (optionnel)</label>
-                <input
-                  type="url"
-                  value={formData.link_url}
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Lien (optionnel)</label>
+                <input type="url" value={formData.link_url}
                   onChange={(e) => setFormData({ ...formData, link_url: e.target.value })}
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                  placeholder="https://example.com"
-                />
+                  className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-300"
+                  placeholder="https://example.com" />
               </div>
 
-              {/* Ordre + Statut */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Ordre d'affichage</label>
-                  <input
-                    type="number"
-                    min={0}
-                    value={formData.display_order}
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Ordre d'affichage</label>
+                  <input type="number" min={0} value={formData.display_order}
                     onChange={(e) => setFormData({ ...formData, display_order: parseInt(e.target.value) || 0 })}
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                  />
+                    className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-300" />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Statut</label>
-                  <select
-                    value={formData.status}
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Statut</label>
+                  <select value={formData.status}
                     onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                  >
+                    className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-300">
                     <option value="active">Active</option>
                     <option value="inactive">Inactive</option>
                   </select>
                 </div>
               </div>
 
-              {/* Dates */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Date de début</label>
-                  <input
-                    type="date"
-                    value={formData.start_date}
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Date de début</label>
+                  <input type="date" value={formData.start_date}
                     onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                  />
+                    className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-300" />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Date de fin</label>
-                  <input
-                    type="date"
-                    value={formData.end_date}
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Date de fin</label>
+                  <input type="date" value={formData.end_date}
                     onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                  />
+                    className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-300" />
                 </div>
               </div>
 
-              {/* Submit */}
-              <div className="flex justify-end space-x-3 pt-2">
-                <button
-                  type="button"
-                  onClick={() => { setShowModal(false); resetForm(); }}
-                  className="px-5 py-2.5 border border-gray-300 rounded-xl text-gray-700 hover:bg-gray-50 transition-colors font-medium"
-                >
+              <div className="flex gap-3 pt-4 border-t border-gray-100">
+                <button type="button" onClick={() => { setShowModal(false); resetForm(); }}
+                  className="flex-1 px-4 py-2.5 border border-gray-200 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">
                   Annuler
                 </button>
-                <button
-                  type="submit"
-                  disabled={submitting}
-                  className="px-5 py-2.5 bg-orange-500 text-white rounded-xl hover:bg-orange-600 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
-                >
+                <button type="submit" disabled={submitting}
+                  className="flex-1 px-4 py-2.5 bg-orange-500 text-white rounded-xl text-sm font-medium hover:bg-orange-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
                   {submitting ? (
-                    <>
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                      <span>Envoi en cours...</span>
-                    </>
+                    <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div> Envoi...</>
                   ) : (
-                    <>
-                      <Upload className="w-4 h-4" />
-                      <span>{editingAd ? 'Mettre à jour' : 'Publier'}</span>
-                    </>
+                    <><Upload className="w-4 h-4" /> {editingAd ? 'Mettre à jour' : 'Publier'}</>
                   )}
                 </button>
               </div>
@@ -549,25 +521,30 @@ const AdvertisementManagement: React.FC = () => {
         </div>
       )}
 
-      {/* Modal suppression */}
+      {/* Delete Modal */}
       {showDeleteModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6">
-            <div className="text-center">
-              <AlertTriangle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Supprimer cette publicité ?</h3>
-              <p className="text-gray-500 mb-6">Cette action est irréversible. Le fichier média sera également supprimé.</p>
-              <div className="flex justify-center space-x-3">
-                <button
-                  onClick={() => { setShowDeleteModal(false); setAdToDelete(null); }}
-                  className="px-5 py-2.5 border border-gray-300 rounded-xl text-gray-700 hover:bg-gray-50 font-medium"
-                >
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={() => { setShowDeleteModal(false); setAdToDelete(null); }}>
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden" onClick={e => e.stopPropagation()}>
+            <div className="bg-gradient-to-r from-red-500 to-red-600 p-5 text-white">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
+                  <Trash2 className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold">Supprimer la publicité</h3>
+                  <p className="text-sm text-red-100">Cette action est irréversible</p>
+                </div>
+              </div>
+            </div>
+            <div className="p-5">
+              <p className="text-sm text-gray-600 mb-5">Le fichier média sera également supprimé définitivement.</p>
+              <div className="flex gap-3">
+                <button onClick={() => { setShowDeleteModal(false); setAdToDelete(null); }}
+                  className="flex-1 px-4 py-2.5 border border-gray-200 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">
                   Annuler
                 </button>
-                <button
-                  onClick={handleDelete}
-                  className="px-5 py-2.5 bg-red-500 text-white rounded-xl hover:bg-red-600 font-medium"
-                >
+                <button onClick={handleDelete}
+                  className="flex-1 px-4 py-2.5 bg-red-600 text-white rounded-xl text-sm font-medium hover:bg-red-700 transition-colors">
                   Supprimer
                 </button>
               </div>
@@ -576,23 +553,21 @@ const AdvertisementManagement: React.FC = () => {
         </div>
       )}
 
-      {/* Modal preview */}
+      {/* Preview Modal */}
       {previewAd && (
-        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4" onClick={() => setPreviewAd(null)}>
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={() => setPreviewAd(null)}>
           <div className="relative max-w-4xl w-full" onClick={(e) => e.stopPropagation()}>
-            <button
-              onClick={() => setPreviewAd(null)}
-              className="absolute -top-12 right-0 p-2 text-white hover:text-gray-300"
-            >
-              <X className="w-8 h-8" />
+            <button onClick={() => setPreviewAd(null)}
+              className="absolute -top-12 right-0 p-2 text-white/70 hover:text-white transition-colors">
+              <X className="w-7 h-7" />
             </button>
             {previewAd.media_type === 'image' ? (
               <img src={previewAd.media_url} alt={previewAd.title} className="w-full rounded-2xl max-h-[80vh] object-contain" />
             ) : (
               <video src={previewAd.media_url} className="w-full rounded-2xl max-h-[80vh]" controls autoPlay />
             )}
-            <div className="mt-3 text-center">
-              <h3 className="text-white font-semibold text-lg">{previewAd.title}</h3>
+            <div className="mt-4 text-center">
+              <h3 className="text-white font-bold text-lg">{previewAd.title}</h3>
               {previewAd.description && <p className="text-gray-300 text-sm mt-1">{previewAd.description}</p>}
             </div>
           </div>

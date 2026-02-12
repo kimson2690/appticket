@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { TrendingUp, Calendar, Building2, Users, ShoppingCart, Download, Filter, X, CheckCircle, Clock, XCircle } from 'lucide-react';
+import { TrendingUp, Building2, Users, ShoppingCart, Download, Filter, X, CheckCircle, Clock, XCircle, CalendarDays, ChevronDown } from 'lucide-react';
 import { apiService } from '../services/api';
 
 interface CompanyOrder {
@@ -161,39 +161,19 @@ const RestaurantReporting: React.FC = () => {
 
   const exportToCSV = () => {
     const data = activeView === 'companies' ? companyOrders : employeeOrders;
-    const headers = activeView === 'companies' 
+    const csvHeaders = activeView === 'companies' 
       ? ['Entreprise', 'Total Commandes', 'Validées', 'En Attente', 'Rejetées', 'Montant Total', 'Employés']
       : ['Employé', 'Email', 'Total Commandes', 'Validées', 'En Attente', 'Rejetées', 'Montant Total'];
 
     const rows = data.map((item: any) => {
       if (activeView === 'companies') {
-        return [
-          item.company_name,
-          item.total_orders,
-          item.confirmed_orders,
-          item.pending_orders,
-          item.rejected_orders,
-          item.total_amount,
-          item.employees_count
-        ];
+        return [item.company_name, item.total_orders, item.confirmed_orders, item.pending_orders, item.rejected_orders, item.total_amount, item.employees_count];
       } else {
-        return [
-          item.employee_name,
-          item.employee_email,
-          item.total_orders,
-          item.confirmed_orders,
-          item.pending_orders,
-          item.rejected_orders,
-          item.total_amount
-        ];
+        return [item.employee_name, item.employee_email, item.total_orders, item.confirmed_orders, item.pending_orders, item.rejected_orders, item.total_amount];
       }
     });
 
-    const csvContent = [
-      headers.join(','),
-      ...rows.map(row => row.join(','))
-    ].join('\n');
-
+    const csvContent = [csvHeaders.join(','), ...rows.map(row => row.join(','))].join('\n');
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
     const url = URL.createObjectURL(blob);
@@ -205,218 +185,165 @@ const RestaurantReporting: React.FC = () => {
     document.body.removeChild(link);
   };
 
+  const dateStr = new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
+
   return (
-    <div className="p-6 space-y-6">
+    <div className="max-w-7xl mx-auto space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Rapports de Commandes</h1>
-          <p className="text-gray-600 mt-1">Analysez les commandes reçues par entreprise</p>
+          <h1 className="text-2xl font-bold text-gray-900">Rapports de Commandes</h1>
+          <p className="text-sm text-gray-400 mt-0.5">Analysez les commandes reçues par entreprise</p>
         </div>
-        <button
-          onClick={exportToCSV}
-          className="flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors"
-        >
-          <Download className="w-4 h-4" />
-          Exporter CSV
-        </button>
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 bg-white border border-gray-200 rounded-xl px-4 py-2 shadow-sm">
+            <CalendarDays className="w-4 h-4 text-gray-400" />
+            <span className="text-sm text-gray-600 font-medium">{dateStr}</span>
+          </div>
+          <button
+            onClick={exportToCSV}
+            className="flex items-center gap-2 px-4 py-2.5 bg-orange-500 text-white rounded-xl text-sm font-semibold hover:bg-orange-600 transition-colors shadow-sm shadow-orange-100"
+          >
+            <Download className="w-4 h-4" />
+            Exporter CSV
+          </button>
+        </div>
       </div>
 
       {/* Summary Cards */}
       {summary && activeView === 'companies' && (
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Total Commandes</p>
-                <p className="text-2xl font-bold text-gray-900 mt-1">
-                  {summary.total_orders}
-                </p>
-              </div>
-              <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                <ShoppingCart className="w-6 h-6 text-blue-600" />
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Validées</p>
-                <p className="text-2xl font-bold text-green-600 mt-1">
-                  {summary.confirmed_orders}
-                </p>
-              </div>
-              <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-                <CheckCircle className="w-6 h-6 text-green-600" />
+        <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
+          {[
+            { label: 'Total Commandes', value: summary.total_orders, icon: ShoppingCart, color: 'bg-blue-50 text-blue-600' },
+            { label: 'Validées', value: summary.confirmed_orders, icon: CheckCircle, color: 'bg-emerald-50 text-emerald-600' },
+            { label: 'En Attente', value: summary.pending_orders, icon: Clock, color: 'bg-amber-50 text-amber-600' },
+            { label: 'Rejetées', value: summary.rejected_orders, icon: XCircle, color: 'bg-red-50 text-red-600' },
+            { label: "Chiffre d'Affaires", value: formatCurrency(summary.total_amount), icon: TrendingUp, color: 'bg-orange-50 text-orange-600', isText: true },
+          ].map((s, i) => (
+            <div key={i} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 hover:shadow-md transition-shadow group">
+              <div className="flex items-start justify-between">
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs text-gray-500 font-medium">{s.label}</p>
+                  <p className={`mt-1 font-extrabold ${(s as any).isText ? 'text-xl text-orange-600' : 'text-3xl text-gray-900'}`}>
+                    {s.value}
+                  </p>
+                </div>
+                <div className={`p-2.5 rounded-xl ${s.color} group-hover:scale-110 transition-transform flex-shrink-0`}>
+                  <s.icon className="w-5 h-5" />
+                </div>
               </div>
             </div>
-          </div>
-
-          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">En Attente</p>
-                <p className="text-2xl font-bold text-yellow-600 mt-1">
-                  {summary.pending_orders}
-                </p>
-              </div>
-              <div className="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center">
-                <Clock className="w-6 h-6 text-yellow-600" />
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Rejetées</p>
-                <p className="text-2xl font-bold text-red-600 mt-1">
-                  {summary.rejected_orders}
-                </p>
-              </div>
-              <div className="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center">
-                <XCircle className="w-6 h-6 text-red-600" />
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Chiffre d'Affaires</p>
-                <p className="text-2xl font-bold text-orange-600 mt-1">
-                  {formatCurrency(summary.total_amount)}
-                </p>
-              </div>
-              <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">
-                <TrendingUp className="w-6 h-6 text-orange-600" />
-              </div>
-            </div>
-          </div>
+          ))}
         </div>
       )}
 
-      {/* Filters and View Toggle */}
-      <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-200">
-        <div className="flex items-center justify-between flex-wrap gap-4">
-          {/* View Toggle */}
-          <div className="flex items-center gap-2 bg-gray-100 rounded-lg p-1">
-            <button
-              onClick={() => setActiveView('companies')}
-              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                activeView === 'companies'
-                  ? 'bg-white text-orange-600 shadow-sm'
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              <Building2 className="w-4 h-4 inline mr-2" />
-              Par Entreprise
-            </button>
-            <button
-              onClick={() => setActiveView('employees')}
-              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                activeView === 'employees'
-                  ? 'bg-white text-orange-600 shadow-sm'
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              <Users className="w-4 h-4 inline mr-2" />
-              Par Employé
-            </button>
-          </div>
-
-          {/* Filter Button */}
+      {/* Tabs + Filters */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        {/* View Toggle */}
+        <div className="flex items-center bg-white border border-gray-200 rounded-xl p-1 shadow-sm">
           <button
-            onClick={() => setShowFilters(!showFilters)}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-colors ${
-              hasActiveFilters
-                ? 'border-orange-500 bg-orange-50 text-orange-600'
-                : 'border-gray-300 hover:border-gray-400'
+            onClick={() => setActiveView('companies')}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
+              activeView === 'companies'
+                ? 'bg-orange-500 text-white shadow-sm'
+                : 'text-gray-500 hover:text-gray-700'
             }`}
           >
-            <Filter className="w-4 h-4" />
-            Filtres
-            {hasActiveFilters && (
-              <span className="bg-orange-600 text-white text-xs px-2 py-0.5 rounded-full">
-                {[startDate, endDate, selectedCompany].filter(Boolean).length}
-              </span>
-            )}
+            <Building2 className="w-4 h-4" />
+            Par Entreprise
+          </button>
+          <button
+            onClick={() => setActiveView('employees')}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
+              activeView === 'employees'
+                ? 'bg-orange-500 text-white shadow-sm'
+                : 'text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            <Users className="w-4 h-4" />
+            Par Employé
           </button>
         </div>
 
-        {/* Filters Panel */}
-        {showFilters && (
-          <div className="mt-4 pt-4 border-t border-gray-200">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  <Calendar className="w-4 h-4 inline mr-1" />
-                  Date début
-                </label>
-                <input
-                  type="date"
-                  value={startDate}
-                  onChange={(e) => setStartDate(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                />
-              </div>
+        {/* Filter Button */}
+        <button
+          onClick={() => setShowFilters(!showFilters)}
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border text-sm font-medium transition-all ${
+            hasActiveFilters
+              ? 'border-orange-300 bg-orange-50 text-orange-600'
+              : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300 shadow-sm'
+          }`}
+        >
+          <Filter className="w-4 h-4" />
+          Filtres
+          {hasActiveFilters && (
+            <span className="bg-orange-500 text-white text-[10px] px-1.5 py-0.5 rounded-full font-bold">
+              {[startDate, endDate, selectedCompany].filter(Boolean).length}
+            </span>
+          )}
+        </button>
+      </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  <Calendar className="w-4 h-4 inline mr-1" />
-                  Date fin
-                </label>
-                <input
-                  type="date"
-                  value={endDate}
-                  onChange={(e) => setEndDate(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  <Building2 className="w-4 h-4 inline mr-1" />
-                  Entreprise
-                </label>
+      {/* Filters Panel */}
+      {showFilters && (
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">Date début</label>
+              <input
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-300"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">Date fin</label>
+              <input
+                type="date"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-300"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">Entreprise</label>
+              <div className="relative">
                 <select
                   value={selectedCompany}
                   onChange={(e) => setSelectedCompany(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                  className="w-full appearance-none px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-300 pr-10"
                 >
                   <option value="">Toutes les entreprises</option>
                   {companies.map((company) => (
-                    <option key={company.id} value={company.id}>
-                      {company.name}
-                    </option>
+                    <option key={company.id} value={company.id}>{company.name}</option>
                   ))}
                 </select>
+                <ChevronDown className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
               </div>
             </div>
-
-            {hasActiveFilters && (
-              <div className="mt-4 flex justify-end">
-                <button
-                  onClick={clearFilters}
-                  className="flex items-center gap-2 px-4 py-2 text-gray-600 hover:text-gray-900 transition-colors"
-                >
-                  <X className="w-4 h-4" />
-                  Effacer les filtres
-                </button>
-              </div>
-            )}
           </div>
-        )}
-      </div>
+          {hasActiveFilters && (
+            <div className="mt-4 pt-3 border-t border-gray-100 flex justify-end">
+              <button onClick={clearFilters} className="flex items-center gap-1.5 text-xs font-medium text-red-500 hover:text-red-700 transition-colors">
+                <X className="w-3.5 h-3.5" />
+                Effacer les filtres
+              </button>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Data Table */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
         {loading ? (
           <div className="flex items-center justify-center h-64">
             <div className="text-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto mb-4"></div>
-              <p className="text-gray-600">Chargement des données...</p>
+              <div className="relative w-12 h-12 mx-auto mb-3">
+                <div className="absolute inset-0 rounded-full border-4 border-orange-100"></div>
+                <div className="absolute inset-0 rounded-full border-4 border-orange-500 border-t-transparent animate-spin"></div>
+              </div>
+              <p className="text-sm text-gray-400 font-medium">Chargement des données...</p>
             </div>
           </div>
         ) : (
@@ -424,78 +351,61 @@ const RestaurantReporting: React.FC = () => {
             {activeView === 'companies' ? (
               <div className="overflow-x-auto">
                 <table className="w-full">
-                  <thead className="bg-gray-50 border-b border-gray-200">
-                    <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Entreprise
-                      </th>
-                      <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Total
-                      </th>
-                      <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Validées
-                      </th>
-                      <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        En Attente
-                      </th>
-                      <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Rejetées
-                      </th>
-                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Chiffre d'Affaires
-                      </th>
-                      <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Employés
-                      </th>
+                  <thead>
+                    <tr className="border-b border-gray-100">
+                      <th className="px-6 py-4 text-left text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Entreprise</th>
+                      <th className="px-4 py-4 text-center text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Total</th>
+                      <th className="px-4 py-4 text-center text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Validées</th>
+                      <th className="px-4 py-4 text-center text-[10px] font-semibold text-gray-400 uppercase tracking-wider">En Attente</th>
+                      <th className="px-4 py-4 text-center text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Rejetées</th>
+                      <th className="px-4 py-4 text-right text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Chiffre d'Affaires</th>
+                      <th className="px-4 py-4 text-center text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Employés</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-gray-200">
+                  <tbody>
                     {companyOrders.length === 0 ? (
                       <tr>
-                        <td colSpan={7} className="px-6 py-12 text-center text-gray-500">
-                          Aucune commande trouvée pour cette période
+                        <td colSpan={7} className="px-6 py-16 text-center">
+                          <div className="w-12 h-12 bg-gray-50 rounded-2xl flex items-center justify-center mx-auto mb-3">
+                            <Building2 className="w-6 h-6 text-gray-300" />
+                          </div>
+                          <p className="text-sm text-gray-400 font-medium">Aucune commande trouvée pour cette période</p>
                         </td>
                       </tr>
                     ) : (
-                      companyOrders.map((order) => (
-                        <tr key={order.company_id} className="hover:bg-gray-50 transition-colors">
+                      companyOrders.map((order, idx) => (
+                        <tr key={order.company_id} className={`hover:bg-orange-50/30 transition-colors ${idx !== companyOrders.length - 1 ? 'border-b border-gray-50' : ''}`}>
                           <td className="px-6 py-4">
-                            <div className="flex items-center">
-                              <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center mr-3">
-                                <Building2 className="w-5 h-5 text-blue-600" />
+                            <div className="flex items-center gap-3">
+                              <div className="w-9 h-9 bg-blue-50 rounded-xl flex items-center justify-center flex-shrink-0">
+                                <Building2 className="w-4 h-4 text-blue-500" />
                               </div>
-                              <p className="text-sm font-medium text-gray-900">
-                                {order.company_name}
-                              </p>
+                              <p className="text-sm font-semibold text-gray-900">{order.company_name}</p>
                             </div>
                           </td>
-                          <td className="px-6 py-4 text-center">
-                            <span className="text-sm font-semibold text-gray-900">
-                              {order.total_orders}
-                            </span>
+                          <td className="px-4 py-4 text-center">
+                            <span className="text-sm font-bold text-gray-900">{order.total_orders}</span>
                           </td>
-                          <td className="px-6 py-4 text-center">
-                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                          <td className="px-4 py-4 text-center">
+                            <span className="inline-flex items-center justify-center min-w-[28px] px-2 py-0.5 rounded-lg text-xs font-bold bg-emerald-50 text-emerald-600 border border-emerald-100">
                               {order.confirmed_orders}
                             </span>
                           </td>
-                          <td className="px-6 py-4 text-center">
-                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                          <td className="px-4 py-4 text-center">
+                            <span className="inline-flex items-center justify-center min-w-[28px] px-2 py-0.5 rounded-lg text-xs font-bold bg-amber-50 text-amber-600 border border-amber-100">
                               {order.pending_orders}
                             </span>
                           </td>
-                          <td className="px-6 py-4 text-center">
-                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                          <td className="px-4 py-4 text-center">
+                            <span className="inline-flex items-center justify-center min-w-[28px] px-2 py-0.5 rounded-lg text-xs font-bold bg-red-50 text-red-600 border border-red-100">
                               {order.rejected_orders}
                             </span>
                           </td>
-                          <td className="px-6 py-4 text-right">
-                            <p className="text-sm font-semibold text-orange-600">
-                              {formatCurrency(order.total_amount)}
-                            </p>
+                          <td className="px-4 py-4 text-right">
+                            <span className="text-sm font-bold text-orange-600">{formatCurrency(order.total_amount)}</span>
                           </td>
-                          <td className="px-6 py-4 text-center">
-                            <p className="text-sm text-gray-900">{order.employees_count}</p>
+                          <td className="px-4 py-4 text-center">
+                            <span className="text-sm text-gray-600 font-medium">{order.employees_count}</span>
                           </td>
                         </tr>
                       ))
@@ -506,80 +416,63 @@ const RestaurantReporting: React.FC = () => {
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full">
-                  <thead className="bg-gray-50 border-b border-gray-200">
-                    <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Employé
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Email
-                      </th>
-                      <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Total
-                      </th>
-                      <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Validées
-                      </th>
-                      <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        En Attente
-                      </th>
-                      <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Rejetées
-                      </th>
-                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Montant Total
-                      </th>
+                  <thead>
+                    <tr className="border-b border-gray-100">
+                      <th className="px-6 py-4 text-left text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Employé</th>
+                      <th className="px-4 py-4 text-left text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Email</th>
+                      <th className="px-4 py-4 text-center text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Total</th>
+                      <th className="px-4 py-4 text-center text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Validées</th>
+                      <th className="px-4 py-4 text-center text-[10px] font-semibold text-gray-400 uppercase tracking-wider">En Attente</th>
+                      <th className="px-4 py-4 text-center text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Rejetées</th>
+                      <th className="px-4 py-4 text-right text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Montant Total</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-gray-200">
+                  <tbody>
                     {employeeOrders.length === 0 ? (
                       <tr>
-                        <td colSpan={7} className="px-6 py-12 text-center text-gray-500">
-                          Aucune commande trouvée pour cette période
+                        <td colSpan={7} className="px-6 py-16 text-center">
+                          <div className="w-12 h-12 bg-gray-50 rounded-2xl flex items-center justify-center mx-auto mb-3">
+                            <Users className="w-6 h-6 text-gray-300" />
+                          </div>
+                          <p className="text-sm text-gray-400 font-medium">Aucune commande trouvée pour cette période</p>
                         </td>
                       </tr>
                     ) : (
-                      employeeOrders.map((order) => (
-                        <tr key={order.employee_id} className="hover:bg-gray-50 transition-colors">
+                      employeeOrders.map((order, idx) => (
+                        <tr key={order.employee_id} className={`hover:bg-orange-50/30 transition-colors ${idx !== employeeOrders.length - 1 ? 'border-b border-gray-50' : ''}`}>
                           <td className="px-6 py-4">
-                            <div className="flex items-center">
-                              <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center mr-3">
-                                <span className="text-sm font-medium text-blue-600">
+                            <div className="flex items-center gap-3">
+                              <div className="w-9 h-9 bg-gradient-to-br from-orange-100 to-amber-50 rounded-xl flex items-center justify-center flex-shrink-0">
+                                <span className="text-[10px] font-bold text-orange-600">
                                   {order.employee_name.split(' ').map(n => n[0]).join('').toUpperCase()}
                                 </span>
                               </div>
-                              <p className="text-sm font-medium text-gray-900">
-                                {order.employee_name}
-                              </p>
+                              <p className="text-sm font-semibold text-gray-900">{order.employee_name}</p>
                             </div>
                           </td>
-                          <td className="px-6 py-4">
-                            <p className="text-sm text-gray-600">{order.employee_email}</p>
+                          <td className="px-4 py-4">
+                            <p className="text-xs text-gray-400">{order.employee_email}</p>
                           </td>
-                          <td className="px-6 py-4 text-center">
-                            <span className="text-sm font-semibold text-gray-900">
-                              {order.total_orders}
-                            </span>
+                          <td className="px-4 py-4 text-center">
+                            <span className="text-sm font-bold text-gray-900">{order.total_orders}</span>
                           </td>
-                          <td className="px-6 py-4 text-center">
-                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                          <td className="px-4 py-4 text-center">
+                            <span className="inline-flex items-center justify-center min-w-[28px] px-2 py-0.5 rounded-lg text-xs font-bold bg-emerald-50 text-emerald-600 border border-emerald-100">
                               {order.confirmed_orders}
                             </span>
                           </td>
-                          <td className="px-6 py-4 text-center">
-                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                          <td className="px-4 py-4 text-center">
+                            <span className="inline-flex items-center justify-center min-w-[28px] px-2 py-0.5 rounded-lg text-xs font-bold bg-amber-50 text-amber-600 border border-amber-100">
                               {order.pending_orders}
                             </span>
                           </td>
-                          <td className="px-6 py-4 text-center">
-                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                          <td className="px-4 py-4 text-center">
+                            <span className="inline-flex items-center justify-center min-w-[28px] px-2 py-0.5 rounded-lg text-xs font-bold bg-red-50 text-red-600 border border-red-100">
                               {order.rejected_orders}
                             </span>
                           </td>
-                          <td className="px-6 py-4 text-right">
-                            <p className="text-sm font-semibold text-orange-600">
-                              {formatCurrency(order.total_amount)}
-                            </p>
+                          <td className="px-4 py-4 text-right">
+                            <span className="text-sm font-bold text-orange-600">{formatCurrency(order.total_amount)}</span>
                           </td>
                         </tr>
                       ))

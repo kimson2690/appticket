@@ -18,7 +18,9 @@ import {
   Ticket,
   ShoppingCart,
   Calendar,
-  TrendingUp
+  TrendingUp,
+  CalendarDays,
+  ChevronDown
 } from 'lucide-react';
 import { apiService, type Employee, type Company } from '../services/api';
 import Pagination from './Pagination';
@@ -311,237 +313,172 @@ const EmployeeManagement: React.FC = () => {
     setIsDetailsModalOpen(false);
   };
 
+  const dateStr = new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
+
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-96">
+      <div className="flex items-center justify-center h-96">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto mb-4"></div>
-          <p className="text-gray-600">Chargement des employés...</p>
+          <div className="relative w-16 h-16 mx-auto mb-4">
+            <div className="absolute inset-0 rounded-full border-4 border-orange-100"></div>
+            <div className="absolute inset-0 rounded-full border-4 border-orange-500 border-t-transparent animate-spin"></div>
+          </div>
+          <p className="text-gray-500 font-medium">Chargement des employés...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
+    <div className="max-w-7xl mx-auto space-y-6">
       {/* Notification Toast */}
       {notification && (
-        <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[60] animate-slide-down">
-          <div className={`flex items-start space-x-4 rounded-2xl p-5 shadow-2xl backdrop-blur-sm min-w-[400px] max-w-2xl ${
-            notification.type === 'success' 
-              ? 'bg-green-50/95 border-2 border-green-200' 
-              : notification.type === 'error'
-              ? 'bg-red-50/95 border-2 border-red-200'
-              : 'bg-blue-50/95 border-2 border-blue-200'
+        <div className="fixed top-4 right-4 z-[60]">
+          <div className={`rounded-2xl shadow-lg border p-4 flex items-center gap-3 backdrop-blur-sm ${
+            notification.type === 'success' ? 'bg-emerald-50/95 border-emerald-200' :
+            notification.type === 'error' ? 'bg-red-50/95 border-red-200' :
+            'bg-blue-50/95 border-blue-200'
           }`}>
             {notification.type === 'success' ? (
-              <CheckCircle className="w-6 h-6 text-green-600 flex-shrink-0 mt-0.5" />
+              <div className="p-1.5 bg-emerald-100 rounded-lg"><CheckCircle className="w-4 h-4 text-emerald-600" /></div>
             ) : notification.type === 'error' ? (
-              <XCircle className="w-6 h-6 text-red-600 flex-shrink-0 mt-0.5" />
+              <div className="p-1.5 bg-red-100 rounded-lg"><XCircle className="w-4 h-4 text-red-600" /></div>
             ) : (
-              <AlertTriangle className="w-6 h-6 text-blue-600 flex-shrink-0 mt-0.5" />
+              <div className="p-1.5 bg-blue-100 rounded-lg"><AlertTriangle className="w-4 h-4 text-blue-600" /></div>
             )}
-            <div className="flex-1">
-              <h3 className={`font-semibold mb-1 ${
-                notification.type === 'success' 
-                  ? 'text-green-900' 
-                  : notification.type === 'error'
-                  ? 'text-red-900'
-                  : 'text-blue-900'
-              }`}>
-                {notification.title}
-              </h3>
-              <p className={`text-sm ${
-                notification.type === 'success' 
-                  ? 'text-green-800' 
-                  : notification.type === 'error'
-                  ? 'text-red-800'
-                  : 'text-blue-800'
-              }`}>
-                {notification.message}
-              </p>
+            <div>
+              <p className={`text-sm font-semibold ${
+                notification.type === 'success' ? 'text-emerald-900' :
+                notification.type === 'error' ? 'text-red-900' : 'text-blue-900'
+              }`}>{notification.title}</p>
+              <p className={`text-xs ${
+                notification.type === 'success' ? 'text-emerald-700' :
+                notification.type === 'error' ? 'text-red-700' : 'text-blue-700'
+              }`}>{notification.message}</p>
             </div>
-            <button
-              onClick={() => setNotification(null)}
-              className={`p-1 rounded-lg transition-colors ${
-                notification.type === 'success' 
-                  ? 'hover:bg-green-100' 
-                  : notification.type === 'error'
-                  ? 'hover:bg-red-100'
-                  : 'hover:bg-blue-100'
-              }`}
-            >
-              <X className={`w-5 h-5 ${
-                notification.type === 'success' 
-                  ? 'text-green-600' 
-                  : notification.type === 'error'
-                  ? 'text-red-600'
-                  : 'text-blue-600'
-              }`} />
+            <button onClick={() => setNotification(null)} className="p-1 hover:bg-black/5 rounded-lg transition-colors ml-2">
+              <X className="w-3.5 h-3.5 text-gray-400" />
             </button>
           </div>
         </div>
       )}
 
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Gestion des Employés</h1>
-          <p className="text-gray-600">
+          <h1 className="text-2xl font-bold text-gray-900">Gestion des Employés</h1>
+          <p className="text-sm text-gray-400 mt-0.5">
             {isCompanyManager 
               ? `Gérez les employés de ${currentUser.companyName || 'votre entreprise'}`
               : 'Gérez les employés de vos entreprises partenaires'
             }
           </p>
         </div>
-        <button
-          onClick={handleCreateEmployee}
-          className="bg-orange-500 hover:bg-orange-600 text-white px-6 py-3 rounded-xl font-medium flex items-center space-x-2 transition-colors"
-        >
-          <Plus className="w-5 h-5" />
-          <span>Nouvel Employé</span>
-        </button>
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 bg-white border border-gray-200 rounded-xl px-4 py-2 shadow-sm">
+            <CalendarDays className="w-4 h-4 text-gray-400" />
+            <span className="text-sm text-gray-600 font-medium">{dateStr}</span>
+          </div>
+          <button
+            onClick={handleCreateEmployee}
+            className="flex items-center gap-2 px-4 py-2.5 bg-orange-500 text-white rounded-xl text-sm font-semibold hover:bg-orange-600 transition-colors shadow-sm shadow-orange-100"
+          >
+            <Plus className="w-4 h-4" />
+            Nouvel Employé
+          </button>
+        </div>
       </div>
 
       {/* Statistics Cards */}
-      <div className={`grid grid-cols-1 gap-6 ${isCompanyManager ? 'md:grid-cols-3' : 'md:grid-cols-4'}`}>
-        <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-200">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Total Employés</p>
-              <p className="text-2xl font-bold text-gray-900">{totalEmployees}</p>
-            </div>
-            <div className="h-12 w-12 bg-blue-100 rounded-lg flex items-center justify-center">
-              <Users className="h-6 w-6 text-blue-600" />
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-200">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Employés Actifs</p>
-              <p className="text-2xl font-bold text-green-600">{activeEmployees}</p>
-            </div>
-            <div className="h-12 w-12 bg-green-100 rounded-lg flex items-center justify-center">
-              <CheckCircle className="h-6 w-6 text-green-600" />
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-200">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Solde Tickets Valides</p>
-              <p className="text-2xl font-bold text-purple-600">
-                {validTicketBalance !== null
-                  ? Math.round(validTicketBalance).toLocaleString('fr-FR') + ' F'
-                  : Math.round(totalTickets).toLocaleString('fr-FR') + ' F'}
-              </p>
-            </div>
-            <div className="h-12 w-12 bg-purple-100 rounded-lg flex items-center justify-center">
-              <CreditCard className="h-6 w-6 text-purple-600" />
-            </div>
-          </div>
-        </div>
-
-        {/* Carte Entreprises - Seulement pour les administrateurs */}
-        {!isCompanyManager && (
-          <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-200">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Entreprises</p>
-                <p className="text-2xl font-bold text-indigo-600">{companies.length}</p>
+      <div className={`grid grid-cols-2 gap-4 ${isCompanyManager ? 'lg:grid-cols-3' : 'lg:grid-cols-4'}`}>
+        {[
+          { label: 'Total Employés', value: totalEmployees, icon: Users, color: 'bg-blue-50 text-blue-600' },
+          { label: 'Employés Actifs', value: activeEmployees, icon: CheckCircle, color: 'bg-emerald-50 text-emerald-600' },
+          { label: 'Solde Tickets Valides', value: (validTicketBalance !== null ? Math.round(validTicketBalance).toLocaleString('fr-FR') : Math.round(totalTickets).toLocaleString('fr-FR')) + ' F', icon: CreditCard, color: 'bg-purple-50 text-purple-600', isText: true },
+          ...(!isCompanyManager ? [{ label: 'Entreprises', value: companies.length, icon: Building2, color: 'bg-indigo-50 text-indigo-600' }] : []),
+        ].map((s, i) => (
+          <div key={i} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 hover:shadow-md transition-shadow group">
+            <div className="flex items-start justify-between">
+              <div className="flex-1 min-w-0">
+                <p className="text-xs text-gray-500 font-medium">{s.label}</p>
+                <p className={`mt-1 font-extrabold ${(s as any).isText ? 'text-xl text-purple-600' : 'text-3xl text-gray-900'}`}>
+                  {s.value}
+                </p>
               </div>
-              <div className="h-12 w-12 bg-indigo-100 rounded-lg flex items-center justify-center">
-                <Building2 className="h-6 w-6 text-indigo-600" />
+              <div className={`p-2.5 rounded-xl ${s.color} group-hover:scale-110 transition-transform flex-shrink-0`}>
+                <s.icon className="w-5 h-5" />
               </div>
             </div>
           </div>
-        )}
+        ))}
       </div>
 
       {/* Filters - Seulement pour les administrateurs */}
       {!isCompanyManager && (
-        <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-200">
-          <div className="flex items-center space-x-4">
-            <label className="text-sm font-medium text-gray-700">Filtrer par entreprise :</label>
+        <div className="flex items-center gap-3">
+          <span className="text-xs font-medium text-gray-500 uppercase tracking-wider">Filtrer par entreprise</span>
+          <div className="relative">
             <select
               value={selectedCompanyFilter}
               onChange={(e) => setSelectedCompanyFilter(e.target.value)}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+              className="appearance-none px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-300 pr-10 bg-white shadow-sm"
             >
               <option value="">Toutes les entreprises</option>
               {companies.map((company) => (
                 <option key={company.id} value={company.id}>{company.name}</option>
               ))}
             </select>
+            <ChevronDown className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
           </div>
         </div>
       )}
 
-      {/* Section des demandes en attente - Seulement pour les gestionnaires d'entreprise */}
+      {/* Section des demandes en attente */}
       {isCompanyManager && pendingEmployees.length > 0 && (
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <h2 className="text-xl font-semibold text-gray-900">Demandes en attente de validation</h2>
-              <p className="text-gray-600 mt-1">{pendingEmployees.length} demande{pendingEmployees.length > 1 ? 's' : ''} à traiter</p>
-            </div>
-            <div className="bg-orange-100 text-orange-800 px-3 py-1 rounded-full text-sm font-medium">
-              {pendingEmployees.length} en attente
+        <div className="bg-white rounded-2xl border border-amber-200 shadow-sm overflow-hidden">
+          <div className="px-5 py-4 border-b border-amber-100 bg-amber-50/50 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse"></div>
+              <h3 className="text-base font-bold text-gray-900">Demandes en attente</h3>
+              <span className="text-xs font-medium text-amber-600 bg-amber-100 px-2 py-0.5 rounded-md">
+                {pendingEmployees.length} à traiter
+              </span>
             </div>
           </div>
-          
-          <div className="space-y-4">
+          <div className="divide-y divide-gray-50">
             {pendingEmployees.map((employee) => (
-              <div key={employee.id} className="border border-gray-200 rounded-xl p-4 hover:bg-gray-50 transition-colors">
-                <div className="flex items-center justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center space-x-4">
-                      <div className="w-12 h-12 bg-gradient-to-br from-orange-500 to-orange-600 rounded-full flex items-center justify-center">
-                        <span className="text-white font-medium text-sm">
-                          {employee.name.split(' ').map(word => word.charAt(0)).join('').toUpperCase().substring(0, 2)}
-                        </span>
-                      </div>
-                      <div className="flex-1">
-                        <h3 className="font-medium text-gray-900">{employee.name}</h3>
-                        <p className="text-sm text-gray-600">{employee.email}</p>
-                        {employee.phone && <p className="text-sm text-gray-500">{employee.phone}</p>}
-                      </div>
-                      <div className="text-right">
-                        {employee.department && (
-                          <p className="text-sm font-medium text-gray-700">{employee.department}</p>
-                        )}
-                        {employee.position && (
-                          <p className="text-sm text-gray-500">{employee.position}</p>
-                        )}
-                      </div>
-                    </div>
+              <div key={employee.id} className="flex items-center justify-between px-5 py-4 hover:bg-orange-50/30 transition-colors">
+                <div className="flex items-center gap-3 flex-1 min-w-0">
+                  <div className="w-10 h-10 bg-gradient-to-br from-orange-100 to-amber-50 rounded-xl flex items-center justify-center flex-shrink-0">
+                    <span className="text-xs font-bold text-orange-600">
+                      {employee.name.split(' ').map(word => word.charAt(0)).join('').toUpperCase().substring(0, 2)}
+                    </span>
                   </div>
-                  <div className="flex items-center space-x-3 ml-6">
-                    <button
-                      onClick={() => handleViewDetails(employee)}
-                      className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center space-x-2"
-                    >
-                      <Eye className="w-4 h-4" />
-                      <span>Voir détails</span>
-                    </button>
-                    <button
-                      onClick={() => handleApproveEmployee(employee.id)}
-                      className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center space-x-2"
-                    >
-                      <span>✓</span>
-                      <span>Approuver</span>
-                    </button>
-                    <button
-                      onClick={() => handleRejectEmployee(employee.id)}
-                      className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center space-x-2"
-                    >
-                      <span>✗</span>
-                      <span>Rejeter</span>
-                    </button>
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-gray-900">{employee.name}</p>
+                    <p className="text-xs text-gray-400">{employee.email}</p>
                   </div>
+                  <div className="hidden md:block ml-4">
+                    {employee.position && (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-xs font-medium bg-gray-50 border border-gray-100 text-gray-600">
+                        <Briefcase className="w-3 h-3" />{employee.position}
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 ml-4">
+                  <button onClick={() => handleViewDetails(employee)}
+                    className="p-2 bg-blue-50 text-blue-600 rounded-xl hover:bg-blue-100 border border-blue-200 transition-colors">
+                    <Eye className="w-3.5 h-3.5" />
+                  </button>
+                  <button onClick={() => handleApproveEmployee(employee.id)}
+                    className="p-2 bg-emerald-50 text-emerald-600 rounded-xl hover:bg-emerald-100 border border-emerald-200 transition-colors">
+                    <CheckCircle className="w-3.5 h-3.5" />
+                  </button>
+                  <button onClick={() => handleRejectEmployee(employee.id)}
+                    className="p-2 bg-red-50 text-red-600 rounded-xl hover:bg-red-100 border border-red-200 transition-colors">
+                    <XCircle className="w-3.5 h-3.5" />
+                  </button>
                 </div>
               </div>
             ))}
@@ -550,116 +487,109 @@ const EmployeeManagement: React.FC = () => {
       )}
 
       {/* Employees Table */}
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Employé
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Entreprise
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Poste
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Solde (F CFA)
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Statut
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Actions
-                </th>
+          <table className="w-full">
+            <thead>
+              <tr className="border-b border-gray-100">
+                <th className="px-6 py-4 text-left text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Employé</th>
+                <th className="px-4 py-4 text-left text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Entreprise</th>
+                <th className="px-4 py-4 text-left text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Poste</th>
+                <th className="px-4 py-4 text-left text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Solde (F CFA)</th>
+                <th className="px-4 py-4 text-center text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Statut</th>
+                <th className="px-4 py-4 text-center text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Actions</th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {paginatedFilteredEmployees.map((employee) => (
-                <tr key={employee.id} className="hover:bg-gray-50 cursor-pointer" onClick={() => handleViewDetail(employee.id)}>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center">
-                      <div className="flex-shrink-0 h-10 w-10">
-                        <div className="h-10 w-10 rounded-full bg-orange-100 flex items-center justify-center">
-                          <Users className="h-5 w-5 text-orange-600" />
-                        </div>
-                      </div>
-                      <div className="ml-4">
-                        <div className="text-sm font-medium text-gray-900">{employee.name}</div>
-                        <div className="text-sm text-gray-500 flex items-center">
-                          <Mail className="w-3 h-3 mr-1" />
-                          {employee.email}
-                        </div>
-                        {employee.phone && (
-                          <div className="text-sm text-gray-500 flex items-center">
-                            <Phone className="w-3 h-3 mr-1" />
-                            {employee.phone}
-                          </div>
-                        )}
-                      </div>
+            <tbody>
+              {paginatedFilteredEmployees.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="px-6 py-16 text-center">
+                    <div className="w-12 h-12 bg-gray-50 rounded-2xl flex items-center justify-center mx-auto mb-3">
+                      <Users className="w-6 h-6 text-gray-300" />
                     </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center">
-                      <Building2 className="w-4 h-4 text-gray-400 mr-2" />
-                      <span className="text-sm text-gray-900">{employee.company_name}</span>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900">
-                      {employee.position && (
-                        <div className="flex items-center">
-                          <Briefcase className="w-3 h-3 text-gray-400 mr-1" />
-                          {employee.position}
-                        </div>
-                      )}
-                      {employee.department && (
-                        <div className="text-xs text-gray-500">{employee.department}</div>
-                      )}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center">
-                      <CreditCard className="w-4 h-4 text-purple-400 mr-2" />
-                      <span className="text-sm font-medium text-purple-600">
-                        {Math.round(Number((employee as any).valid_balance ?? employee.ticket_balance)).toLocaleString('fr-FR')} F
-                      </span>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                      employee.status === 'active' 
-                        ? 'bg-green-100 text-green-800' 
-                        : employee.status === 'inactive'
-                        ? 'bg-gray-100 text-gray-800'
-                        : 'bg-red-100 text-red-800'
-                    }`}>
-                      {employee.status === 'active' ? <CheckCircle className="w-3 h-3 mr-1" /> :
-                       employee.status === 'inactive' ? <Clock className="w-3 h-3 mr-1" /> :
-                       <XCircle className="w-3 h-3 mr-1" />}
-                      {employee.status === 'active' ? 'Actif' :
-                       employee.status === 'inactive' ? 'Inactif' : 'Suspendu'}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    <div className="flex items-center space-x-2">
-                      <button 
-                        onClick={(e) => { e.stopPropagation(); handleEditEmployee(employee); }}
-                        className="text-orange-600 hover:text-orange-900 p-1 rounded"
-                      >
-                        <Edit className="w-4 h-4" />
-                      </button>
-                      <button 
-                        onClick={(e) => { e.stopPropagation(); handleDeleteEmployee(employee); }}
-                        className="text-red-600 hover:text-red-900 p-1 rounded"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
+                    <p className="text-sm text-gray-400 font-medium">Aucun employé trouvé</p>
                   </td>
                 </tr>
-              ))}
+              ) : (
+                paginatedFilteredEmployees.map((employee, idx) => (
+                  <tr key={employee.id} className={`hover:bg-orange-50/30 transition-colors cursor-pointer ${idx !== paginatedFilteredEmployees.length - 1 ? 'border-b border-gray-50' : ''}`} onClick={() => handleViewDetail(employee.id)}>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-gradient-to-br from-orange-100 to-amber-50 rounded-xl flex items-center justify-center flex-shrink-0">
+                          <span className="text-xs font-bold text-orange-600">
+                            {employee.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
+                          </span>
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-sm font-semibold text-gray-900">{employee.name}</p>
+                          <div className="flex items-center gap-1 text-xs text-gray-400 mt-0.5">
+                            <Mail className="w-3 h-3 flex-shrink-0" />
+                            <span className="truncate">{employee.email}</span>
+                          </div>
+                          {employee.phone && (
+                            <div className="flex items-center gap-1 text-xs text-gray-400">
+                              <Phone className="w-3 h-3 flex-shrink-0" />
+                              <span>{employee.phone}</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-4 py-4">
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold border bg-blue-50 border-blue-200 text-blue-700">
+                        <Building2 className="w-3 h-3" />
+                        {employee.company_name}
+                      </span>
+                    </td>
+                    <td className="px-4 py-4">
+                      {employee.position ? (
+                        <div>
+                          <div className="flex items-center gap-1 text-sm font-medium text-gray-700">
+                            <Briefcase className="w-3 h-3 text-gray-400" />
+                            {employee.position}
+                          </div>
+                          {employee.department && (
+                            <p className="text-xs text-gray-400 mt-0.5 ml-4">{employee.department}</p>
+                          )}
+                        </div>
+                      ) : (
+                        <span className="text-xs text-gray-300">—</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-4">
+                      <span className="text-sm font-bold text-emerald-600">
+                        {Math.round(Number((employee as any).valid_balance ?? employee.ticket_balance)).toLocaleString('fr-FR')} F
+                      </span>
+                    </td>
+                    <td className="px-4 py-4 text-center">
+                      <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold border ${
+                        employee.status === 'active' ? 'bg-emerald-50 border-emerald-200 text-emerald-700' :
+                        employee.status === 'inactive' ? 'bg-gray-50 border-gray-200 text-gray-600' :
+                        'bg-red-50 border-red-200 text-red-700'
+                      }`}>
+                        <span className={`w-1.5 h-1.5 rounded-full ${
+                          employee.status === 'active' ? 'bg-emerald-400' :
+                          employee.status === 'inactive' ? 'bg-gray-400' : 'bg-red-400'
+                        }`}></span>
+                        {employee.status === 'active' ? 'Actif' :
+                         employee.status === 'inactive' ? 'Inactif' : 'Suspendu'}
+                      </span>
+                    </td>
+                    <td className="px-4 py-4">
+                      <div className="flex items-center justify-center gap-1.5">
+                        <button onClick={(e) => { e.stopPropagation(); handleEditEmployee(employee); }}
+                          className="p-2 bg-blue-50 text-blue-600 rounded-xl hover:bg-blue-100 border border-blue-200 transition-colors">
+                          <Edit className="w-3.5 h-3.5" />
+                        </button>
+                        <button onClick={(e) => { e.stopPropagation(); handleDeleteEmployee(employee); }}
+                          className="p-2 bg-red-50 text-red-600 rounded-xl hover:bg-red-100 border border-red-200 transition-colors">
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
@@ -673,230 +603,159 @@ const EmployeeManagement: React.FC = () => {
 
       {/* Create/Edit Modal */}
       {showModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6">
-              <div className="flex items-center justify-between mb-6">
-                <h3 className="text-xl font-semibold text-gray-900">
-                  {selectedEmployee ? 'Modifier l\'Employé' : 'Nouvel Employé'}
-                </h3>
-                <button
-                  onClick={() => setShowModal(false)}
-                  className="text-gray-400 hover:text-gray-600 p-1 rounded"
-                >
-                  <X className="w-6 h-6" />
-                </button>
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={() => setShowModal(false)}>
+          <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden" onClick={e => e.stopPropagation()}>
+            <div className="bg-gradient-to-r from-orange-500 to-orange-600 p-5 text-white">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
+                  {selectedEmployee ? <Edit className="w-5 h-5" /> : <Plus className="w-5 h-5" />}
+                </div>
+                <div>
+                  <h2 className="text-lg font-bold">{selectedEmployee ? 'Modifier l\'Employé' : 'Nouvel Employé'}</h2>
+                  <p className="text-sm text-orange-100">Remplissez les informations de l'employé</p>
+                </div>
+              </div>
+            </div>
+
+            <form onSubmit={handleSubmit} className="p-5 space-y-4 overflow-y-auto max-h-[calc(90vh-140px)]">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Nom complet *</label>
+                  <input type="text" required value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-300"
+                    placeholder="Ex: Moussa Kaboré" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Email *</label>
+                  <input type="email" required value={formData.email}
+                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-300"
+                    placeholder="moussa@entreprise.bf" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Téléphone</label>
+                  <input type="tel" value={formData.phone}
+                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                    className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-300"
+                    placeholder="+226 70 12 34 56" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                    {selectedEmployee ? 'Nouveau mot de passe' : 'Mot de passe *'}
+                  </label>
+                  <input type="password" required={!selectedEmployee} value={formData.password}
+                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                    className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-300"
+                    placeholder={selectedEmployee ? "Laisser vide pour ne pas changer" : "••••••••"} />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Entreprise *</label>
+                  {isCompanyManager ? (
+                    <div className="w-full px-3.5 py-2.5 border border-gray-200 bg-gray-50 rounded-xl text-sm text-gray-700">
+                      {currentUser.companyName || 'Entreprise non définie'}
+                    </div>
+                  ) : (
+                    <select required value={formData.company_id}
+                      onChange={(e) => setFormData({ ...formData, company_id: e.target.value })}
+                      className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-300">
+                      <option value="">Sélectionner une entreprise</option>
+                      {companies.map((company) => (
+                        <option key={company.id} value={company.id}>{company.name}</option>
+                      ))}
+                    </select>
+                  )}
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Département</label>
+                  <input type="text" value={formData.department}
+                    onChange={(e) => setFormData({ ...formData, department: e.target.value })}
+                    className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-300"
+                    placeholder="Ex: IT, RH, Finance" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Poste</label>
+                  <input type="text" value={formData.position}
+                    onChange={(e) => setFormData({ ...formData, position: e.target.value })}
+                    className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-300"
+                    placeholder="Ex: Développeur, Manager" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Numéro d'employé</label>
+                  <input type="text" value={formData.employee_number}
+                    onChange={(e) => setFormData({ ...formData, employee_number: e.target.value })}
+                    className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-300"
+                    placeholder="Ex: EMP001" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Solde de tickets initial</label>
+                  <input type="number" min="0" value={formData.ticket_balance}
+                    onChange={(e) => setFormData({ ...formData, ticket_balance: parseInt(e.target.value) || 0 })}
+                    className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-300"
+                    placeholder="0" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Statut</label>
+                  <select value={formData.status}
+                    onChange={(e) => setFormData({ ...formData, status: e.target.value as 'active' | 'inactive' | 'suspended' })}
+                    className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-300">
+                    <option value="active">Actif</option>
+                    <option value="inactive">Inactif</option>
+                    <option value="suspended">Suspendu</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Date d'embauche</label>
+                  <input type="date" value={formData.hire_date}
+                    onChange={(e) => setFormData({ ...formData, hire_date: e.target.value })}
+                    className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-300" />
+                </div>
               </div>
 
-              <form onSubmit={handleSubmit} className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Nom complet *
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={formData.name}
-                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                      placeholder="Ex: Moussa Kaboré"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Email *
-                    </label>
-                    <input
-                      type="email"
-                      required
-                      value={formData.email}
-                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                      placeholder="moussa@entreprise.bf"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Téléphone
-                    </label>
-                    <input
-                      type="tel"
-                      value={formData.phone}
-                      onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                      placeholder="+226 70 12 34 56"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      {selectedEmployee ? 'Nouveau mot de passe' : 'Mot de passe *'}
-                    </label>
-                    <input
-                      type="password"
-                      required={!selectedEmployee}
-                      value={formData.password}
-                      onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                      placeholder={selectedEmployee ? "Laisser vide pour ne pas changer" : "••••••••"}
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Entreprise *
-                    </label>
-                    {isCompanyManager ? (
-                      <div className="w-full px-4 py-3 border border-gray-200 bg-gray-50 rounded-lg text-gray-700">
-                        {currentUser.companyName || 'Entreprise non définie'}
-                      </div>
-                    ) : (
-                      <select
-                        required
-                        value={formData.company_id}
-                        onChange={(e) => setFormData({ ...formData, company_id: e.target.value })}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                      >
-                        <option value="">Sélectionner une entreprise</option>
-                        {companies.map((company) => (
-                          <option key={company.id} value={company.id}>{company.name}</option>
-                        ))}
-                      </select>
-                    )}
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Département
-                    </label>
-                    <input
-                      type="text"
-                      value={formData.department}
-                      onChange={(e) => setFormData({ ...formData, department: e.target.value })}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                      placeholder="Ex: IT, RH, Finance"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Poste
-                    </label>
-                    <input
-                      type="text"
-                      value={formData.position}
-                      onChange={(e) => setFormData({ ...formData, position: e.target.value })}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                      placeholder="Ex: Développeur, Manager"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Numéro d'employé
-                    </label>
-                    <input
-                      type="text"
-                      value={formData.employee_number}
-                      onChange={(e) => setFormData({ ...formData, employee_number: e.target.value })}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                      placeholder="Ex: EMP001"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Solde de tickets initial
-                    </label>
-                    <input
-                      type="number"
-                      min="0"
-                      value={formData.ticket_balance}
-                      onChange={(e) => setFormData({ ...formData, ticket_balance: parseInt(e.target.value) || 0 })}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                      placeholder="0"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Statut
-                    </label>
-                    <select
-                      value={formData.status}
-                      onChange={(e) => setFormData({ ...formData, status: e.target.value as 'active' | 'inactive' | 'suspended' })}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                    >
-                      <option value="active">Actif</option>
-                      <option value="inactive">Inactif</option>
-                      <option value="suspended">Suspendu</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Date d'embauche
-                    </label>
-                    <input
-                      type="date"
-                      value={formData.hire_date}
-                      onChange={(e) => setFormData({ ...formData, hire_date: e.target.value })}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                    />
-                  </div>
-                </div>
-
-                <div className="flex justify-end space-x-3 pt-6 border-t">
-                  <button
-                    type="button"
-                    onClick={() => setShowModal(false)}
-                    className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-medium transition-colors"
-                  >
-                    Annuler
-                  </button>
-                  <button
-                    type="submit"
-                    className="px-6 py-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600 font-medium transition-colors"
-                  >
-                    {selectedEmployee ? 'Modifier' : 'Créer'}
-                  </button>
-                </div>
-              </form>
-            </div>
+              <div className="flex gap-3 pt-4 border-t border-gray-100">
+                <button type="button" onClick={() => setShowModal(false)}
+                  className="flex-1 px-4 py-2.5 border border-gray-200 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">
+                  Annuler
+                </button>
+                <button type="submit"
+                  className="flex-1 px-4 py-2.5 bg-orange-500 text-white rounded-xl text-sm font-medium hover:bg-orange-600 transition-colors">
+                  {selectedEmployee ? 'Modifier' : 'Créer'}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
 
       {/* Delete Confirmation Modal */}
       {showDeleteModal && selectedEmployee && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6">
-            <div className="flex items-center justify-center w-12 h-12 mx-auto mb-4 bg-red-100 rounded-full">
-              <AlertTriangle className="w-6 h-6 text-red-600" />
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={() => setShowDeleteModal(false)}>
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden" onClick={e => e.stopPropagation()}>
+            <div className="bg-gradient-to-r from-red-500 to-red-600 p-5 text-white">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
+                  <Trash2 className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold">Supprimer l'employé</h3>
+                  <p className="text-sm text-red-100">Cette action est irréversible</p>
+                </div>
+              </div>
             </div>
-            <h3 className="text-lg font-semibold text-gray-900 text-center mb-2">
-              Supprimer l'employé
-            </h3>
-            <p className="text-gray-600 text-center mb-6">
-              Êtes-vous sûr de vouloir supprimer <strong>{selectedEmployee.name}</strong> ? 
-              Cette action est irréversible.
-            </p>
-            <div className="flex space-x-3">
-              <button
-                onClick={() => setShowDeleteModal(false)}
-                className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-medium transition-colors"
-              >
-                Annuler
-              </button>
-              <button
-                onClick={handleConfirmDelete}
-                className="flex-1 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 font-medium transition-colors"
-              >
-                Supprimer
-              </button>
+            <div className="p-5">
+              <p className="text-sm text-gray-600 mb-5">
+                Êtes-vous sûr de vouloir supprimer <span className="font-semibold text-gray-900">"{selectedEmployee.name}"</span> ?
+              </p>
+              <div className="flex gap-3">
+                <button onClick={() => setShowDeleteModal(false)}
+                  className="flex-1 px-4 py-2.5 border border-gray-200 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">
+                  Annuler
+                </button>
+                <button onClick={handleConfirmDelete}
+                  className="flex-1 px-4 py-2.5 bg-red-600 text-white rounded-xl text-sm font-medium hover:bg-red-700 transition-colors">
+                  Supprimer
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -904,34 +763,33 @@ const EmployeeManagement: React.FC = () => {
 
       {/* Reject Confirmation Modal */}
       {showRejectModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6">
-            <div className="flex items-center justify-center w-12 h-12 mx-auto mb-4 bg-orange-100 rounded-full">
-              <XCircle className="w-6 h-6 text-orange-600" />
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={() => { setShowRejectModal(false); setEmployeeToReject(null); }}>
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden" onClick={e => e.stopPropagation()}>
+            <div className="bg-gradient-to-r from-amber-500 to-orange-500 p-5 text-white">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
+                  <XCircle className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold">Rejeter la demande</h3>
+                  <p className="text-sm text-orange-100">L'employé devra soumettre une nouvelle demande</p>
+                </div>
+              </div>
             </div>
-            <h3 className="text-lg font-semibold text-gray-900 text-center mb-2">
-              Rejeter la demande
-            </h3>
-            <p className="text-gray-600 text-center mb-6">
-              Êtes-vous sûr de vouloir rejeter cette demande d'inscription ? 
-              Cette action est <strong>irréversible</strong> et l'employé devra soumettre une nouvelle demande.
-            </p>
-            <div className="flex space-x-3">
-              <button
-                onClick={() => {
-                  setShowRejectModal(false);
-                  setEmployeeToReject(null);
-                }}
-                className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-medium transition-colors"
-              >
-                Annuler
-              </button>
-              <button
-                onClick={handleConfirmReject}
-                className="flex-1 px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 font-medium transition-colors"
-              >
-                Rejeter
-              </button>
+            <div className="p-5">
+              <p className="text-sm text-gray-600 mb-5">
+                Êtes-vous sûr de vouloir rejeter cette demande d'inscription ? Cette action est <span className="font-semibold text-gray-900">irréversible</span>.
+              </p>
+              <div className="flex gap-3">
+                <button onClick={() => { setShowRejectModal(false); setEmployeeToReject(null); }}
+                  className="flex-1 px-4 py-2.5 border border-gray-200 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">
+                  Annuler
+                </button>
+                <button onClick={handleConfirmReject}
+                  className="flex-1 px-4 py-2.5 bg-orange-500 text-white rounded-xl text-sm font-medium hover:bg-orange-600 transition-colors">
+                  Rejeter
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -939,164 +797,108 @@ const EmployeeManagement: React.FC = () => {
 
       {/* Modal de détails pour les employés en attente */}
       {isDetailsModalOpen && selectedPendingEmployee && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
-            {/* Header de la modal */}
-            <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 rounded-t-2xl">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h2 className="text-xl font-semibold text-gray-900">Détails de la demande d'inscription</h2>
-                  <p className="text-sm text-gray-600 mt-1">Vérification des informations soumises</p>
-                </div>
-                <button
-                  onClick={handleCloseDetailsModal}
-                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                >
-                  <X className="w-5 h-5 text-gray-500" />
-                </button>
-              </div>
-            </div>
-
-            {/* Contenu de la modal */}
-            <div className="p-6">
-              {/* Avatar et informations principales */}
-              <div className="flex items-center space-x-4 mb-6 p-4 bg-gray-50 rounded-xl">
-                <div className="w-16 h-16 bg-gradient-to-br from-orange-500 to-orange-600 rounded-full flex items-center justify-center">
-                  <span className="text-white font-medium text-lg">
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={handleCloseDetailsModal}>
+          <div className="bg-white rounded-2xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-hidden" onClick={e => e.stopPropagation()}>
+            {/* Header */}
+            <div className="bg-gradient-to-r from-amber-500 to-orange-500 p-5 text-white">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
+                  <span className="text-sm font-bold">
                     {selectedPendingEmployee.name.split(' ').map(word => word.charAt(0)).join('').toUpperCase().substring(0, 2)}
                   </span>
                 </div>
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-900">{selectedPendingEmployee.name}</h3>
-                  <p className="text-gray-600">{selectedPendingEmployee.email}</p>
-                  <div className="flex items-center space-x-2 mt-1">
-                    <span className="bg-orange-100 text-orange-800 px-2 py-1 rounded-full text-xs font-medium">
-                      En attente de validation
-                    </span>
-                  </div>
+                <div className="flex-1">
+                  <h2 className="text-lg font-bold">{selectedPendingEmployee.name}</h2>
+                  <p className="text-sm text-orange-100">{selectedPendingEmployee.email}</p>
                 </div>
+                <span className="px-2.5 py-1 bg-white/20 rounded-lg text-xs font-semibold">En attente</span>
               </div>
+            </div>
 
-              {/* Grille d'informations détaillées */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                
+            <div className="p-5 overflow-y-auto max-h-[calc(90vh-200px)]">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                 {/* Informations personnelles */}
-                <div className="space-y-4">
-                  <h4 className="font-medium text-gray-900 flex items-center space-x-2 border-b pb-2">
-                    <Users className="w-5 h-5 text-gray-500" />
-                    <span>Informations personnelles</span>
+                <div className="space-y-3">
+                  <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider flex items-center gap-2">
+                    <Users className="w-3.5 h-3.5" /> Informations personnelles
                   </h4>
-                  
-                  <div className="space-y-3 pl-1">
+                  <div className="space-y-2.5 bg-gray-50 rounded-xl p-4">
                     <div>
-                      <label className="text-sm font-medium text-gray-500">Nom complet</label>
-                      <p className="text-gray-900 mt-1">{selectedPendingEmployee.name}</p>
+                      <p className="text-xs text-gray-400">Nom complet</p>
+                      <p className="text-sm font-semibold text-gray-900">{selectedPendingEmployee.name}</p>
                     </div>
-                    
                     <div>
-                      <label className="text-sm font-medium text-gray-500">Email</label>
-                      <p className="text-gray-900 flex items-center space-x-2 mt-1">
-                        <Mail className="w-4 h-4 text-gray-400" />
-                        <span>{selectedPendingEmployee.email}</span>
-                      </p>
+                      <p className="text-xs text-gray-400">Email</p>
+                      <p className="text-sm text-gray-700 flex items-center gap-1.5"><Mail className="w-3.5 h-3.5 text-gray-400" />{selectedPendingEmployee.email}</p>
                     </div>
-                    
                     {selectedPendingEmployee.phone && (
                       <div>
-                        <label className="text-sm font-medium text-gray-500">Téléphone</label>
-                        <p className="text-gray-900 flex items-center space-x-2 mt-1">
-                          <Phone className="w-4 h-4 text-gray-400" />
-                          <span>{selectedPendingEmployee.phone}</span>
-                        </p>
+                        <p className="text-xs text-gray-400">Téléphone</p>
+                        <p className="text-sm text-gray-700 flex items-center gap-1.5"><Phone className="w-3.5 h-3.5 text-gray-400" />{selectedPendingEmployee.phone}</p>
                       </div>
                     )}
                   </div>
                 </div>
 
                 {/* Informations professionnelles */}
-                <div className="space-y-4">
-                  <h4 className="font-medium text-gray-900 flex items-center space-x-2 border-b pb-2">
-                    <Briefcase className="w-5 h-5 text-gray-500" />
-                    <span>Informations professionnelles</span>
+                <div className="space-y-3">
+                  <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider flex items-center gap-2">
+                    <Briefcase className="w-3.5 h-3.5" /> Informations professionnelles
                   </h4>
-                  
-                  <div className="space-y-3 pl-1">
+                  <div className="space-y-2.5 bg-gray-50 rounded-xl p-4">
                     <div>
-                      <label className="text-sm font-medium text-gray-500">Entreprise</label>
-                      <p className="text-gray-900 flex items-center space-x-2 mt-1">
-                        <Building2 className="w-4 h-4 text-gray-400" />
-                        <span>{selectedPendingEmployee.company_name}</span>
-                      </p>
+                      <p className="text-xs text-gray-400">Entreprise</p>
+                      <p className="text-sm text-gray-700 flex items-center gap-1.5"><Building2 className="w-3.5 h-3.5 text-gray-400" />{selectedPendingEmployee.company_name}</p>
                     </div>
-                    
                     {selectedPendingEmployee.department && (
                       <div>
-                        <label className="text-sm font-medium text-gray-500">Département</label>
-                        <p className="text-gray-900 mt-1">{selectedPendingEmployee.department}</p>
+                        <p className="text-xs text-gray-400">Département</p>
+                        <p className="text-sm font-medium text-gray-700">{selectedPendingEmployee.department}</p>
                       </div>
                     )}
-                    
                     {selectedPendingEmployee.position && (
                       <div>
-                        <label className="text-sm font-medium text-gray-500">Poste</label>
-                        <p className="text-gray-900 mt-1">{selectedPendingEmployee.position}</p>
+                        <p className="text-xs text-gray-400">Poste</p>
+                        <p className="text-sm font-medium text-gray-700">{selectedPendingEmployee.position}</p>
                       </div>
                     )}
-                    
                     {selectedPendingEmployee.employee_number && (
                       <div>
-                        <label className="text-sm font-medium text-gray-500">Numéro d'employé</label>
-                        <p className="text-gray-900 mt-1">{selectedPendingEmployee.employee_number}</p>
+                        <p className="text-xs text-gray-400">Numéro d'employé</p>
+                        <p className="text-sm font-mono text-gray-700">{selectedPendingEmployee.employee_number}</p>
                       </div>
                     )}
                   </div>
                 </div>
 
-                {/* Informations système */}
-                <div className="space-y-4 md:col-span-2 mt-2">
-                  <h4 className="font-medium text-gray-900 flex items-center space-x-2 border-b pb-2">
-                    <Clock className="w-5 h-5 text-gray-500" />
-                    <span>Informations complémentaires</span>
+                {/* Infos complémentaires */}
+                <div className="md:col-span-2 space-y-3">
+                  <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider flex items-center gap-2">
+                    <Clock className="w-3.5 h-3.5" /> Informations complémentaires
                   </h4>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pl-1">
-                    <div>
-                      <label className="text-sm font-medium text-gray-500">Statut</label>
-                      <p className="mt-1">
-                        <span className="bg-orange-100 text-orange-800 px-2 py-1 rounded-full text-sm font-medium">
-                          En attente
-                        </span>
-                      </p>
+                  <div className="grid grid-cols-3 gap-3">
+                    <div className="bg-amber-50 rounded-xl p-3 text-center">
+                      <p className="text-xs text-amber-600 font-medium">Statut</p>
+                      <p className="text-sm font-bold text-amber-700 mt-0.5">En attente</p>
                     </div>
-                    
-                    <div>
-                      <label className="text-sm font-medium text-gray-500">Solde de tickets</label>
-                      <p className="text-gray-900 flex items-center space-x-2 mt-1">
-                        <CreditCard className="w-4 h-4 text-gray-400" />
-                        <span>{selectedPendingEmployee.ticket_balance || 0}</span>
-                      </p>
+                    <div className="bg-purple-50 rounded-xl p-3 text-center">
+                      <p className="text-xs text-purple-600 font-medium">Solde tickets</p>
+                      <p className="text-sm font-bold text-purple-700 mt-0.5">{selectedPendingEmployee.ticket_balance || 0}</p>
                     </div>
-                    
-                    <div>
-                      <label className="text-sm font-medium text-gray-500">Date d'embauche</label>
-                      <p className="text-gray-900 mt-1">
+                    <div className="bg-blue-50 rounded-xl p-3 text-center">
+                      <p className="text-xs text-blue-600 font-medium">Date d'embauche</p>
+                      <p className="text-sm font-bold text-blue-700 mt-0.5">
                         {(() => {
                           if (!selectedPendingEmployee.hire_date || selectedPendingEmployee.hire_date.trim() === '') {
-                            return <span className="text-gray-400 italic">Non renseignée</span>;
+                            return <span className="text-gray-400 italic font-normal">Non renseignée</span>;
                           }
                           try {
                             const date = new Date(selectedPendingEmployee.hire_date);
-                            if (isNaN(date.getTime())) {
-                              return <span className="text-gray-400 italic">Date invalide</span>;
-                            }
-                            return date.toLocaleDateString('fr-FR', { 
-                              year: 'numeric', 
-                              month: 'long', 
-                              day: 'numeric' 
-                            });
+                            if (isNaN(date.getTime())) return <span className="text-gray-400 italic font-normal">Invalide</span>;
+                            return date.toLocaleDateString('fr-FR', { year: 'numeric', month: 'short', day: 'numeric' });
                           } catch (error) {
                             console.error('Erreur de formatage de la date:', error);
-                            return <span className="text-gray-400 italic">Erreur de format</span>;
+                            return <span className="text-gray-400 italic font-normal">Erreur</span>;
                           }
                         })()}
                       </p>
@@ -1104,36 +906,22 @@ const EmployeeManagement: React.FC = () => {
                   </div>
                 </div>
               </div>
+            </div>
 
-              {/* Actions */}
-              <div className="flex items-center justify-end space-x-4 mt-8 pt-6 border-t border-gray-200">
-                <button
-                  onClick={handleCloseDetailsModal}
-                  className="px-5 py-2.5 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg font-medium transition-colors"
-                >
-                  Fermer
-                </button>
-                <button
-                  onClick={() => {
-                    handleRejectEmployee(selectedPendingEmployee.id);
-                    handleCloseDetailsModal();
-                  }}
-                  className="px-5 py-2.5 bg-red-500 hover:bg-red-600 text-white rounded-lg font-medium transition-colors flex items-center space-x-2"
-                >
-                  <XCircle className="w-4 h-4" />
-                  <span>Rejeter la demande</span>
-                </button>
-                <button
-                  onClick={() => {
-                    handleApproveEmployee(selectedPendingEmployee.id);
-                    handleCloseDetailsModal();
-                  }}
-                  className="px-5 py-2.5 bg-green-500 hover:bg-green-600 text-white rounded-lg font-medium transition-colors flex items-center space-x-2"
-                >
-                  <CheckCircle className="w-4 h-4" />
-                  <span>Approuver la demande</span>
-                </button>
-              </div>
+            {/* Actions */}
+            <div className="flex gap-3 p-5 border-t border-gray-100">
+              <button onClick={handleCloseDetailsModal}
+                className="flex-1 px-4 py-2.5 border border-gray-200 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">
+                Fermer
+              </button>
+              <button onClick={() => { handleRejectEmployee(selectedPendingEmployee.id); handleCloseDetailsModal(); }}
+                className="flex-1 px-4 py-2.5 bg-red-600 text-white rounded-xl text-sm font-medium hover:bg-red-700 transition-colors flex items-center justify-center gap-2">
+                <XCircle className="w-4 h-4" /> Rejeter
+              </button>
+              <button onClick={() => { handleApproveEmployee(selectedPendingEmployee.id); handleCloseDetailsModal(); }}
+                className="flex-1 px-4 py-2.5 bg-emerald-600 text-white rounded-xl text-sm font-medium hover:bg-emerald-700 transition-colors flex items-center justify-center gap-2">
+                <CheckCircle className="w-4 h-4" /> Approuver
+              </button>
             </div>
           </div>
         </div>
@@ -1141,215 +929,214 @@ const EmployeeManagement: React.FC = () => {
 
       {/* Employee Detail Modal */}
       {showDetailModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={() => setShowDetailModal(false)}>
+          <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden" onClick={e => e.stopPropagation()}>
             {detailLoading ? (
               <div className="flex items-center justify-center py-20">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500"></div>
+                <div className="relative w-12 h-12 mx-auto">
+                  <div className="absolute inset-0 rounded-full border-4 border-orange-100"></div>
+                  <div className="absolute inset-0 rounded-full border-4 border-orange-500 border-t-transparent animate-spin"></div>
+                </div>
               </div>
             ) : employeeDetail ? (
-              <div className="p-6">
+              <>
                 {/* Header */}
-                <div className="flex items-center justify-between mb-6">
+                <div className="bg-gradient-to-r from-orange-500 to-orange-600 p-5 text-white">
                   <div className="flex items-center gap-4">
-                    <div className="h-14 w-14 rounded-full bg-orange-100 flex items-center justify-center">
-                      <Users className="h-7 w-7 text-orange-600" />
+                    <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center flex-shrink-0">
+                      <span className="text-sm font-bold">
+                        {employeeDetail.name?.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2)}
+                      </span>
                     </div>
-                    <div>
-                      <h3 className="text-xl font-bold text-gray-900">{employeeDetail.name}</h3>
-                      <p className="text-sm text-gray-500">{employeeDetail.email} · {employeeDetail.phone}</p>
-                      <p className="text-sm text-gray-400">{employeeDetail.position} — {employeeDetail.department}</p>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="text-lg font-bold">{employeeDetail.name}</h3>
+                      <p className="text-sm text-orange-100">{employeeDetail.email} · {employeeDetail.phone}</p>
+                      <p className="text-xs text-orange-200">{employeeDetail.position} — {employeeDetail.department}</p>
                     </div>
                   </div>
-                  <button
-                    onClick={() => setShowDetailModal(false)}
-                    className="text-gray-400 hover:text-gray-600 p-1 rounded"
-                  >
-                    <X className="w-6 h-6" />
-                  </button>
                 </div>
 
-                {/* Stats cards */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-                  <div className="bg-blue-50 rounded-xl p-3 text-center">
-                    <Ticket className="w-5 h-5 text-blue-600 mx-auto mb-1" />
-                    <p className="text-xs text-blue-600 font-medium">Souches actives</p>
-                    <p className="text-lg font-bold text-blue-700">{employeeDetail.stats?.active_batches ?? 0}</p>
+                <div className="p-5 overflow-y-auto max-h-[calc(90vh-140px)] space-y-5">
+                  {/* Stats cards */}
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    {[
+                      { label: 'Souches actives', value: employeeDetail.stats?.active_batches ?? 0, icon: Ticket, color: 'bg-blue-50 text-blue-600' },
+                      { label: 'Solde valide', value: Math.round(employeeDetail.valid_balance || 0).toLocaleString('fr-FR') + ' F', icon: TrendingUp, color: 'bg-emerald-50 text-emerald-600' },
+                      { label: 'Commandes', value: employeeDetail.stats?.total_orders ?? 0, icon: ShoppingCart, color: 'bg-purple-50 text-purple-600' },
+                      { label: 'Total dépensé', value: Math.round(employeeDetail.stats?.total_spent || 0).toLocaleString('fr-FR') + ' F', icon: CreditCard, color: 'bg-orange-50 text-orange-600' },
+                    ].map((s, i) => (
+                      <div key={i} className="bg-white rounded-xl border border-gray-100 p-3 text-center group hover:shadow-sm transition-shadow">
+                        <div className={`w-8 h-8 ${s.color} rounded-lg flex items-center justify-center mx-auto mb-1.5 group-hover:scale-110 transition-transform`}>
+                          <s.icon className="w-4 h-4" />
+                        </div>
+                        <p className="text-[10px] text-gray-400 font-medium uppercase tracking-wider">{s.label}</p>
+                        <p className="text-base font-bold text-gray-900 mt-0.5">{s.value}</p>
+                      </div>
+                    ))}
                   </div>
-                  <div className="bg-green-50 rounded-xl p-3 text-center">
-                    <TrendingUp className="w-5 h-5 text-green-600 mx-auto mb-1" />
-                    <p className="text-xs text-green-600 font-medium">Solde valide</p>
-                    <p className="text-lg font-bold text-green-700">{Math.round(employeeDetail.valid_balance || 0).toLocaleString('fr-FR')} F</p>
-                  </div>
-                  <div className="bg-purple-50 rounded-xl p-3 text-center">
-                    <ShoppingCart className="w-5 h-5 text-purple-600 mx-auto mb-1" />
-                    <p className="text-xs text-purple-600 font-medium">Commandes</p>
-                    <p className="text-lg font-bold text-purple-700">{employeeDetail.stats?.total_orders ?? 0}</p>
-                  </div>
-                  <div className="bg-orange-50 rounded-xl p-3 text-center">
-                    <CreditCard className="w-5 h-5 text-orange-600 mx-auto mb-1" />
-                    <p className="text-xs text-orange-600 font-medium">Total dépensé</p>
-                    <p className="text-lg font-bold text-orange-700">{Math.round(employeeDetail.stats?.total_spent || 0).toLocaleString('fr-FR')} F</p>
-                  </div>
-                </div>
 
-                {/* Tickets summary */}
-                <div className="bg-gray-50 rounded-xl p-4 mb-6 grid grid-cols-3 gap-4 text-center">
-                  <div>
-                    <p className="text-xs text-gray-500">Tickets reçus</p>
-                    <p className="text-lg font-bold text-gray-900">{employeeDetail.stats?.total_tickets_received ?? 0}</p>
+                  {/* Tickets summary */}
+                  <div className="grid grid-cols-3 gap-3">
+                    <div className="bg-gray-50 rounded-xl p-3 text-center">
+                      <p className="text-xs text-gray-400 font-medium">Tickets reçus</p>
+                      <p className="text-lg font-extrabold text-gray-900">{employeeDetail.stats?.total_tickets_received ?? 0}</p>
+                    </div>
+                    <div className="bg-gray-50 rounded-xl p-3 text-center">
+                      <p className="text-xs text-gray-400 font-medium">Tickets utilisés</p>
+                      <p className="text-lg font-extrabold text-emerald-600">{employeeDetail.stats?.total_tickets_used ?? 0}</p>
+                    </div>
+                    <div className="bg-gray-50 rounded-xl p-3 text-center">
+                      <p className="text-xs text-gray-400 font-medium">Tickets restants</p>
+                      <p className="text-lg font-extrabold text-blue-600">{employeeDetail.stats?.total_tickets_remaining ?? 0}</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-xs text-gray-500">Tickets utilisés</p>
-                    <p className="text-lg font-bold text-green-600">{employeeDetail.stats?.total_tickets_used ?? 0}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-gray-500">Tickets restants (valides)</p>
-                    <p className="text-lg font-bold text-blue-600">{employeeDetail.stats?.total_tickets_remaining ?? 0}</p>
-                  </div>
-                </div>
 
-                {/* Batches table */}
-                <div className="mb-6">
-                  <h4 className="text-lg font-bold text-gray-900 mb-3 flex items-center gap-2">
-                    <Ticket className="w-5 h-5 text-orange-500" />
-                    Souches de tickets ({employeeDetail.batches?.length ?? 0})
-                  </h4>
-                  {employeeDetail.batches && employeeDetail.batches.length > 0 ? (
-                    <div className="overflow-x-auto border border-gray-200 rounded-xl">
-                      <table className="min-w-full divide-y divide-gray-200">
-                        <thead className="bg-gray-50">
-                          <tr>
-                            <th className="px-4 py-2.5 text-left text-xs font-medium text-gray-500 uppercase">N° Souche</th>
-                            <th className="px-4 py-2.5 text-center text-xs font-medium text-gray-500 uppercase">Total</th>
-                            <th className="px-4 py-2.5 text-center text-xs font-medium text-gray-500 uppercase">Utilisés</th>
-                            <th className="px-4 py-2.5 text-center text-xs font-medium text-gray-500 uppercase">Restants</th>
-                            <th className="px-4 py-2.5 text-right text-xs font-medium text-gray-500 uppercase">Valeur unit.</th>
-                            <th className="px-4 py-2.5 text-right text-xs font-medium text-gray-500 uppercase">Montant restant</th>
-                            <th className="px-4 py-2.5 text-center text-xs font-medium text-gray-500 uppercase">Statut</th>
-                            <th className="px-4 py-2.5 text-center text-xs font-medium text-gray-500 uppercase">Validité</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-gray-100">
-                          {employeeDetail.batches.map((batch: any, idx: number) => (
-                            <tr key={idx} className={`${batch.real_status === 'expired' ? 'bg-red-50/50' : ''}`}>
-                              <td className="px-4 py-2.5 text-sm font-mono text-gray-700">{batch.batch_number}</td>
-                              <td className="px-4 py-2.5 text-sm text-center text-gray-900">{batch.total_tickets}</td>
-                              <td className="px-4 py-2.5 text-sm text-center text-green-600 font-medium">{batch.used_tickets}</td>
-                              <td className="px-4 py-2.5 text-sm text-center font-medium text-gray-900">{batch.remaining_tickets}</td>
-                              <td className="px-4 py-2.5 text-sm text-right text-gray-600">{Math.round(batch.ticket_value).toLocaleString('fr-FR')} F</td>
-                              <td className="px-4 py-2.5 text-sm text-right font-medium text-purple-600">
-                                {Math.round(batch.remaining_amount).toLocaleString('fr-FR')} F
-                              </td>
-                              <td className="px-4 py-2.5 text-center">
-                                <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
-                                  batch.real_status === 'active'
-                                    ? 'bg-green-100 text-green-800'
-                                    : 'bg-red-100 text-red-800'
-                                }`}>
-                                  {batch.real_status === 'active' ? (
-                                    <><CheckCircle className="w-3 h-3 mr-1" />Active</>
-                                  ) : (
-                                    <><XCircle className="w-3 h-3 mr-1" />Expirée</>
-                                  )}
-                                </span>
-                              </td>
-                              <td className="px-4 py-2.5 text-sm text-center">
-                                <div className="text-gray-600">
-                                  {batch.validity_end ? new Date(batch.validity_end).toLocaleDateString('fr-FR') : '-'}
-                                </div>
-                                {batch.real_status === 'active' && batch.days_left !== undefined && (
-                                  <div className={`text-xs font-medium ${batch.days_left <= 7 ? 'text-amber-600' : 'text-gray-400'}`}>
-                                    {batch.days_left}j restants
+                  {/* Batches table */}
+                  <div>
+                    <h4 className="text-sm font-bold text-gray-900 mb-2.5 flex items-center gap-2">
+                      <Ticket className="w-4 h-4 text-orange-500" />
+                      Souches de tickets ({employeeDetail.batches?.length ?? 0})
+                    </h4>
+                    {employeeDetail.batches && employeeDetail.batches.length > 0 ? (
+                      <div className="overflow-x-auto border border-gray-100 rounded-xl">
+                        <table className="w-full">
+                          <thead>
+                            <tr className="border-b border-gray-100">
+                              <th className="px-3 py-2.5 text-left text-[10px] font-semibold text-gray-400 uppercase tracking-wider">N° Souche</th>
+                              <th className="px-3 py-2.5 text-center text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Total</th>
+                              <th className="px-3 py-2.5 text-center text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Utilisés</th>
+                              <th className="px-3 py-2.5 text-center text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Restants</th>
+                              <th className="px-3 py-2.5 text-right text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Val. unit.</th>
+                              <th className="px-3 py-2.5 text-right text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Montant</th>
+                              <th className="px-3 py-2.5 text-center text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Statut</th>
+                              <th className="px-3 py-2.5 text-center text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Validité</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {employeeDetail.batches.map((batch: any, idx: number) => (
+                              <tr key={idx} className={`border-b border-gray-50 ${batch.real_status === 'expired' ? 'bg-red-50/30' : 'hover:bg-orange-50/20'}`}>
+                                <td className="px-3 py-2.5 text-xs font-mono text-gray-700">{batch.batch_number}</td>
+                                <td className="px-3 py-2.5 text-xs text-center text-gray-900">{batch.total_tickets}</td>
+                                <td className="px-3 py-2.5 text-xs text-center text-emerald-600 font-semibold">{batch.used_tickets}</td>
+                                <td className="px-3 py-2.5 text-xs text-center font-semibold text-gray-900">{batch.remaining_tickets}</td>
+                                <td className="px-3 py-2.5 text-xs text-right text-gray-600">{Math.round(batch.ticket_value).toLocaleString('fr-FR')} F</td>
+                                <td className="px-3 py-2.5 text-xs text-right font-bold text-purple-600">
+                                  {Math.round(batch.remaining_amount).toLocaleString('fr-FR')} F
+                                </td>
+                                <td className="px-3 py-2.5 text-center">
+                                  <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-semibold border ${
+                                    batch.real_status === 'active'
+                                      ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
+                                      : 'bg-red-50 border-red-200 text-red-700'
+                                  }`}>
+                                    <span className={`w-1.5 h-1.5 rounded-full ${batch.real_status === 'active' ? 'bg-emerald-400' : 'bg-red-400'}`}></span>
+                                    {batch.real_status === 'active' ? 'Active' : 'Expirée'}
+                                  </span>
+                                </td>
+                                <td className="px-3 py-2.5 text-center">
+                                  <div className="text-xs text-gray-600">
+                                    {batch.validity_end ? new Date(batch.validity_end).toLocaleDateString('fr-FR') : '-'}
                                   </div>
-                                )}
-                              </td>
+                                  {batch.real_status === 'active' && batch.days_left !== undefined && (
+                                    <div className={`text-[10px] font-medium ${batch.days_left <= 7 ? 'text-amber-600' : 'text-gray-400'}`}>
+                                      {batch.days_left}j restants
+                                    </div>
+                                  )}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    ) : (
+                      <div className="text-center py-8 bg-gray-50 rounded-xl">
+                        <Ticket className="w-8 h-8 mx-auto mb-2 text-gray-300" />
+                        <p className="text-sm text-gray-400 font-medium">Aucune souche de tickets</p>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Recent orders */}
+                  <div>
+                    <h4 className="text-sm font-bold text-gray-900 mb-2.5 flex items-center gap-2">
+                      <ShoppingCart className="w-4 h-4 text-orange-500" />
+                      Dernières commandes ({employeeDetail.recent_orders?.length ?? 0})
+                    </h4>
+                    {employeeDetail.recent_orders && employeeDetail.recent_orders.length > 0 ? (
+                      <div className="overflow-x-auto border border-gray-100 rounded-xl">
+                        <table className="w-full">
+                          <thead>
+                            <tr className="border-b border-gray-100">
+                              <th className="px-3 py-2.5 text-left text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Date</th>
+                              <th className="px-3 py-2.5 text-right text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Montant</th>
+                              <th className="px-3 py-2.5 text-center text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Statut</th>
+                              <th className="px-3 py-2.5 text-left text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Articles</th>
                             </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  ) : (
-                    <div className="text-center py-6 text-gray-400">
-                      <Ticket className="w-10 h-10 mx-auto mb-2 opacity-30" />
-                      <p>Aucune souche de tickets</p>
-                    </div>
-                  )}
+                          </thead>
+                          <tbody>
+                            {employeeDetail.recent_orders.map((order: any, idx: number) => (
+                              <tr key={idx} className="border-b border-gray-50 hover:bg-orange-50/20">
+                                <td className="px-3 py-2.5 text-xs text-gray-700">
+                                  <div className="flex items-center gap-1">
+                                    <Calendar className="w-3 h-3 text-gray-400" />
+                                    {new Date(order.created_at).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' })}
+                                  </div>
+                                  <div className="text-[10px] text-gray-400 ml-4">
+                                    {new Date(order.created_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+                                  </div>
+                                </td>
+                                <td className="px-3 py-2.5 text-xs text-right font-bold text-gray-900">
+                                  {Math.round(order.total_amount).toLocaleString('fr-FR')} F
+                                </td>
+                                <td className="px-3 py-2.5 text-center">
+                                  <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-semibold border ${
+                                    order.status === 'confirmed' ? 'bg-emerald-50 border-emerald-200 text-emerald-700' :
+                                    order.status === 'pending' ? 'bg-amber-50 border-amber-200 text-amber-700' :
+                                    'bg-red-50 border-red-200 text-red-700'
+                                  }`}>
+                                    <span className={`w-1.5 h-1.5 rounded-full ${
+                                      order.status === 'confirmed' ? 'bg-emerald-400' :
+                                      order.status === 'pending' ? 'bg-amber-400' : 'bg-red-400'
+                                    }`}></span>
+                                    {order.status === 'confirmed' ? 'Confirmée' :
+                                     order.status === 'pending' ? 'En attente' : order.status}
+                                  </span>
+                                </td>
+                                <td className="px-3 py-2.5 text-xs text-gray-600 max-w-[200px] truncate">
+                                  {Array.isArray(order.items) ? order.items.map((item: any) => item.name || item.menu_item_name).join(', ') : '-'}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    ) : (
+                      <div className="text-center py-8 bg-gray-50 rounded-xl">
+                        <ShoppingCart className="w-8 h-8 mx-auto mb-2 text-gray-300" />
+                        <p className="text-sm text-gray-400 font-medium">Aucune commande</p>
+                      </div>
+                    )}
+                  </div>
                 </div>
 
-                {/* Recent orders */}
-                <div>
-                  <h4 className="text-lg font-bold text-gray-900 mb-3 flex items-center gap-2">
-                    <ShoppingCart className="w-5 h-5 text-orange-500" />
-                    Dernières commandes ({employeeDetail.recent_orders?.length ?? 0})
-                  </h4>
-                  {employeeDetail.recent_orders && employeeDetail.recent_orders.length > 0 ? (
-                    <div className="overflow-x-auto border border-gray-200 rounded-xl">
-                      <table className="min-w-full divide-y divide-gray-200">
-                        <thead className="bg-gray-50">
-                          <tr>
-                            <th className="px-4 py-2.5 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
-                            <th className="px-4 py-2.5 text-right text-xs font-medium text-gray-500 uppercase">Montant</th>
-                            <th className="px-4 py-2.5 text-center text-xs font-medium text-gray-500 uppercase">Statut</th>
-                            <th className="px-4 py-2.5 text-left text-xs font-medium text-gray-500 uppercase">Articles</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-gray-100">
-                          {employeeDetail.recent_orders.map((order: any, idx: number) => (
-                            <tr key={idx}>
-                              <td className="px-4 py-2.5 text-sm text-gray-700">
-                                <div className="flex items-center gap-1">
-                                  <Calendar className="w-3.5 h-3.5 text-gray-400" />
-                                  {new Date(order.created_at).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' })}
-                                </div>
-                                <div className="text-xs text-gray-400">
-                                  {new Date(order.created_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
-                                </div>
-                              </td>
-                              <td className="px-4 py-2.5 text-sm text-right font-medium text-gray-900">
-                                {Math.round(order.total_amount).toLocaleString('fr-FR')} F
-                              </td>
-                              <td className="px-4 py-2.5 text-center">
-                                <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
-                                  order.status === 'confirmed' ? 'bg-green-100 text-green-800' :
-                                  order.status === 'pending' ? 'bg-amber-100 text-amber-800' :
-                                  'bg-red-100 text-red-800'
-                                }`}>
-                                  {order.status === 'confirmed' ? 'Confirmée' :
-                                   order.status === 'pending' ? 'En attente' : order.status}
-                                </span>
-                              </td>
-                              <td className="px-4 py-2.5 text-sm text-gray-600">
-                                {Array.isArray(order.items) ? order.items.map((item: any) => item.name || item.menu_item_name).join(', ') : '-'}
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  ) : (
-                    <div className="text-center py-6 text-gray-400">
-                      <ShoppingCart className="w-10 h-10 mx-auto mb-2 opacity-30" />
-                      <p>Aucune commande</p>
-                    </div>
-                  )}
-                </div>
-
-                {/* Close button */}
-                <div className="flex justify-end mt-6 pt-4 border-t border-gray-200">
-                  <button
-                    onClick={() => setShowDetailModal(false)}
-                    className="px-5 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-medium transition-colors"
-                  >
+                {/* Footer */}
+                <div className="flex justify-end p-5 border-t border-gray-100">
+                  <button onClick={() => setShowDetailModal(false)}
+                    className="px-5 py-2.5 border border-gray-200 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">
                     Fermer
                   </button>
                 </div>
-              </div>
+              </>
             ) : (
-              <div className="text-center py-12">
-                <AlertTriangle className="w-12 h-12 text-red-400 mx-auto mb-3" />
-                <p className="text-gray-500">Impossible de charger les détails</p>
-                <button onClick={() => setShowDetailModal(false)} className="mt-4 px-4 py-2 bg-gray-100 rounded-lg">Fermer</button>
+              <div className="text-center py-16">
+                <div className="w-12 h-12 bg-red-50 rounded-2xl flex items-center justify-center mx-auto mb-3">
+                  <AlertTriangle className="w-6 h-6 text-red-400" />
+                </div>
+                <p className="text-sm text-gray-500 font-medium">Impossible de charger les détails</p>
+                <button onClick={() => setShowDetailModal(false)}
+                  className="mt-4 px-4 py-2 border border-gray-200 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">
+                  Fermer
+                </button>
               </div>
             )}
           </div>

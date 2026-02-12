@@ -244,81 +244,64 @@ const TicketConfiguration: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-96">
+      <div className="flex items-center justify-center h-96">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto mb-4"></div>
-          <p className="text-gray-600">Chargement des configurations...</p>
+          <div className="relative w-16 h-16 mx-auto mb-4">
+            <div className="absolute inset-0 rounded-full border-4 border-orange-100"></div>
+            <div className="absolute inset-0 rounded-full border-4 border-orange-500 border-t-transparent animate-spin"></div>
+          </div>
+          <p className="text-gray-500 font-medium">Chargement des configurations...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
+    <div className="max-w-7xl mx-auto space-y-6">
       {/* Notification Toast */}
       {notification && (
-        <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[60] animate-slide-down">
-          <div className={`flex items-start space-x-4 rounded-2xl p-5 shadow-2xl backdrop-blur-sm min-w-[400px] max-w-2xl ${
-            notification.type === 'success' 
-              ? 'bg-green-50/95 border-2 border-green-200' 
-              : notification.type === 'error'
-              ? 'bg-red-50/95 border-2 border-red-200'
-              : 'bg-blue-50/95 border-2 border-blue-200'
-          }`}>
-            {notification.type === 'success' ? (
-              <CheckCircle className="w-6 h-6 text-green-600 flex-shrink-0 mt-0.5" />
-            ) : notification.type === 'error' ? (
-              <XCircle className="w-6 h-6 text-red-600 flex-shrink-0 mt-0.5" />
-            ) : (
-              <AlertTriangle className="w-6 h-6 text-blue-600 flex-shrink-0 mt-0.5" />
-            )}
-            <div className="flex-1">
-              <h3 className={`font-semibold mb-1 ${
-                notification.type === 'success' 
-                  ? 'text-green-900' 
-                  : notification.type === 'error'
-                  ? 'text-red-900'
-                  : 'text-blue-900'
-              }`}>
-                {notification.title}
-              </h3>
-              <p className={`text-sm ${
-                notification.type === 'success' 
-                  ? 'text-green-800' 
-                  : notification.type === 'error'
-                  ? 'text-red-800'
-                  : 'text-blue-800'
-              }`}>
-                {notification.message}
-              </p>
+        <div className={`fixed top-4 right-4 z-50 max-w-md w-full rounded-2xl shadow-lg border p-4 backdrop-blur-sm ${
+          notification.type === 'success' ? 'bg-emerald-50/95 border-emerald-200' :
+          notification.type === 'error' ? 'bg-red-50/95 border-red-200' : 'bg-blue-50/95 border-blue-200'
+        }`}>
+          <div className="flex items-start gap-3">
+            <div className={`p-1.5 rounded-lg flex-shrink-0 ${
+              notification.type === 'success' ? 'bg-emerald-100' :
+              notification.type === 'error' ? 'bg-red-100' : 'bg-blue-100'
+            }`}>
+              {notification.type === 'success' ? (
+                <CheckCircle className="w-4 h-4 text-emerald-600" />
+              ) : notification.type === 'error' ? (
+                <XCircle className="w-4 h-4 text-red-600" />
+              ) : (
+                <AlertTriangle className="w-4 h-4 text-blue-600" />
+              )}
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className={`text-xs font-bold ${
+                notification.type === 'success' ? 'text-emerald-800' :
+                notification.type === 'error' ? 'text-red-800' : 'text-blue-800'
+              }`}>{notification.title}</p>
+              <p className={`text-xs mt-0.5 ${
+                notification.type === 'success' ? 'text-emerald-600' :
+                notification.type === 'error' ? 'text-red-600' : 'text-blue-600'
+              }`}>{notification.message}</p>
             </div>
             <button
               onClick={() => setNotification(null)}
-              className={`p-1 rounded-lg transition-colors ${
-                notification.type === 'success' 
-                  ? 'hover:bg-green-100' 
-                  : notification.type === 'error'
-                  ? 'hover:bg-red-100'
-                  : 'hover:bg-blue-100'
-              }`}
+              className="flex-shrink-0 p-1 hover:bg-white/50 rounded-lg"
             >
-              <X className={`w-5 h-5 ${
-                notification.type === 'success' 
-                  ? 'text-green-600' 
-                  : notification.type === 'error'
-                  ? 'text-red-600'
-                  : 'text-blue-600'
-              }`} />
+              <X className="w-3.5 h-3.5 text-gray-400" />
             </button>
           </div>
         </div>
       )}
 
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Configuration des Tickets</h1>
-          <p className="text-gray-600">
+          <h1 className="text-2xl font-bold text-gray-900">Configuration des Tickets</h1>
+          <p className="text-sm text-gray-400 mt-0.5">
             {isCompanyManager 
               ? `Paramétrez les tickets pour ${currentUser.companyName || 'votre entreprise'}`
               : 'Gérez les configurations de tickets pour toutes les entreprises'
@@ -327,189 +310,187 @@ const TicketConfiguration: React.FC = () => {
         </div>
         <button
           onClick={handleCreateConfig}
-          className="bg-orange-500 hover:bg-orange-600 text-white px-6 py-3 rounded-xl font-medium flex items-center space-x-2 transition-colors"
+          className="bg-orange-500 hover:bg-orange-600 text-white px-5 py-2.5 rounded-xl text-sm font-semibold flex items-center gap-2 transition-colors shadow-sm shadow-orange-100"
         >
-          <Plus className="w-5 h-5" />
+          <Plus className="w-4 h-4" />
           <span>Nouvelle Configuration</span>
         </button>
       </div>
 
       {/* Statistiques */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-          <div className="flex items-center space-x-3">
-            <div className="p-3 bg-blue-100 rounded-xl">
-              <CreditCard className="w-6 h-6 text-blue-600" />
-            </div>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 hover:shadow-md transition-shadow">
+          <div className="flex items-start justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600">Configurations</p>
-              <p className="text-2xl font-bold text-gray-900">{filteredConfigurations.length}</p>
+              <p className="text-xs text-gray-500 font-medium">Configurations</p>
+              <p className="text-3xl font-extrabold text-gray-900 mt-1">{filteredConfigurations.length}</p>
+            </div>
+            <div className="p-2.5 rounded-xl bg-blue-50 text-blue-600">
+              <CreditCard className="w-5 h-5" />
             </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-          <div className="flex items-center space-x-3">
-            <div className="p-3 bg-green-100 rounded-xl">
-              <DollarSign className="w-6 h-6 text-green-600" />
-            </div>
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 hover:shadow-md transition-shadow">
+          <div className="flex items-start justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600">Valeur Moyenne</p>
-              <p className="text-2xl font-bold text-gray-900">
+              <p className="text-xs text-gray-500 font-medium">Valeur Moyenne</p>
+              <p className="text-3xl font-extrabold text-gray-900 mt-1">
                 {filteredConfigurations.length > 0 
                   ? Math.round(filteredConfigurations.reduce((sum, config) => sum + parseFloat(String(config.ticket_value)), 0) / filteredConfigurations.length)
                   : 0
                 }F
               </p>
             </div>
+            <div className="p-2.5 rounded-xl bg-emerald-50 text-emerald-600">
+              <DollarSign className="w-5 h-5" />
+            </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-          <div className="flex items-center space-x-3">
-            <div className="p-3 bg-purple-100 rounded-xl">
-              <Clock className="w-6 h-6 text-purple-600" />
-            </div>
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 hover:shadow-md transition-shadow">
+          <div className="flex items-start justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600">Durée Moyenne</p>
-              <p className="text-2xl font-bold text-gray-900">
+              <p className="text-xs text-gray-500 font-medium">Durée Moyenne</p>
+              <p className="text-3xl font-extrabold text-gray-900 mt-1">
                 {filteredConfigurations.length > 0 
                   ? Math.round(filteredConfigurations.reduce((sum, config) => sum + (config.validity_days || 0), 0) / filteredConfigurations.length)
                   : 0
-                } jours
+                }<span className="text-lg font-bold text-gray-400 ml-1">j</span>
               </p>
+            </div>
+            <div className="p-2.5 rounded-xl bg-purple-50 text-purple-600">
+              <Clock className="w-5 h-5" />
             </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-          <div className="flex items-center space-x-3">
-            <div className="p-3 bg-orange-100 rounded-xl">
-              <CheckCircle className="w-6 h-6 text-orange-600" />
-            </div>
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 hover:shadow-md transition-shadow">
+          <div className="flex items-start justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600">Auto-renouvellement</p>
-              <p className="text-2xl font-bold text-gray-900">
+              <p className="text-xs text-gray-500 font-medium">Auto-renouvellement</p>
+              <p className="text-3xl font-extrabold text-gray-900 mt-1">
                 {filteredConfigurations.filter(config => config.auto_renewal).length}
               </p>
+            </div>
+            <div className="p-2.5 rounded-xl bg-orange-50 text-orange-600">
+              <CheckCircle className="w-5 h-5" />
             </div>
           </div>
         </div>
       </div>
 
       {/* Liste des configurations */}
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-100">
-        <div className="px-6 py-4 border-b border-gray-100">
-          <h2 className="text-lg font-semibold text-gray-900">Configurations Actives</h2>
-        </div>
-        
-        <div className="p-6">
-          {filteredConfigurations.length === 0 ? (
-            <div className="text-center py-12">
-              <CreditCard className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">Aucune configuration</h3>
-              <p className="text-gray-600 mb-6">Créez votre première configuration de tickets.</p>
-              <button
-                onClick={handleCreateConfig}
-                className="bg-orange-500 hover:bg-orange-600 text-white px-6 py-3 rounded-xl font-medium transition-colors"
-              >
-                Créer une configuration
-              </button>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {filteredConfigurations.map((config) => (
-                <div key={config.id} className="border border-gray-200 rounded-xl p-6 hover:shadow-md transition-shadow">
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="flex items-center space-x-3">
-                      <div className="p-2 bg-orange-100 rounded-lg flex items-center justify-center">
-                        {config.logo ? (
-                          <img 
-                            src={config.logo} 
-                            alt="Logo" 
-                            className="w-10 h-10 object-contain"
-                          />
-                        ) : (
-                          <CreditCard className="w-5 h-5 text-orange-600" />
-                        )}
-                      </div>
-                      <div>
-                        <h3 className="font-semibold text-gray-900">
-                          Ticket {getTypeLabel(config.type || 'standard')}
-                        </h3>
-                        <span className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${getTypeColor(config.type || 'standard')}`}>
-                          {getTypeLabel(config.type || 'standard')}
-                        </span>
-                      </div>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <button
-                        onClick={() => handleEditConfig(config)}
-                        className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                      >
-                        <Edit className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => handleDeleteConfig(config.id!)}
-                        className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </div>
+      <div>
+        <h2 className="text-lg font-bold text-gray-900 mb-4">Configurations Actives</h2>
 
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-gray-600">Valeur du ticket</span>
-                      <span className="font-semibold text-gray-900">{parseFloat(String(config.ticket_value))}F</span>
+        {filteredConfigurations.length === 0 ? (
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-16 text-center">
+            <div className="w-16 h-16 bg-gray-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
+              <CreditCard className="w-8 h-8 text-gray-300" />
+            </div>
+            <h3 className="text-base font-bold text-gray-900 mb-1">Aucune configuration</h3>
+            <p className="text-sm text-gray-400 mb-6">Créez votre première configuration de tickets</p>
+            <button
+              onClick={handleCreateConfig}
+              className="bg-orange-500 hover:bg-orange-600 text-white px-5 py-2.5 rounded-xl text-sm font-semibold transition-colors"
+            >
+              Créer une configuration
+            </button>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            {filteredConfigurations.map((config) => (
+              <div key={config.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 hover:shadow-md hover:border-gray-200 transition-all group">
+                <div className="flex items-start justify-between mb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2.5 bg-orange-50 rounded-xl flex items-center justify-center">
+                      {config.logo ? (
+                        <img 
+                          src={config.logo} 
+                          alt="Logo" 
+                          className="w-8 h-8 object-contain"
+                        />
+                      ) : (
+                        <CreditCard className="w-5 h-5 text-orange-600" />
+                      )}
                     </div>
-                    
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-gray-600">Durée de validité</span>
-                      <span className="font-semibold text-gray-900">{config.validity_days || '-'} jours</span>
-                    </div>
-                    
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-gray-600">Auto-renouvellement</span>
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                        config.auto_renewal 
-                          ? 'bg-green-100 text-green-800' 
-                          : 'bg-gray-100 text-gray-800'
-                      }`}>
-                        {config.auto_renewal ? 'Activé' : 'Désactivé'}
+                    <div>
+                      <h3 className="font-bold text-gray-900 text-sm">
+                        Ticket {getTypeLabel(config.type || 'standard')}
+                      </h3>
+                      <span className={`inline-flex items-center mt-1 px-2 py-0.5 rounded-lg text-[10px] font-bold ${getTypeColor(config.type || 'standard')}`}>
+                        {getTypeLabel(config.type || 'standard')}
                       </span>
                     </div>
                   </div>
+                  <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button
+                      onClick={() => handleEditConfig(config)}
+                      className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-colors"
+                    >
+                      <Edit className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => handleDeleteConfig(config.id!)}
+                      className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-colors"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
                 </div>
-              ))}
-            </div>
-          )}
-        </div>
+
+                <div className="space-y-2.5">
+                  <div className="flex items-center justify-between py-1.5">
+                    <span className="text-xs text-gray-500">Valeur du ticket</span>
+                    <span className="text-sm font-bold text-gray-900">{parseFloat(String(config.ticket_value))}F</span>
+                  </div>
+                  
+                  <div className="flex items-center justify-between py-1.5 border-t border-gray-50">
+                    <span className="text-xs text-gray-500">Durée de validité</span>
+                    <span className="text-sm font-bold text-gray-900">{config.validity_days || '-'} jours</span>
+                  </div>
+                  
+                  <div className="flex items-center justify-between py-1.5 border-t border-gray-50">
+                    <span className="text-xs text-gray-500">Auto-renouvellement</span>
+                    <span className={`px-2.5 py-1 rounded-lg text-[10px] font-bold ${
+                      config.auto_renewal 
+                        ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' 
+                        : 'bg-gray-50 text-gray-500 border border-gray-200'
+                    }`}>
+                      {config.auto_renewal ? 'Activé' : 'Désactivé'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Modal de création/édition */}
       {showModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 rounded-t-2xl">
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl border border-gray-100">
+            <div className="sticky top-0 bg-white border-b border-gray-100 px-6 py-4 rounded-t-2xl">
               <div className="flex items-center justify-between">
-                <h2 className="text-xl font-semibold text-gray-900">
+                <h2 className="text-lg font-bold text-gray-900">
                   {selectedConfig ? 'Modifier la Configuration' : 'Nouvelle Configuration'}
                 </h2>
                 <button
                   onClick={() => setShowModal(false)}
-                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                  className="p-2 hover:bg-gray-100 rounded-xl transition-colors"
                 >
-                  <X className="w-5 h-5 text-gray-500" />
+                  <X className="w-4 h-4 text-gray-500" />
                 </button>
               </div>
             </div>
 
-            <form onSubmit={handleSubmit} className="p-6 space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <form onSubmit={handleSubmit} className="p-6 space-y-5">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* Valeur du ticket */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-xs font-medium text-gray-700 mb-1.5">
                     Valeur du ticket (F CFA) *
                   </label>
                   <div className="relative">
@@ -518,7 +499,7 @@ const TicketConfiguration: React.FC = () => {
                       type="number"
                       value={formData.ticket_value}
                       onChange={(e) => setFormData({ ...formData, ticket_value: Number(e.target.value) })}
-                      className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                      className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-300"
                       placeholder="500"
                       min="100"
                       step="50"
@@ -529,7 +510,7 @@ const TicketConfiguration: React.FC = () => {
 
                 {/* Durée de validité */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-xs font-medium text-gray-700 mb-1.5">
                     Durée de validité (jours) *
                   </label>
                   <div className="relative">
@@ -538,7 +519,7 @@ const TicketConfiguration: React.FC = () => {
                       type="number"
                       value={formData.validity_duration_days}
                       onChange={(e) => setFormData({ ...formData, validity_duration_days: Number(e.target.value) })}
-                      className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                      className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-300"
                       placeholder="30"
                       min="1"
                       max="365"
@@ -550,13 +531,13 @@ const TicketConfiguration: React.FC = () => {
 
               {/* Type de ticket */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-xs font-medium text-gray-700 mb-1.5">
                   Type de ticket *
                 </label>
                 <select
                   value={formData.type}
                   onChange={(e) => setFormData({ ...formData, type: e.target.value as 'standard' | 'premium' | 'bonus' })}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                  className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-300"
                   required
                 >
                   <option value="standard">Standard</option>
@@ -567,49 +548,45 @@ const TicketConfiguration: React.FC = () => {
 
               {/* Logo du ticket */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-xs font-medium text-gray-700 mb-1.5">
                   Logo du ticket (optionnel)
                 </label>
-                <div className="space-y-3">
+                <div>
                   {logoPreview ? (
                     <div className="relative inline-block">
                       <img 
                         src={logoPreview} 
                         alt="Logo preview" 
-                        className="w-32 h-32 object-contain border-2 border-gray-200 rounded-lg"
+                        className="w-28 h-28 object-contain border-2 border-gray-200 rounded-xl"
                       />
                       <button
                         type="button"
                         onClick={handleRemoveLogo}
-                        className="absolute -top-2 -right-2 p-1 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
+                        className="absolute -top-2 -right-2 p-1 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors shadow-sm"
                       >
-                        <X className="w-4 h-4" />
+                        <X className="w-3.5 h-3.5" />
                       </button>
                     </div>
                   ) : (
-                    <div className="flex items-center justify-center w-full">
-                      <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100 transition-colors">
-                        <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                          <Upload className="w-8 h-8 mb-2 text-gray-400" />
-                          <p className="mb-2 text-sm text-gray-500">
-                            <span className="font-semibold">Cliquez pour télécharger</span> ou glissez-déposez
-                          </p>
-                          <p className="text-xs text-gray-400">PNG, JPG, SVG (MAX. 2MB)</p>
-                        </div>
-                        <input 
-                          type="file" 
-                          className="hidden" 
-                          accept="image/*"
-                          onChange={handleLogoUpload}
-                        />
-                      </label>
-                    </div>
+                    <label className="flex flex-col items-center justify-center w-full h-28 border-2 border-gray-200 border-dashed rounded-xl cursor-pointer bg-gray-50 hover:bg-gray-100 transition-colors">
+                      <Upload className="w-6 h-6 mb-1.5 text-gray-400" />
+                      <p className="text-xs text-gray-500">
+                        <span className="font-semibold">Cliquez pour télécharger</span>
+                      </p>
+                      <p className="text-[10px] text-gray-400 mt-0.5">PNG, JPG, SVG (MAX. 2MB)</p>
+                      <input 
+                        type="file" 
+                        className="hidden" 
+                        accept="image/*"
+                        onChange={handleLogoUpload}
+                      />
+                    </label>
                   )}
                 </div>
               </div>
 
               {/* Auto-renouvellement */}
-              <div className="flex items-center space-x-3">
+              <div className="flex items-center gap-2.5 p-3 bg-gray-50 rounded-xl">
                 <input
                   type="checkbox"
                   id="auto_renewal"
@@ -617,23 +594,23 @@ const TicketConfiguration: React.FC = () => {
                   onChange={(e) => setFormData({ ...formData, auto_renewal: e.target.checked })}
                   className="w-4 h-4 text-orange-600 border-gray-300 rounded focus:ring-orange-500"
                 />
-                <label htmlFor="auto_renewal" className="text-sm font-medium text-gray-700">
+                <label htmlFor="auto_renewal" className="text-xs font-medium text-gray-700">
                   Activer le renouvellement automatique
                 </label>
               </div>
 
               {/* Boutons d'action */}
-              <div className="flex items-center justify-end space-x-4 pt-6 border-t border-gray-200">
+              <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-100">
                 <button
                   type="button"
                   onClick={() => setShowModal(false)}
-                  className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-medium transition-colors"
+                  className="px-5 py-2.5 border border-gray-200 text-gray-700 rounded-xl text-sm font-semibold hover:bg-gray-50 transition-colors"
                 >
                   Annuler
                 </button>
                 <button
                   type="submit"
-                  className="px-6 py-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600 font-medium transition-colors flex items-center space-x-2"
+                  className="px-5 py-2.5 bg-orange-500 text-white rounded-xl text-sm font-semibold hover:bg-orange-600 transition-colors flex items-center gap-2 shadow-sm shadow-orange-100"
                 >
                   <Save className="w-4 h-4" />
                   <span>{selectedConfig ? 'Mettre à jour' : 'Créer'}</span>
@@ -646,31 +623,31 @@ const TicketConfiguration: React.FC = () => {
 
       {/* Modal de confirmation de suppression */}
       {showDeleteModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6">
-            <div className="flex items-center justify-center w-12 h-12 mx-auto mb-4 bg-red-100 rounded-full">
-              <AlertTriangle className="w-6 h-6 text-red-600" />
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl border border-gray-100">
+            <div className="flex items-center justify-center w-12 h-12 mx-auto mb-4 bg-red-50 rounded-2xl">
+              <AlertTriangle className="w-6 h-6 text-red-500" />
             </div>
-            <h3 className="text-lg font-semibold text-gray-900 text-center mb-2">
+            <h3 className="text-base font-bold text-gray-900 text-center mb-1">
               Supprimer la configuration
             </h3>
-            <p className="text-gray-600 text-center mb-6">
-              Êtes-vous sûr de vouloir supprimer cette configuration de tickets ? 
-              Cette action est <strong>irréversible</strong>.
+            <p className="text-sm text-gray-500 text-center mb-6">
+              Êtes-vous sûr de vouloir supprimer cette configuration ? 
+              Cette action est <strong className="text-gray-700">irréversible</strong>.
             </p>
-            <div className="flex space-x-3">
+            <div className="flex gap-3">
               <button
                 onClick={() => {
                   setShowDeleteModal(false);
                   setConfigToDelete(null);
                 }}
-                className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-medium transition-colors"
+                className="flex-1 px-4 py-2.5 border border-gray-200 text-gray-700 rounded-xl text-sm font-semibold hover:bg-gray-50 transition-colors"
               >
                 Annuler
               </button>
               <button
                 onClick={handleConfirmDelete}
-                className="flex-1 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 font-medium transition-colors"
+                className="flex-1 px-4 py-2.5 bg-red-500 text-white rounded-xl text-sm font-semibold hover:bg-red-600 transition-colors shadow-sm shadow-red-100"
               >
                 Supprimer
               </button>

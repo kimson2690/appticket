@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, Save, CheckCircle, XCircle, RefreshCw } from 'lucide-react';
+import { Save, CheckCircle, XCircle, RefreshCw, CalendarDays, Copy, ChefHat, X as XIcon } from 'lucide-react';
 import { apiService, type WeeklyMenuPlanning, type MenuItem } from '../services/api';
 
-const WeeklyMenuPlanning: React.FC = () => {
+const WeeklyMenuPlanningComponent: React.FC = () => {
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [planning, setPlanning] = useState<WeeklyMenuPlanning | null>(null);
   const [loading, setLoading] = useState(true);
@@ -151,178 +151,201 @@ const WeeklyMenuPlanning: React.FC = () => {
       newPlanning[d.key as keyof typeof selectedDishes] = [...dayDishes];
     });
     setSelectedDishes(newPlanning);
+    setHasUnsavedChanges(true);
   };
+
+  const totalSelected = Object.values(selectedDishes).flat().length;
+  const configuredDays = Object.values(selectedDishes).filter(arr => arr.length > 0).length;
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500"></div>
+      <div className="flex items-center justify-center h-96">
+        <div className="text-center">
+          <div className="relative w-16 h-16 mx-auto mb-4">
+            <div className="absolute inset-0 rounded-full border-4 border-orange-100"></div>
+            <div className="absolute inset-0 rounded-full border-4 border-orange-500 border-t-transparent animate-spin"></div>
+          </div>
+          <p className="text-gray-500 font-medium">Chargement du planning...</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
+    <div className="max-w-7xl mx-auto space-y-6">
+      {/* Notification Toast */}
       {notification && (
-        <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-50 animate-slide-down">
-          <div className={`rounded-xl shadow-2xl border-2 backdrop-blur-sm p-4 min-w-[320px] ${
-            notification.type === 'success' ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'
+        <div className="fixed top-4 right-4 z-50">
+          <div className={`rounded-2xl shadow-lg border p-4 flex items-center gap-3 backdrop-blur-sm ${
+            notification.type === 'success' ? 'bg-emerald-50/95 border-emerald-200' : 'bg-red-50/95 border-red-200'
           }`}>
-            <div className="flex items-start">
-              <div className={`flex-shrink-0 ${notification.type === 'success' ? 'text-green-600' : 'text-red-600'}`}>
-                {notification.type === 'success' ? <CheckCircle className="w-6 h-6" /> : <XCircle className="w-6 h-6" />}
-              </div>
-              <div className="ml-3 flex-1">
-                <h3 className={`text-sm font-bold ${notification.type === 'success' ? 'text-green-900' : 'text-red-900'}`}>
-                  {notification.title}
-                </h3>
-                <p className={`mt-1 text-sm ${notification.type === 'success' ? 'text-green-700' : 'text-red-700'}`}>
-                  {notification.message}
-                </p>
-              </div>
+            {notification.type === 'success' ? (
+              <div className="p-1.5 bg-emerald-100 rounded-lg"><CheckCircle className="w-4 h-4 text-emerald-600" /></div>
+            ) : (
+              <div className="p-1.5 bg-red-100 rounded-lg"><XCircle className="w-4 h-4 text-red-600" /></div>
+            )}
+            <div>
+              <p className={`text-sm font-semibold ${notification.type === 'success' ? 'text-emerald-900' : 'text-red-900'}`}>{notification.title}</p>
+              <p className={`text-xs ${notification.type === 'success' ? 'text-emerald-700' : 'text-red-700'}`}>{notification.message}</p>
             </div>
+            <button onClick={() => setNotification(null)} className="p-1 hover:bg-black/5 rounded-lg transition-colors ml-2">
+              <XIcon className="w-3.5 h-3.5 text-gray-400" />
+            </button>
           </div>
         </div>
       )}
 
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center space-x-3">
-            <div className="p-3 bg-orange-100 rounded-xl">
-              <Calendar className="w-6 h-6 text-orange-600" />
-            </div>
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Planification Hebdomadaire</h1>
+          <p className="text-sm text-gray-400 mt-0.5">Définissez quels plats sont disponibles chaque jour de la semaine</p>
+        </div>
+        <button
+          onClick={handleSave}
+          disabled={saving}
+          className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition-all shadow-sm ${
+            hasUnsavedChanges
+              ? 'bg-orange-500 text-white hover:bg-orange-600 shadow-orange-100'
+              : 'bg-emerald-500 text-white hover:bg-emerald-600 shadow-emerald-100'
+          } disabled:opacity-50 disabled:cursor-not-allowed`}
+        >
+          {saving ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+          {saving ? 'Enregistrement...' : 'Enregistrer'}
+        </button>
+      </div>
+
+      {/* Stat Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+        {/* Plats sélectionnés */}
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 hover:shadow-md transition-shadow group">
+          <div className="flex items-start justify-between">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">Planification Hebdomadaire</h1>
-              <p className="text-sm text-gray-600">Définissez quels plats sont disponibles chaque jour de la semaine</p>
+              <p className="text-sm text-gray-500 font-medium">Plats sélectionnés</p>
+              <p className="text-3xl font-extrabold text-gray-900 mt-1">{totalSelected}</p>
             </div>
-          </div>
-          <button
-            onClick={handleSave}
-            disabled={saving}
-            className="flex items-center space-x-2 px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {saving ? <RefreshCw className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
-            <span>{saving ? 'Enregistrement...' : 'Enregistrer'}</span>
-          </button>
-        </div>
-
-        {/* Feedback visuel */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-          {/* Compteur total de plats sélectionnés */}
-          <div className="bg-gradient-to-br from-purple-50 to-purple-100 border border-purple-200 rounded-xl p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-purple-600">Plats sélectionnés</p>
-                <p className="text-2xl font-bold text-purple-900 mt-1">
-                  {Object.values(selectedDishes).flat().length}
-                </p>
-              </div>
-              <div className="p-3 bg-purple-200 rounded-lg">
-                <CheckCircle className="w-6 h-6 text-purple-600" />
-              </div>
-            </div>
-          </div>
-
-          {/* Statut de sauvegarde */}
-          <div className={`border rounded-xl p-4 ${hasUnsavedChanges ? 'bg-gradient-to-br from-orange-50 to-orange-100 border-orange-200' : 'bg-gradient-to-br from-green-50 to-green-100 border-green-200'}`}>
-            <div className="flex items-center justify-between">
-              <div>
-                <p className={`text-sm font-medium ${hasUnsavedChanges ? 'text-orange-600' : 'text-green-600'}`}>
-                  {hasUnsavedChanges ? 'Modifications non sauvegardées' : 'Sauvegardé'}
-                </p>
-                {lastSaved && !hasUnsavedChanges && (
-                  <p className="text-xs text-green-700 mt-1">
-                    {lastSaved.toLocaleDateString('fr-FR')} à {lastSaved.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
-                  </p>
-                )}
-                {hasUnsavedChanges && (
-                  <p className="text-xs text-orange-700 mt-1">
-                    Cliquez sur "Enregistrer"
-                  </p>
-                )}
-              </div>
-              <div className={`p-3 rounded-lg ${hasUnsavedChanges ? 'bg-orange-200' : 'bg-green-200'}`}>
-                {hasUnsavedChanges ? (
-                  <XCircle className="w-6 h-6 text-orange-600" />
-                ) : (
-                  <CheckCircle className="w-6 h-6 text-green-600" />
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* Jours configurés */}
-          <div className="bg-gradient-to-br from-blue-50 to-blue-100 border border-blue-200 rounded-xl p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-blue-600">Jours configurés</p>
-                <p className="text-2xl font-bold text-blue-900 mt-1">
-                  {Object.values(selectedDishes).filter(arr => arr.length > 0).length} / 7
-                </p>
-              </div>
-              <div className="p-3 bg-blue-200 rounded-lg">
-                <Calendar className="w-6 h-6 text-blue-600" />
-              </div>
+            <div className="p-2.5 rounded-xl bg-purple-50 text-purple-600 group-hover:scale-110 transition-transform">
+              <CheckCircle className="w-5 h-5" />
             </div>
           </div>
         </div>
 
-        <div className="space-y-6">
-          {days.map(day => {
-            const dayDishes = selectedDishes[day.key as keyof typeof selectedDishes];
-            return (
-              <div key={day.key} className="border border-gray-200 rounded-xl p-4">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center space-x-3">
-                    <div className="w-3 h-3 rounded-full bg-orange-500"></div>
-                    <h3 className="text-lg font-bold text-gray-900">{day.label}</h3>
-                    <span className="text-sm text-gray-600">({dayDishes.length} plat{dayDishes.length > 1 ? 's' : ''})</span>
+        {/* Statut sauvegarde */}
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 hover:shadow-md transition-shadow group">
+          <div className="flex items-start justify-between">
+            <div>
+              <p className="text-sm text-gray-500 font-medium">
+                {hasUnsavedChanges ? 'Non sauvegardé' : 'Sauvegardé'}
+              </p>
+              {lastSaved && !hasUnsavedChanges ? (
+                <p className="text-sm font-semibold text-gray-900 mt-1">
+                  {lastSaved.toLocaleDateString('fr-FR')} à {lastSaved.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+                </p>
+              ) : hasUnsavedChanges ? (
+                <p className="text-sm font-semibold text-amber-600 mt-1">Modifications en attente</p>
+              ) : (
+                <p className="text-sm font-semibold text-gray-900 mt-1">À jour</p>
+              )}
+            </div>
+            <div className={`p-2.5 rounded-xl group-hover:scale-110 transition-transform ${
+              hasUnsavedChanges ? 'bg-amber-50 text-amber-600' : 'bg-emerald-50 text-emerald-600'
+            }`}>
+              {hasUnsavedChanges ? <RefreshCw className="w-5 h-5" /> : <CheckCircle className="w-5 h-5" />}
+            </div>
+          </div>
+        </div>
+
+        {/* Jours configurés */}
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 hover:shadow-md transition-shadow group">
+          <div className="flex items-start justify-between">
+            <div>
+              <p className="text-sm text-gray-500 font-medium">Jours configurés</p>
+              <p className="text-3xl font-extrabold text-gray-900 mt-1">{configuredDays} <span className="text-lg font-bold text-gray-400">/ 7</span></p>
+            </div>
+            <div className="p-2.5 rounded-xl bg-blue-50 text-blue-600 group-hover:scale-110 transition-transform">
+              <CalendarDays className="w-5 h-5" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Day Sections */}
+      <div className="space-y-4">
+        {days.map(day => {
+          const dayDishes = selectedDishes[day.key as keyof typeof selectedDishes];
+          const selectedCount = dayDishes.length;
+
+          return (
+            <div key={day.key} className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden hover:border-orange-200 transition-all">
+              {/* Day Header */}
+              <div className="flex items-center justify-between px-5 py-4 border-b border-gray-50">
+                <div className="flex items-center gap-3">
+                  <div className="w-2.5 h-2.5 rounded-full bg-orange-400"></div>
+                  <h3 className="text-base font-bold text-gray-900">{day.label}</h3>
+                  <span className="text-xs font-medium text-gray-400 bg-gray-50 px-2 py-0.5 rounded-md">
+                    {selectedCount} plat{selectedCount > 1 ? 's' : ''}
+                  </span>
+                </div>
+                <button
+                  onClick={() => copyToAll(day.key)}
+                  className="flex items-center gap-1.5 text-xs font-semibold text-blue-600 hover:text-blue-700 hover:bg-blue-50 px-2.5 py-1.5 rounded-lg transition-colors"
+                >
+                  <Copy className="w-3.5 h-3.5" />
+                  Copier vers tous
+                </button>
+              </div>
+
+              {/* Dishes Grid */}
+              <div className="p-4">
+                {menuItems.length === 0 ? (
+                  <div className="text-center py-8">
+                    <div className="w-12 h-12 bg-gray-50 rounded-2xl flex items-center justify-center mx-auto mb-3">
+                      <ChefHat className="w-6 h-6 text-gray-300" />
+                    </div>
+                    <p className="text-sm text-gray-400 font-medium">Aucun plat disponible</p>
+                    <p className="text-xs text-gray-300 mt-0.5">Créez d'abord des plats dans "Gestion du Menu"</p>
                   </div>
-                  <button
-                    onClick={() => copyToAll(day.key)}
-                    className="text-sm text-blue-600 hover:text-blue-700 font-medium"
-                  >
-                    Copier vers tous
-                  </button>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
-                  {menuItems.map(item => {
-                    const isSelected = dayDishes.includes(item.id);
-                    return (
-                      <button
-                        key={item.id}
-                        onClick={() => toggleDish(day.key, item.id)}
-                        className={`text-left p-3 rounded-lg border-2 transition-all ${
-                          isSelected
-                            ? 'border-orange-500 bg-orange-50'
-                            : 'border-gray-200 hover:border-gray-300'
-                        }`}
-                      >
-                        <div className="flex items-center justify-between">
-                          <div className="flex-1">
-                            <p className="font-medium text-gray-900">{item.name}</p>
-                            <p className="text-xs text-gray-600">{item.category} - {item.price}F</p>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2.5">
+                    {menuItems.map(item => {
+                      const isSelected = dayDishes.includes(item.id);
+                      return (
+                        <button
+                          key={item.id}
+                          onClick={() => toggleDish(day.key, item.id)}
+                          className={`text-left p-3.5 rounded-xl border-2 transition-all group/dish ${
+                            isSelected
+                              ? 'border-orange-400 bg-orange-50/70 shadow-sm shadow-orange-100'
+                              : 'border-gray-100 hover:border-gray-200 hover:bg-gray-50/50'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between">
+                            <div className="flex-1 min-w-0">
+                              <p className={`text-sm font-semibold truncate ${isSelected ? 'text-gray-900' : 'text-gray-700'}`}>
+                                {item.name}
+                              </p>
+                              <p className="text-xs text-gray-400 mt-0.5">{item.category} - {item.price}F</p>
+                            </div>
+                            <div className={`ml-3 flex-shrink-0 w-7 h-7 rounded-lg flex items-center justify-center transition-all ${
+                              isSelected
+                                ? 'bg-orange-500 text-white'
+                                : 'bg-gray-100 text-gray-300 group-hover/dish:bg-gray-200 group-hover/dish:text-gray-400'
+                            }`}>
+                              <CheckCircle className="w-4 h-4" />
+                            </div>
                           </div>
-                          {isSelected && <CheckCircle className="w-5 h-5 text-orange-600" />}
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
-
-                {menuItems.length === 0 && (
-                  <p className="text-center text-gray-500 py-8">
-                    Aucun plat disponible. Créez d'abord des plats dans "Gestion du Menu".
-                  </p>
+                        </button>
+                      );
+                    })}
+                  </div>
                 )}
               </div>
-            );
-          })}
-        </div>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
 };
 
-export default WeeklyMenuPlanning;
+export default WeeklyMenuPlanningComponent;

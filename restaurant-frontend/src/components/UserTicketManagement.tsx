@@ -178,10 +178,13 @@ const UserTicketManagement: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-96">
+      <div className="flex items-center justify-center h-96">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto mb-4"></div>
-          <p className="text-gray-600">Chargement...</p>
+          <div className="relative w-16 h-16 mx-auto mb-4">
+            <div className="absolute inset-0 rounded-full border-4 border-orange-100"></div>
+            <div className="absolute inset-0 rounded-full border-4 border-orange-500 border-t-transparent animate-spin"></div>
+          </div>
+          <p className="text-gray-500 font-medium">Chargement...</p>
         </div>
       </div>
     );
@@ -198,211 +201,187 @@ const UserTicketManagement: React.FC = () => {
   const totalTicketsAssigned = batches.reduce((sum, b) => sum + b.total_tickets, 0);
 
   return (
-    <div className="space-y-6">
+    <div className="max-w-7xl mx-auto space-y-6">
       {/* Notification Toast */}
       {notification && (
-        <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[60] animate-slide-down">
-          <div className={`flex items-start space-x-4 rounded-2xl p-5 shadow-2xl backdrop-blur-sm min-w-[400px] max-w-2xl ${
-            notification.type === 'success' 
-              ? 'bg-green-50/95 border-2 border-green-200' 
-              : notification.type === 'error'
-              ? 'bg-red-50/95 border-2 border-red-200'
-              : 'bg-blue-50/95 border-2 border-blue-200'
-          }`}>
-            {notification.type === 'success' ? (
-              <CheckCircle className="w-6 h-6 text-green-600 flex-shrink-0 mt-0.5" />
-            ) : notification.type === 'error' ? (
-              <XCircle className="w-6 h-6 text-red-600 flex-shrink-0 mt-0.5" />
-            ) : (
-              <AlertTriangle className="w-6 h-6 text-blue-600 flex-shrink-0 mt-0.5" />
-            )}
-            <div className="flex-1">
-              <h3 className={`font-semibold mb-1 ${
-                notification.type === 'success' 
-                  ? 'text-green-900' 
-                  : notification.type === 'error'
-                  ? 'text-red-900'
-                  : 'text-blue-900'
-              }`}>
-                {notification.title}
-              </h3>
-              <p className={`text-sm ${
-                notification.type === 'success' 
-                  ? 'text-green-800' 
-                  : notification.type === 'error'
-                  ? 'text-red-800'
-                  : 'text-blue-800'
-              }`}>
-                {notification.message}
-              </p>
+        <div className={`fixed top-4 right-4 z-50 max-w-md w-full rounded-2xl shadow-lg border p-4 backdrop-blur-sm ${
+          notification.type === 'success' ? 'bg-emerald-50/95 border-emerald-200' :
+          notification.type === 'error' ? 'bg-red-50/95 border-red-200' : 'bg-blue-50/95 border-blue-200'
+        }`}>
+          <div className="flex items-start gap-3">
+            <div className={`p-1.5 rounded-lg flex-shrink-0 ${
+              notification.type === 'success' ? 'bg-emerald-100' :
+              notification.type === 'error' ? 'bg-red-100' : 'bg-blue-100'
+            }`}>
+              {notification.type === 'success' ? (
+                <CheckCircle className="w-4 h-4 text-emerald-600" />
+              ) : notification.type === 'error' ? (
+                <XCircle className="w-4 h-4 text-red-600" />
+              ) : (
+                <AlertTriangle className="w-4 h-4 text-blue-600" />
+              )}
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className={`text-xs font-bold ${
+                notification.type === 'success' ? 'text-emerald-800' :
+                notification.type === 'error' ? 'text-red-800' : 'text-blue-800'
+              }`}>{notification.title}</p>
+              <p className={`text-xs mt-0.5 ${
+                notification.type === 'success' ? 'text-emerald-600' :
+                notification.type === 'error' ? 'text-red-600' : 'text-blue-600'
+              }`}>{notification.message}</p>
             </div>
             <button
               onClick={() => setNotification(null)}
-              className={`p-1 rounded-lg transition-colors ${
-                notification.type === 'success' 
-                  ? 'hover:bg-green-100' 
-                  : notification.type === 'error'
-                  ? 'hover:bg-red-100'
-                  : 'hover:bg-blue-100'
-              }`}
+              className="flex-shrink-0 p-1 hover:bg-white/50 rounded-lg"
             >
-              <X className={`w-5 h-5 ${
-                notification.type === 'success' 
-                  ? 'text-green-600' 
-                  : notification.type === 'error'
-                  ? 'text-red-600'
-                  : 'text-blue-600'
-              }`} />
+              <X className="w-3.5 h-3.5 text-gray-400" />
             </button>
           </div>
         </div>
       )}
 
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Gestion des Tickets Employés</h1>
-          <p className="text-gray-600">
+          <h1 className="text-2xl font-bold text-gray-900">Gestion des Tickets Employés</h1>
+          <p className="text-sm text-gray-400 mt-0.5">
             Affectez des tickets à vos employés
           </p>
         </div>
         <button
           onClick={handleBulkAssign}
-          className="bg-purple-500 hover:bg-purple-600 text-white px-6 py-3 rounded-xl font-medium flex items-center space-x-2 transition-colors"
+          className="bg-purple-500 hover:bg-purple-600 text-white px-5 py-2.5 rounded-xl text-sm font-semibold flex items-center gap-2 transition-colors shadow-sm shadow-purple-100"
         >
-          <Zap className="w-5 h-5" />
+          <Zap className="w-4 h-4" />
           <span>Affectation Groupée</span>
         </button>
       </div>
 
       {/* Statistiques */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-          <div className="flex items-center space-x-3">
-            <div className="p-3 bg-blue-100 rounded-xl">
-              <Users className="w-6 h-6 text-blue-600" />
-            </div>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 hover:shadow-md transition-shadow">
+          <div className="flex items-start justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600">Employés Actifs</p>
-              <p className="text-2xl font-bold text-gray-900">{activeEmployees.length}</p>
+              <p className="text-xs text-gray-500 font-medium">Employés Actifs</p>
+              <p className="text-3xl font-extrabold text-gray-900 mt-1">{activeEmployees.length}</p>
+            </div>
+            <div className="p-2.5 rounded-xl bg-blue-50 text-blue-600">
+              <Users className="w-5 h-5" />
             </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-          <div className="flex items-center space-x-3">
-            <div className="p-3 bg-green-100 rounded-xl">
-              <Wallet className="w-6 h-6 text-green-600" />
-            </div>
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 hover:shadow-md transition-shadow">
+          <div className="flex items-start justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600">Solde Total Valide</p>
-              <p className="text-2xl font-bold text-gray-900">
+              <p className="text-xs text-gray-500 font-medium">Solde Total Valide</p>
+              <p className="text-3xl font-extrabold text-emerald-600 mt-1">
                 {activeEmployees.reduce((sum, emp) => sum + Math.round(Number((emp as any).valid_balance ?? emp.ticket_balance ?? 0)), 0).toLocaleString('fr-FR')}F
               </p>
             </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-          <div className="flex items-center space-x-3">
-            <div className="p-3 bg-orange-100 rounded-xl">
-              <Package className="w-6 h-6 text-orange-600" />
-            </div>
-            <div>
-              <p className="text-sm font-medium text-gray-600">Souches Actives</p>
-              <p className="text-2xl font-bold text-gray-900">{activeBatches.length}</p>
+            <div className="p-2.5 rounded-xl bg-emerald-50 text-emerald-600">
+              <Wallet className="w-5 h-5" />
             </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-          <div className="flex items-center space-x-3">
-            <div className="p-3 bg-purple-100 rounded-xl">
-              <TrendingUp className="w-6 h-6 text-purple-600" />
-            </div>
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 hover:shadow-md transition-shadow">
+          <div className="flex items-start justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600">Tickets Affectés</p>
-              <p className="text-2xl font-bold text-gray-900">{totalTicketsAssigned}</p>
+              <p className="text-xs text-gray-500 font-medium">Souches Actives</p>
+              <p className="text-3xl font-extrabold text-orange-600 mt-1">{activeBatches.length}</p>
+            </div>
+            <div className="p-2.5 rounded-xl bg-orange-50 text-orange-600">
+              <Package className="w-5 h-5" />
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 hover:shadow-md transition-shadow">
+          <div className="flex items-start justify-between">
+            <div>
+              <p className="text-xs text-gray-500 font-medium">Tickets Affectés</p>
+              <p className="text-3xl font-extrabold text-purple-600 mt-1">{totalTicketsAssigned}</p>
+            </div>
+            <div className="p-2.5 rounded-xl bg-purple-50 text-purple-600">
+              <TrendingUp className="w-5 h-5" />
             </div>
           </div>
         </div>
       </div>
 
       {/* Liste des employés */}
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-100">
-        <div className="px-6 py-4 border-b border-gray-100">
-          <h2 className="text-lg font-semibold text-gray-900">Employés</h2>
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+        <div className="px-5 py-4 border-b border-gray-100">
+          <h2 className="text-lg font-bold text-gray-900">Employés</h2>
         </div>
         
         <div className="overflow-x-auto">
           <table className="w-full">
-            <thead className="bg-gray-50 border-b border-gray-200">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <thead>
+              <tr className="bg-gray-50/80">
+                <th className="px-5 py-3 text-left text-[10px] font-bold text-gray-500 uppercase tracking-wider">
                   Employé
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-5 py-3 text-left text-[10px] font-bold text-gray-500 uppercase tracking-wider">
                   Email
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-5 py-3 text-left text-[10px] font-bold text-gray-500 uppercase tracking-wider">
                   Département
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-5 py-3 text-left text-[10px] font-bold text-gray-500 uppercase tracking-wider">
                   Solde
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-5 py-3 text-left text-[10px] font-bold text-gray-500 uppercase tracking-wider">
                   Statut
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-5 py-3 text-left text-[10px] font-bold text-gray-500 uppercase tracking-wider">
                   Actions
                 </th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+            <tbody className="divide-y divide-gray-50">
               {paginatedEmployees.map((employee) => (
-                <tr key={employee.id} className="hover:bg-gray-50 transition-colors">
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center">
-                      <div className="h-10 w-10 flex-shrink-0">
-                        <div className="h-10 w-10 rounded-full bg-orange-100 flex items-center justify-center">
-                          <span className="text-sm font-medium text-orange-600">
-                            {employee.name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2)}
-                          </span>
-                        </div>
+                <tr key={employee.id} className="hover:bg-gray-50/50 transition-colors group">
+                  <td className="px-5 py-3.5 whitespace-nowrap">
+                    <div className="flex items-center gap-3">
+                      <div className="h-9 w-9 rounded-xl bg-orange-50 border border-orange-100 flex items-center justify-center flex-shrink-0">
+                        <span className="text-xs font-bold text-orange-600">
+                          {employee.name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2)}
+                        </span>
                       </div>
-                      <div className="ml-4">
-                        <div className="text-sm font-medium text-gray-900">{employee.name}</div>
+                      <div>
+                        <p className="text-sm font-semibold text-gray-900">{employee.name}</p>
                         {employee.employee_number && (
-                          <div className="text-sm text-gray-500">#{employee.employee_number}</div>
+                          <p className="text-[10px] text-gray-400 font-medium">#{employee.employee_number}</p>
                         )}
                       </div>
                     </div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900">{employee.email}</div>
+                  <td className="px-5 py-3.5 whitespace-nowrap">
+                    <span className="text-sm text-gray-600">{employee.email}</span>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900">{employee.department || 'N/A'}</div>
+                  <td className="px-5 py-3.5 whitespace-nowrap">
+                    <span className="text-sm text-gray-600">{employee.department || 'N/A'}</span>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center">
-                      <Wallet className="w-4 h-4 text-green-600 mr-2" />
-                      <span className="text-sm font-semibold text-green-600">{Math.round(Number((employee as any).valid_balance ?? employee.ticket_balance ?? 0)).toLocaleString('fr-FR')}F</span>
+                  <td className="px-5 py-3.5 whitespace-nowrap">
+                    <div className="flex items-center gap-1.5">
+                      <Wallet className="w-3.5 h-3.5 text-emerald-500" />
+                      <span className="text-sm font-bold text-emerald-600">{Math.round(Number((employee as any).valid_balance ?? employee.ticket_balance ?? 0)).toLocaleString('fr-FR')}F</span>
                     </div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
+                  <td className="px-5 py-3.5 whitespace-nowrap">
                     {getStatusBadge(employee.status)}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm">
-                    <div className="flex items-center space-x-2">
-                      <button
-                        onClick={() => handleAssignTickets(employee)}
-                        className="px-3 py-1.5 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors text-xs font-medium flex items-center space-x-1"
-                      >
-                        <CreditCard className="w-3 h-3" />
-                        <span>Affecter</span>
-                      </button>
-                    </div>
+                  <td className="px-5 py-3.5 whitespace-nowrap">
+                    <button
+                      onClick={() => handleAssignTickets(employee)}
+                      className="px-3 py-1.5 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors text-xs font-semibold flex items-center gap-1.5 shadow-sm shadow-orange-100"
+                    >
+                      <CreditCard className="w-3 h-3" />
+                      <span>Affecter</span>
+                    </button>
                   </td>
                 </tr>
               ))}
@@ -419,48 +398,48 @@ const UserTicketManagement: React.FC = () => {
 
       {/* Modal */}
       {showModal && selectedEmployee && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl max-w-lg w-full">
-            <div className="border-b border-gray-200 px-6 py-4">
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl max-w-lg w-full shadow-2xl border border-gray-100">
+            <div className="border-b border-gray-100 px-6 py-4 rounded-t-2xl">
               <div className="flex items-center justify-between">
-                <h2 className="text-xl font-semibold text-gray-900">
+                <h2 className="text-lg font-bold text-gray-900">
                   Affecter des Tickets
                 </h2>
                 <button
                   onClick={() => setShowModal(false)}
-                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                  className="p-2 hover:bg-gray-100 rounded-xl transition-colors"
                 >
-                  <X className="w-5 h-5 text-gray-500" />
+                  <X className="w-4 h-4 text-gray-500" />
                 </button>
               </div>
             </div>
 
-            <form onSubmit={handleSubmit} className="p-6 space-y-6">
+            <form onSubmit={handleSubmit} className="p-6 space-y-5">
               {/* Info employé */}
-              <div className="bg-gray-50 rounded-lg p-4">
-                <div className="flex items-center space-x-3">
-                  <div className="h-12 w-12 rounded-full bg-orange-100 flex items-center justify-center">
-                    <span className="text-sm font-medium text-orange-600">
+              <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
+                <div className="flex items-center gap-3">
+                  <div className="h-11 w-11 rounded-xl bg-orange-50 border border-orange-100 flex items-center justify-center flex-shrink-0">
+                    <span className="text-xs font-bold text-orange-600">
                       {selectedEmployee.name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2)}
                     </span>
                   </div>
                   <div>
-                    <p className="font-semibold text-gray-900">{selectedEmployee.name}</p>
-                    <p className="text-sm text-gray-600">Solde actuel: {Math.round(Number((selectedEmployee as any).valid_balance ?? selectedEmployee.ticket_balance ?? 0)).toLocaleString('fr-FR')}F</p>
+                    <p className="text-sm font-bold text-gray-900">{selectedEmployee.name}</p>
+                    <p className="text-xs text-gray-500">Solde actuel: <span className="font-bold text-emerald-600">{Math.round(Number((selectedEmployee as any).valid_balance ?? selectedEmployee.ticket_balance ?? 0)).toLocaleString('fr-FR')}F</span></p>
                   </div>
                 </div>
               </div>
 
               {/* Nombre de tickets */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-xs font-medium text-gray-700 mb-1.5">
                   Nombre de tickets *
                 </label>
                 <input
                   type="number"
                   value={formData.tickets_count}
                   onChange={(e) => setFormData({ ...formData, tickets_count: Number(e.target.value) })}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                  className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-300"
                   min="1"
                   required
                 />
@@ -468,13 +447,13 @@ const UserTicketManagement: React.FC = () => {
 
               {/* Valeur du ticket */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-xs font-medium text-gray-700 mb-1.5">
                   Valeur du ticket (F CFA) *
                 </label>
                 <select
                   value={formData.ticket_value}
                   onChange={(e) => setFormData({ ...formData, ticket_value: Number(e.target.value) })}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                  className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-300"
                   required
                 >
                   {configurations.length > 0 ? (
@@ -487,56 +466,56 @@ const UserTicketManagement: React.FC = () => {
                     <option value="500">500F - standard</option>
                   )}
                 </select>
-                <p className="mt-1 text-xs text-gray-500">
+                <p className="mt-1 text-[10px] text-gray-400">
                   Valeurs paramétrées par votre entreprise
                 </p>
               </div>
 
               {/* Nombre de jours de validité */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-xs font-medium text-gray-700 mb-1.5">
                   Validité (jours) *
                 </label>
                 <input
                   type="number"
                   value={formData.validity_days}
                   onChange={(e) => setFormData({ ...formData, validity_days: Number(e.target.value) })}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                  className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-300"
                   min="1"
                   max="365"
                   required
                 />
-                <p className="mt-1 text-xs text-gray-500">
+                <p className="mt-1 text-[10px] text-gray-400">
                   Les tickets seront valables {formData.validity_days} jour(s) à partir d'aujourd'hui
                 </p>
               </div>
 
               {/* Notes */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-xs font-medium text-gray-700 mb-1.5">
                   Notes (optionnel)
                 </label>
                 <textarea
                   value={formData.notes}
                   onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                  className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-300"
                   rows={3}
                   placeholder="Ajouter une note..."
                 />
               </div>
 
               {/* Boutons */}
-              <div className="flex items-center justify-end space-x-4 pt-6 border-t border-gray-200">
+              <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-100">
                 <button
                   type="button"
                   onClick={() => setShowModal(false)}
-                  className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-medium transition-colors"
+                  className="px-5 py-2.5 border border-gray-200 text-gray-700 rounded-xl text-sm font-semibold hover:bg-gray-50 transition-colors"
                 >
                   Annuler
                 </button>
                 <button
                   type="submit"
-                  className="px-6 py-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600 font-medium transition-colors"
+                  className="px-5 py-2.5 bg-orange-500 text-white rounded-xl text-sm font-semibold hover:bg-orange-600 transition-colors shadow-sm shadow-orange-100"
                 >
                   Affecter
                 </button>
@@ -548,33 +527,33 @@ const UserTicketManagement: React.FC = () => {
 
       {/* Modal Affectation Groupée */}
       {showBulkModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl max-w-lg w-full">
-            <div className="border-b border-gray-200 px-6 py-4">
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl max-w-lg w-full shadow-2xl border border-gray-100">
+            <div className="border-b border-gray-100 px-6 py-4 rounded-t-2xl">
               <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-3">
-                  <div className="p-2 bg-purple-100 rounded-lg">
-                    <Zap className="w-6 h-6 text-purple-600" />
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-purple-50 rounded-xl border border-purple-100">
+                    <Zap className="w-5 h-5 text-purple-600" />
                   </div>
-                  <h2 className="text-xl font-semibold text-gray-900">Affectation Groupée</h2>
+                  <h2 className="text-lg font-bold text-gray-900">Affectation Groupée</h2>
                 </div>
                 <button
                   onClick={() => setShowBulkModal(false)}
-                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                  className="p-2 hover:bg-gray-100 rounded-xl transition-colors"
                 >
-                  <X className="w-5 h-5 text-gray-500" />
+                  <X className="w-4 h-4 text-gray-500" />
                 </button>
               </div>
             </div>
 
-            <form onSubmit={handleBulkSubmit} className="p-6 space-y-6">
+            <form onSubmit={handleBulkSubmit} className="p-6 space-y-5">
               {/* Info */}
-              <div className="bg-purple-50 rounded-lg p-4 border border-purple-200">
-                <div className="flex items-start space-x-3">
-                  <AlertTriangle className="w-5 h-5 text-purple-600 flex-shrink-0 mt-0.5" />
+              <div className="bg-purple-50 rounded-xl p-4 border border-purple-100">
+                <div className="flex items-start gap-3">
+                  <AlertTriangle className="w-4 h-4 text-purple-600 flex-shrink-0 mt-0.5" />
                   <div>
-                    <p className="font-semibold text-purple-900 mb-1">Génération de souches individuelles</p>
-                    <p className="text-sm text-purple-800">
+                    <p className="text-xs font-bold text-purple-900 mb-0.5">Génération de souches individuelles</p>
+                    <p className="text-xs text-purple-700">
                       Une souche sera créée pour chaque employé actif ({activeEmployees.length}).
                       Chaque souche aura un numéro de suivi unique et contiendra {formData.tickets_count} ticket(s).
                     </p>
@@ -584,7 +563,7 @@ const UserTicketManagement: React.FC = () => {
 
               {/* Configuration */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-xs font-medium text-gray-700 mb-1.5">
                   Configuration de tickets *
                 </label>
                 <select
@@ -597,7 +576,7 @@ const UserTicketManagement: React.FC = () => {
                       ticket_value: parseFloat(selectedConfig?.ticket_value || '500')
                     });
                   }}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-purple-500 focus:border-purple-300"
                   required
                 >
                   <option value="">Sélectionner une configuration</option>
@@ -607,14 +586,14 @@ const UserTicketManagement: React.FC = () => {
                     </option>
                   ))}
                 </select>
-                <p className="mt-1 text-xs text-gray-500">
+                <p className="mt-1 text-[10px] text-gray-400">
                   Détermine le type et la durée de validité des souches
                 </p>
               </div>
 
               {/* Valeur du ticket */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-xs font-medium text-gray-700 mb-1.5">
                   Valeur de chaque ticket *
                 </label>
                 <div className="relative">
@@ -622,62 +601,62 @@ const UserTicketManagement: React.FC = () => {
                     type="number"
                     value={formData.ticket_value}
                     onChange={(e) => setFormData({ ...formData, ticket_value: Number(e.target.value) })}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-purple-500 focus:border-purple-300"
                     min="100"
                     step="100"
                     required
                   />
-                  <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 font-medium">F CFA</span>
+                  <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs text-gray-400 font-medium">F CFA</span>
                 </div>
               </div>
 
               {/* Nombre de tickets par employé */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-xs font-medium text-gray-700 mb-1.5">
                   Nombre de tickets par souche *
                 </label>
                 <input
                   type="number"
                   value={formData.tickets_count}
                   onChange={(e) => setFormData({ ...formData, tickets_count: Number(e.target.value) })}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-purple-500 focus:border-purple-300"
                   min="1"
                   required
                 />
-                <p className="mt-2 text-sm text-gray-500">
+                <p className="mt-1.5 text-xs text-gray-500">
                   <strong>{activeEmployees.length} souches</strong> seront créées avec <strong>{formData.tickets_count} tickets</strong> chacune
                 </p>
-                <p className="mt-1 text-sm text-gray-600">
-                  Valeur totale distribuée: <strong>{(formData.tickets_count * formData.ticket_value * activeEmployees.length).toLocaleString()}F</strong>
+                <p className="mt-0.5 text-xs text-gray-600">
+                  Valeur totale distribuée: <strong className="text-purple-600">{(formData.tickets_count * formData.ticket_value * activeEmployees.length).toLocaleString()}F</strong>
                 </p>
               </div>
 
               {/* Notes */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-xs font-medium text-gray-700 mb-1.5">
                   Notes (optionnel)
                 </label>
                 <textarea
                   value={formData.notes}
                   onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-purple-500 focus:border-purple-300"
                   rows={3}
                   placeholder="Ex: Distribution mensuelle de tickets..."
                 />
               </div>
 
               {/* Boutons */}
-              <div className="flex items-center justify-end space-x-4 pt-6 border-t border-gray-200">
+              <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-100">
                 <button
                   type="button"
                   onClick={() => setShowBulkModal(false)}
-                  className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-medium transition-colors"
+                  className="px-5 py-2.5 border border-gray-200 text-gray-700 rounded-xl text-sm font-semibold hover:bg-gray-50 transition-colors"
                 >
                   Annuler
                 </button>
                 <button
                   type="submit"
-                  className="px-6 py-3 bg-purple-500 text-white rounded-lg hover:bg-purple-600 font-medium transition-colors flex items-center space-x-2"
+                  className="px-5 py-2.5 bg-purple-500 text-white rounded-xl text-sm font-semibold hover:bg-purple-600 transition-colors flex items-center gap-2 shadow-sm shadow-purple-100"
                 >
                   <Zap className="w-4 h-4" />
                   <span>Affecter à tous</span>

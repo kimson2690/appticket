@@ -138,135 +138,149 @@ const PartnerRestaurants: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500"></div>
+      <div className="flex items-center justify-center h-96">
+        <div className="text-center">
+          <div className="relative w-16 h-16 mx-auto mb-4">
+            <div className="absolute inset-0 rounded-full border-4 border-orange-100"></div>
+            <div className="absolute inset-0 rounded-full border-4 border-orange-500 border-t-transparent animate-spin"></div>
+          </div>
+          <p className="text-gray-500 font-medium">Chargement des restaurants...</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
+    <div className="max-w-7xl mx-auto space-y-6">
       {/* Notification Toast */}
       {notification && (
-        <div className={`fixed top-4 right-4 z-50 max-w-md w-full bg-white rounded-lg shadow-lg border-l-4 ${
-          notification.type === 'success' ? 'border-green-500' :
-          notification.type === 'error' ? 'border-red-500' : 'border-blue-500'
-        } p-4 animate-slide-in`}>
-          <div className="flex items-start">
-            <div className="flex-shrink-0">
-              {notification.type === 'success' && <CheckCircle className="h-5 w-5 text-green-500" />}
-              {notification.type === 'error' && <AlertTriangle className="h-5 w-5 text-red-500" />}
-              {notification.type === 'info' && <AlertTriangle className="h-5 w-5 text-blue-500" />}
+        <div className={`fixed top-4 right-4 z-50 max-w-md w-full rounded-2xl shadow-lg border p-4 backdrop-blur-sm ${
+          notification.type === 'success' ? 'bg-emerald-50/95 border-emerald-200' :
+          notification.type === 'error' ? 'bg-red-50/95 border-red-200' : 'bg-blue-50/95 border-blue-200'
+        }`}>
+          <div className="flex items-start gap-3">
+            <div className={`p-1.5 rounded-lg flex-shrink-0 ${
+              notification.type === 'success' ? 'bg-emerald-100' :
+              notification.type === 'error' ? 'bg-red-100' : 'bg-blue-100'
+            }`}>
+              {notification.type === 'success' && <CheckCircle className="w-4 h-4 text-emerald-600" />}
+              {notification.type === 'error' && <AlertTriangle className="w-4 h-4 text-red-600" />}
+              {notification.type === 'info' && <AlertTriangle className="w-4 h-4 text-blue-600" />}
             </div>
-            <div className="ml-3 flex-1">
-              <h3 className="text-sm font-medium text-gray-900">{notification.title}</h3>
-              <p className="mt-1 text-sm text-gray-600">{notification.message}</p>
+            <div className="flex-1 min-w-0">
+              <p className={`text-xs font-bold ${
+                notification.type === 'success' ? 'text-emerald-800' :
+                notification.type === 'error' ? 'text-red-800' : 'text-blue-800'
+              }`}>{notification.title}</p>
+              <p className={`text-xs mt-0.5 ${
+                notification.type === 'success' ? 'text-emerald-600' :
+                notification.type === 'error' ? 'text-red-600' : 'text-blue-600'
+              }`}>{notification.message}</p>
             </div>
             <button
               onClick={() => setNotification(null)}
-              className="ml-4 flex-shrink-0 text-gray-400 hover:text-gray-600"
+              className="flex-shrink-0 p-1 hover:bg-white/50 rounded-lg"
             >
-              <X className="h-5 w-5" />
+              <X className="w-3.5 h-3.5 text-gray-400" />
             </button>
           </div>
         </div>
       )}
 
       {/* Header */}
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center space-x-3">
-            <div className="p-3 bg-orange-100 rounded-xl">
-              <Store className="w-6 h-6 text-orange-600" />
-            </div>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Restaurants Partenaires</h1>
+          <p className="text-sm text-gray-400 mt-0.5">Sélectionnez les restaurants avec lesquels vous collaborez</p>
+        </div>
+      </div>
+
+      {/* Statistiques */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 hover:shadow-md transition-shadow">
+          <div className="flex items-start justify-between">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">Restaurants Partenaires</h1>
-              <p className="text-sm text-gray-600">Sélectionnez les restaurants avec lesquels vous collaborez</p>
+              <p className="text-xs text-gray-500 font-medium">Restaurants Disponibles</p>
+              <p className="text-3xl font-extrabold text-gray-900 mt-1">{restaurants.length}</p>
+            </div>
+            <div className="p-2.5 rounded-xl bg-blue-50 text-blue-600">
+              <Store className="w-5 h-5" />
             </div>
           </div>
         </div>
 
-        {/* Statistiques */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
-          <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-4 border border-blue-200">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-blue-700">Restaurants Disponibles</p>
-                <p className="text-2xl font-bold text-blue-900 mt-1">{restaurants.length}</p>
-              </div>
-              <Store className="w-8 h-8 text-blue-500" />
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 hover:shadow-md transition-shadow">
+          <div className="flex items-start justify-between">
+            <div>
+              <p className="text-xs text-gray-500 font-medium">Partenaires Sélectionnés</p>
+              <p className="text-3xl font-extrabold text-gray-900 mt-1">{selectedRestaurants.length}</p>
+            </div>
+            <div className="p-2.5 rounded-xl bg-emerald-50 text-emerald-600">
+              <CheckCircle className="w-5 h-5" />
             </div>
           </div>
-          
-          <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-4 border border-green-200">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-green-700">Partenaires Sélectionnés</p>
-                <p className="text-2xl font-bold text-green-900 mt-1">{selectedRestaurants.length}</p>
-              </div>
-              <CheckCircle className="w-8 h-8 text-green-500" />
+        </div>
+
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 hover:shadow-md transition-shadow">
+          <div className="flex items-start justify-between">
+            <div>
+              <p className="text-xs text-gray-500 font-medium">Taux de Couverture</p>
+              <p className="text-3xl font-extrabold text-gray-900 mt-1">
+                {restaurants.length > 0 ? Math.round((selectedRestaurants.length / restaurants.length) * 100) : 0}%
+              </p>
             </div>
-          </div>
-          
-          <div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl p-4 border border-orange-200">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-orange-700">Taux de Couverture</p>
-                <p className="text-2xl font-bold text-orange-900 mt-1">
-                  {restaurants.length > 0 ? Math.round((selectedRestaurants.length / restaurants.length) * 100) : 0}%
-                </p>
-              </div>
-              <Star className="w-8 h-8 text-orange-500" />
+            <div className="p-2.5 rounded-xl bg-orange-50 text-orange-600">
+              <Star className="w-5 h-5" />
             </div>
           </div>
         </div>
       </div>
 
       {/* Barre de recherche et actions */}
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0">
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           {/* Recherche */}
           <div className="relative flex-1 max-w-md">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
             <input
               type="text"
               placeholder="Rechercher un restaurant..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+              className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-300 placeholder:text-gray-400"
             />
           </div>
 
           {/* Actions */}
-          <div className="flex items-center space-x-3">
+          <div className="flex items-center gap-2">
             <button
               onClick={handleSelectAll}
-              className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-medium transition-colors"
+              className="px-4 py-2.5 border border-gray-200 text-gray-700 rounded-xl text-xs font-semibold hover:bg-gray-50 transition-colors"
             >
               {selectedRestaurants.length === restaurants.length ? 'Tout désélectionner' : 'Tout sélectionner'}
             </button>
-            
+
             {hasChanges && (
               <>
                 <button
                   onClick={handleCancel}
-                  className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-medium transition-colors"
+                  className="px-4 py-2.5 border border-gray-200 text-gray-700 rounded-xl text-xs font-semibold hover:bg-gray-50 transition-colors"
                 >
                   Annuler
                 </button>
                 <button
                   onClick={handleSave}
                   disabled={saving}
-                  className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+                  className="px-4 py-2.5 bg-orange-500 hover:bg-orange-600 text-white rounded-xl text-xs font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 shadow-sm shadow-orange-100"
                 >
                   {saving ? (
                     <>
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                      <div className="animate-spin rounded-full h-3.5 w-3.5 border-2 border-white border-t-transparent"></div>
                       <span>Sauvegarde...</span>
                     </>
                   ) : (
                     <>
-                      <Check className="w-4 h-4" />
+                      <Check className="w-3.5 h-3.5" />
                       <span>Sauvegarder</span>
                     </>
                   )}
@@ -278,92 +292,93 @@ const PartnerRestaurants: React.FC = () => {
       </div>
 
       {/* Liste des restaurants */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {filteredRestaurants.map((restaurant) => {
-          const isSelected = selectedRestaurants.includes(restaurant.id);
-          
-          return (
-            <div
-              key={restaurant.id}
-              onClick={() => handleToggleRestaurant(restaurant.id)}
-              className={`bg-white rounded-xl p-5 border-2 transition-all cursor-pointer ${
-                isSelected
-                  ? 'border-orange-500 shadow-lg'
-                  : 'border-gray-200 hover:border-gray-300 hover:shadow-md'
-              }`}
-            >
-              {/* Header avec checkbox */}
-              <div className="flex items-start justify-between mb-3">
-                <div className="flex-1">
-                  <h3 className="font-bold text-gray-900 text-lg">{restaurant.name}</h3>
-                  <span className="inline-block mt-1 px-2 py-0.5 bg-orange-100 text-orange-700 rounded-md text-xs font-medium">
-                    {restaurant.cuisine_type}
-                  </span>
-                </div>
-                <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors ${
+      {filteredRestaurants.length === 0 ? (
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-16 text-center">
+          <div className="w-16 h-16 bg-gray-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <Store className="w-8 h-8 text-gray-300" />
+          </div>
+          <h3 className="text-base font-bold text-gray-900 mb-1">Aucun restaurant trouvé</h3>
+          <p className="text-sm text-gray-400">Essayez de modifier vos critères de recherche</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {filteredRestaurants.map((restaurant) => {
+            const isSelected = selectedRestaurants.includes(restaurant.id);
+
+            return (
+              <div
+                key={restaurant.id}
+                onClick={() => handleToggleRestaurant(restaurant.id)}
+                className={`bg-white rounded-2xl p-5 border-2 transition-all cursor-pointer group ${
                   isSelected
-                    ? 'bg-orange-500 border-orange-500'
-                    : 'border-gray-300'
-                }`}>
-                  {isSelected && <Check className="w-4 h-4 text-white" />}
+                    ? 'border-orange-400 shadow-md shadow-orange-50'
+                    : 'border-gray-100 hover:border-gray-200 hover:shadow-md'
+                }`}
+              >
+                {/* Header avec checkbox */}
+                <div className="flex items-start justify-between mb-3">
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-bold text-gray-900 text-sm">{restaurant.name}</h3>
+                    <span className="inline-flex items-center mt-1.5 px-2 py-0.5 rounded-lg text-[10px] font-bold bg-orange-50 border border-orange-200 text-orange-700">
+                      {restaurant.cuisine_type}
+                    </span>
+                  </div>
+                  <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all flex-shrink-0 ${
+                    isSelected
+                      ? 'bg-emerald-500 border-emerald-500 scale-110'
+                      : 'border-gray-300 group-hover:border-gray-400'
+                  }`}>
+                    {isSelected && <Check className="w-3.5 h-3.5 text-white" />}
+                  </div>
+                </div>
+
+                {/* Informations */}
+                <div className="space-y-1.5 mb-3">
+                  <div className="flex items-center gap-2 text-xs text-gray-500">
+                    <MapPin className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
+                    <span className="line-clamp-1">{restaurant.address}</span>
+                  </div>
+
+                  <div className="flex items-center gap-2 text-xs text-gray-500">
+                    <Phone className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
+                    <span>{restaurant.phone}</span>
+                  </div>
+
+                  <div className="flex items-center gap-2 text-xs text-gray-500">
+                    <Mail className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
+                    <span className="line-clamp-1">{restaurant.email}</span>
+                  </div>
+                </div>
+
+                {/* Métriques */}
+                <div className="pt-3 border-t border-gray-50 grid grid-cols-3 gap-2">
+                  <div className="text-center">
+                    <div className="flex items-center justify-center gap-0.5 mb-0.5">
+                      <Star className="w-3 h-3 text-amber-400 fill-current" />
+                      <span className="text-xs font-bold text-gray-900">{restaurant.rating}</span>
+                    </div>
+                    <p className="text-[10px] text-gray-400">Note</p>
+                  </div>
+
+                  <div className="text-center">
+                    <div className="flex items-center justify-center gap-0.5 mb-0.5">
+                      <DollarSign className="w-3 h-3 text-emerald-500" />
+                      <span className="text-xs font-bold text-gray-900">{restaurant.delivery_fee}F</span>
+                    </div>
+                    <p className="text-[10px] text-gray-400">Livraison</p>
+                  </div>
+
+                  <div className="text-center">
+                    <div className="flex items-center justify-center gap-0.5 mb-0.5">
+                      <ShoppingBag className="w-3 h-3 text-blue-500" />
+                      <span className="text-xs font-bold text-gray-900">{restaurant.min_order}F</span>
+                    </div>
+                    <p className="text-[10px] text-gray-400">Min.</p>
+                  </div>
                 </div>
               </div>
-
-              {/* Informations */}
-              <div className="space-y-2">
-                <div className="flex items-center text-sm text-gray-600">
-                  <MapPin className="w-4 h-4 mr-2 text-gray-400 flex-shrink-0" />
-                  <span className="line-clamp-1">{restaurant.address}</span>
-                </div>
-                
-                <div className="flex items-center text-sm text-gray-600">
-                  <Phone className="w-4 h-4 mr-2 text-gray-400 flex-shrink-0" />
-                  <span>{restaurant.phone}</span>
-                </div>
-                
-                <div className="flex items-center text-sm text-gray-600">
-                  <Mail className="w-4 h-4 mr-2 text-gray-400 flex-shrink-0" />
-                  <span className="line-clamp-1">{restaurant.email}</span>
-                </div>
-              </div>
-
-              {/* Métriques */}
-              <div className="mt-4 pt-4 border-t border-gray-100 grid grid-cols-3 gap-2">
-                <div className="text-center">
-                  <div className="flex items-center justify-center text-yellow-500 mb-1">
-                    <Star className="w-4 h-4 fill-current" />
-                    <span className="ml-1 text-sm font-semibold text-gray-900">{restaurant.rating}</span>
-                  </div>
-                  <p className="text-xs text-gray-500">Note</p>
-                </div>
-                
-                <div className="text-center">
-                  <div className="flex items-center justify-center text-green-600 mb-1">
-                    <DollarSign className="w-4 h-4" />
-                    <span className="text-sm font-semibold text-gray-900">{restaurant.delivery_fee}F</span>
-                  </div>
-                  <p className="text-xs text-gray-500">Livraison</p>
-                </div>
-                
-                <div className="text-center">
-                  <div className="flex items-center justify-center text-blue-600 mb-1">
-                    <ShoppingBag className="w-4 h-4" />
-                    <span className="text-sm font-semibold text-gray-900">{restaurant.min_order}F</span>
-                  </div>
-                  <p className="text-xs text-gray-500">Min.</p>
-                </div>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-
-      {/* État vide */}
-      {filteredRestaurants.length === 0 && (
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-12 text-center">
-          <Store className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 mb-2">Aucun restaurant trouvé</h3>
-          <p className="text-gray-600">Essayez de modifier vos critères de recherche.</p>
+            );
+          })}
         </div>
       )}
     </div>
