@@ -48,6 +48,24 @@ class AuthController extends Controller
                     ], 403);
                 }
 
+                // Vérifier si l'entreprise associée est suspendue
+                if ($user->company_id && $user->company) {
+                    if ($user->company->status === 'suspended') {
+                        Log::info('Connexion refusée - entreprise suspendue: ' . $user->company->name);
+                        return response()->json([
+                            'success' => false,
+                            'message' => 'Votre entreprise a été suspendue. Contactez l\'administrateur pour plus d\'informations.'
+                        ], 403);
+                    }
+                    if ($user->company->status === 'inactive') {
+                        Log::info('Connexion refusée - entreprise inactive: ' . $user->company->name);
+                        return response()->json([
+                            'success' => false,
+                            'message' => 'Votre entreprise est inactive. Contactez l\'administrateur pour plus d\'informations.'
+                        ], 403);
+                    }
+                }
+
                 // Générer un token
                 $token = 'token_' . $user->id . '_' . time();
 
@@ -96,6 +114,25 @@ class AuthController extends Controller
                         'success' => false,
                         'message' => $message
                     ], 403);
+                }
+
+                // Vérifier si l'entreprise associée est suspendue
+                if ($employee->company_id) {
+                    $company = \App\Models\Company::find($employee->company_id);
+                    if ($company && $company->status === 'suspended') {
+                        Log::info('Connexion employé refusée - entreprise suspendue: ' . $company->name);
+                        return response()->json([
+                            'success' => false,
+                            'message' => 'Votre entreprise a été suspendue. Contactez l\'administrateur pour plus d\'informations.'
+                        ], 403);
+                    }
+                    if ($company && $company->status === 'inactive') {
+                        Log::info('Connexion employé refusée - entreprise inactive: ' . $company->name);
+                        return response()->json([
+                            'success' => false,
+                            'message' => 'Votre entreprise est inactive. Contactez l\'administrateur pour plus d\'informations.'
+                        ], 403);
+                    }
                 }
 
                 // Générer un token

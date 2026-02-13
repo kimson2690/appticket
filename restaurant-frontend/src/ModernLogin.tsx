@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Mail, Lock, Eye, EyeOff, ShoppingBag, Users, TrendingUp, Sparkles, Zap, Shield } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, ShoppingBag, Users, TrendingUp, Sparkles, Zap, Shield, AlertTriangle, Building2, XCircle } from 'lucide-react';
 import { apiService } from './services/api';
 
 interface ModernLoginProps {
@@ -13,10 +13,12 @@ const ModernLogin: React.FC<ModernLoginProps> = ({ onShowRegister }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<{ message: string; type: 'suspended' | 'inactive' | 'generic' } | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+    setError(null);
     
     try {
       console.log('Tentative de connexion avec:', { email, password });
@@ -66,7 +68,14 @@ const ModernLogin: React.FC<ModernLoginProps> = ({ onShowRegister }) => {
     } catch (error) {
       console.error('Erreur de connexion détaillée:', error);
       const errorMessage = error instanceof Error ? error.message : 'Identifiants incorrects';
-      alert(`Erreur de connexion: ${errorMessage}`);
+      
+      if (errorMessage.toLowerCase().includes('suspendue')) {
+        setError({ message: errorMessage, type: 'suspended' });
+      } else if (errorMessage.toLowerCase().includes('inactive')) {
+        setError({ message: errorMessage, type: 'inactive' });
+      } else {
+        setError({ message: errorMessage, type: 'generic' });
+      }
     } finally {
       setIsLoading(false);
     }
@@ -146,6 +155,64 @@ const ModernLogin: React.FC<ModernLoginProps> = ({ onShowRegister }) => {
               </h1>
               <p className="text-white/60 text-sm">Connectez-vous pour accéder à votre espace</p>
             </div>
+
+            {/* Message d'erreur stylisé */}
+            {error && (
+              <div className={`mb-6 rounded-2xl border-2 p-5 backdrop-blur-sm animate-[fadeIn_0.3s_ease-out] ${
+                error.type === 'suspended'
+                  ? 'bg-red-500/10 border-red-500/30'
+                  : error.type === 'inactive'
+                    ? 'bg-amber-500/10 border-amber-500/30'
+                    : 'bg-red-500/10 border-red-500/20'
+              }`}>
+                <div className="flex items-start gap-4">
+                  <div className={`p-2.5 rounded-xl flex-shrink-0 ${
+                    error.type === 'suspended'
+                      ? 'bg-red-500/20'
+                      : error.type === 'inactive'
+                        ? 'bg-amber-500/20'
+                        : 'bg-red-500/15'
+                  }`}>
+                    {error.type === 'suspended' ? (
+                      <Building2 className="w-5 h-5 text-red-400" />
+                    ) : error.type === 'inactive' ? (
+                      <AlertTriangle className="w-5 h-5 text-amber-400" />
+                    ) : (
+                      <XCircle className="w-5 h-5 text-red-400" />
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h3 className={`text-sm font-bold mb-1 ${
+                      error.type === 'suspended'
+                        ? 'text-red-300'
+                        : error.type === 'inactive'
+                          ? 'text-amber-300'
+                          : 'text-red-300'
+                    }`}>
+                      {error.type === 'suspended'
+                        ? 'Entreprise suspendue'
+                        : error.type === 'inactive'
+                          ? 'Entreprise inactive'
+                          : 'Erreur de connexion'}
+                    </h3>
+                    <p className="text-white/60 text-xs leading-relaxed">{error.message}</p>
+                    {(error.type === 'suspended' || error.type === 'inactive') && (
+                      <div className="mt-3 flex items-center gap-2 text-xs text-white/40">
+                        <Mail className="w-3.5 h-3.5" />
+                        <span>Contactez votre administrateur pour plus d'informations</span>
+                      </div>
+                    )}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setError(null)}
+                    className="p-1 rounded-lg hover:bg-white/10 transition-colors flex-shrink-0"
+                  >
+                    <XCircle className="w-4 h-4 text-white/40 hover:text-white/70" />
+                  </button>
+                </div>
+              </div>
+            )}
 
             {/* Formulaire moderne */}
             <form onSubmit={handleSubmit} className="space-y-5">
