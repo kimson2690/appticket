@@ -11,7 +11,6 @@ import {
   X,
   Tag,
   FileText,
-  Sparkles,
   CheckCircle2,
   ShieldAlert
 } from 'lucide-react';
@@ -230,7 +229,7 @@ const RoleManagement: React.FC = () => {
               <div className="relative flex items-center justify-between">
                 <div className="flex items-center gap-3.5">
                   <div className="w-12 h-12 bg-gradient-to-br from-orange-500 to-amber-500 rounded-2xl flex items-center justify-center shadow-lg shadow-orange-200">
-                    {selectedRole ? <Edit className="w-5 h-5 text-white" /> : <Sparkles className="w-5 h-5 text-white" />}
+                    {selectedRole ? <Edit className="w-5 h-5 text-white" /> : <Plus className="w-5 h-5 text-white" />}
                   </div>
                   <div>
                     <h2 className="text-lg font-bold text-gray-900">{selectedRole ? 'Modifier le Rôle' : 'Nouveau Rôle'}</h2>
