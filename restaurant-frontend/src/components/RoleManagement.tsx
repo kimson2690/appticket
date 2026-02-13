@@ -7,7 +7,13 @@ import {
   Users, 
   AlertTriangle,
   CalendarDays,
-  Calendar
+  Calendar,
+  X,
+  Tag,
+  FileText,
+  Sparkles,
+  CheckCircle2,
+  ShieldAlert
 } from 'lucide-react';
 import { apiService, type Role } from '../services/api';
 
@@ -214,45 +220,62 @@ const RoleManagement: React.FC = () => {
 
       {/* Create/Edit Modal */}
       {showModal && (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={() => setShowModal(false)}>
-          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden" onClick={e => e.stopPropagation()}>
-            <div className="bg-gradient-to-r from-orange-500 to-orange-600 p-5 text-white">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
-                  {selectedRole ? <Edit className="w-5 h-5" /> : <Plus className="w-5 h-5" />}
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-md flex items-center justify-center z-50 p-4 animate-[fadeIn_0.2s_ease-out]" onClick={() => setShowModal(false)}>
+          <div className="bg-white rounded-3xl shadow-2xl max-w-md w-full overflow-hidden animate-[slideUp_0.3s_ease-out]" onClick={e => e.stopPropagation()}
+            style={{ boxShadow: '0 25px 60px -15px rgba(0, 0, 0, 0.3)' }}>
+            {/* Header avec gradient subtil */}
+            <div className="relative overflow-hidden px-6 pt-6 pb-5">
+              <div className="absolute inset-0 bg-gradient-to-br from-orange-50 via-amber-50 to-orange-50"></div>
+              <div className="absolute top-0 right-0 w-32 h-32 bg-orange-200/30 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2"></div>
+              <div className="relative flex items-center justify-between">
+                <div className="flex items-center gap-3.5">
+                  <div className="w-12 h-12 bg-gradient-to-br from-orange-500 to-amber-500 rounded-2xl flex items-center justify-center shadow-lg shadow-orange-200">
+                    {selectedRole ? <Edit className="w-5 h-5 text-white" /> : <Sparkles className="w-5 h-5 text-white" />}
+                  </div>
+                  <div>
+                    <h2 className="text-lg font-bold text-gray-900">{selectedRole ? 'Modifier le Rôle' : 'Nouveau Rôle'}</h2>
+                    <p className="text-xs text-gray-500 mt-0.5">Définissez le nom et la description du rôle</p>
+                  </div>
                 </div>
-                <div>
-                  <h2 className="text-lg font-bold">{selectedRole ? 'Modifier le Rôle' : 'Nouveau Rôle'}</h2>
-                  <p className="text-sm text-orange-100">Définissez le nom et la description du rôle</p>
-                </div>
+                <button onClick={() => setShowModal(false)}
+                  className="p-2 rounded-xl hover:bg-white/80 text-gray-400 hover:text-gray-600 transition-all">
+                  <X className="w-5 h-5" />
+                </button>
               </div>
             </div>
 
-            <form onSubmit={handleSubmit} className="p-5 space-y-4">
+            <form onSubmit={handleSubmit} className="px-6 pb-6 space-y-5">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">Nom du rôle *</label>
+                <label className="flex items-center gap-1.5 text-xs font-semibold text-gray-600 uppercase tracking-wider mb-2">
+                  <Tag className="w-3.5 h-3.5 text-orange-500" />
+                  Nom du rôle <span className="text-red-400">*</span>
+                </label>
                 <input type="text" value={formData.name} required
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-300"
+                  className="w-full px-4 py-3 bg-gray-50 border-2 border-gray-100 rounded-xl text-sm text-gray-900 placeholder:text-gray-400 outline-none transition-all focus:border-orange-300 focus:bg-white focus:ring-4 focus:ring-orange-500/10 hover:border-gray-200"
                   placeholder="Ex: Gestionnaire" />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">Description</label>
+                <label className="flex items-center gap-1.5 text-xs font-semibold text-gray-600 uppercase tracking-wider mb-2">
+                  <FileText className="w-3.5 h-3.5 text-orange-500" />
+                  Description
+                </label>
                 <textarea value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-300"
-                  placeholder="Description du rôle..." rows={3} />
+                  className="w-full px-4 py-3 bg-gray-50 border-2 border-gray-100 rounded-xl text-sm text-gray-900 placeholder:text-gray-400 outline-none transition-all focus:border-orange-300 focus:bg-white focus:ring-4 focus:ring-orange-500/10 hover:border-gray-200 resize-none"
+                  placeholder="Décrivez les responsabilités de ce rôle..." rows={3} />
               </div>
 
-              <div className="flex gap-3 pt-4 border-t border-gray-100">
+              <div className="flex gap-3 pt-3">
                 <button type="button" onClick={() => setShowModal(false)}
-                  className="flex-1 px-4 py-2.5 border border-gray-200 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">
+                  className="flex-1 px-4 py-3 border-2 border-gray-200 rounded-xl text-sm font-semibold text-gray-600 hover:bg-gray-50 hover:border-gray-300 transition-all">
                   Annuler
                 </button>
                 <button type="submit"
-                  className="flex-1 px-4 py-2.5 bg-orange-500 text-white rounded-xl text-sm font-medium hover:bg-orange-600 transition-colors">
-                  {selectedRole ? 'Modifier' : 'Créer'}
+                  className="flex-1 px-4 py-3 bg-gradient-to-r from-orange-500 to-amber-500 text-white rounded-xl text-sm font-semibold hover:from-orange-600 hover:to-amber-600 transition-all shadow-lg shadow-orange-200 hover:shadow-xl hover:shadow-orange-300 hover:-translate-y-0.5 active:translate-y-0 flex items-center justify-center gap-2">
+                  <CheckCircle2 className="w-4 h-4" />
+                  {selectedRole ? 'Enregistrer' : 'Créer le rôle'}
                 </button>
               </div>
             </form>
@@ -262,35 +285,50 @@ const RoleManagement: React.FC = () => {
 
       {/* Delete Modal */}
       {showDeleteModal && roleToDelete && (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={() => { setShowDeleteModal(false); setRoleToDelete(null); }}>
-          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden" onClick={e => e.stopPropagation()}>
-            <div className="bg-gradient-to-r from-red-500 to-red-600 p-5 text-white">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
-                  <Trash2 className="w-5 h-5" />
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-md flex items-center justify-center z-50 p-4 animate-[fadeIn_0.2s_ease-out]" onClick={() => { setShowDeleteModal(false); setRoleToDelete(null); }}>
+          <div className="bg-white rounded-3xl shadow-2xl max-w-md w-full overflow-hidden animate-[slideUp_0.3s_ease-out]" onClick={e => e.stopPropagation()}
+            style={{ boxShadow: '0 25px 60px -15px rgba(0, 0, 0, 0.3)' }}>
+            <div className="relative overflow-hidden px-6 pt-6 pb-5">
+              <div className="absolute inset-0 bg-gradient-to-br from-red-50 via-rose-50 to-red-50"></div>
+              <div className="absolute top-0 right-0 w-32 h-32 bg-red-200/30 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2"></div>
+              <div className="relative flex items-center justify-between">
+                <div className="flex items-center gap-3.5">
+                  <div className="w-12 h-12 bg-gradient-to-br from-red-500 to-rose-500 rounded-2xl flex items-center justify-center shadow-lg shadow-red-200">
+                    <ShieldAlert className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-bold text-gray-900">Supprimer le Rôle</h3>
+                    <p className="text-xs text-gray-500 mt-0.5">Cette action est irréversible</p>
+                  </div>
                 </div>
-                <div>
-                  <h3 className="text-lg font-bold">Supprimer le Rôle</h3>
-                  <p className="text-sm text-red-100">Cette action est irréversible</p>
-                </div>
+                <button onClick={() => { setShowDeleteModal(false); setRoleToDelete(null); }}
+                  className="p-2 rounded-xl hover:bg-white/80 text-gray-400 hover:text-gray-600 transition-all">
+                  <X className="w-5 h-5" />
+                </button>
               </div>
             </div>
-            <div className="p-5">
-              <p className="text-sm text-gray-600 mb-5">
-                Êtes-vous sûr de vouloir supprimer le rôle <span className="font-semibold text-gray-900">"{roleToDelete.name}"</span> ?
+            <div className="px-6 pb-6">
+              <div className="bg-red-50 border-2 border-red-100 rounded-xl p-4 mb-5">
+                <p className="text-sm text-gray-700">
+                  Êtes-vous sûr de vouloir supprimer le rôle <span className="font-bold text-gray-900">"{roleToDelete.name}"</span> ?
+                </p>
                 {roleToDelete.user_count > 0 && (
-                  <span className="block mt-1 text-red-600 font-medium">
-                    Attention : {roleToDelete.user_count} utilisateur(s) sont associés à ce rôle.
-                  </span>
+                  <div className="flex items-start gap-2 mt-3 bg-red-100/50 rounded-lg p-2.5">
+                    <AlertTriangle className="w-4 h-4 text-red-500 flex-shrink-0 mt-0.5" />
+                    <p className="text-xs text-red-700 font-semibold">
+                      {roleToDelete.user_count} utilisateur{roleToDelete.user_count !== 1 ? 's' : ''} associé{roleToDelete.user_count !== 1 ? 's' : ''} à ce rôle.
+                    </p>
+                  </div>
                 )}
-              </p>
+              </div>
               <div className="flex gap-3">
                 <button onClick={() => { setShowDeleteModal(false); setRoleToDelete(null); }}
-                  className="flex-1 px-4 py-2.5 border border-gray-200 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">
+                  className="flex-1 px-4 py-3 border-2 border-gray-200 rounded-xl text-sm font-semibold text-gray-600 hover:bg-gray-50 hover:border-gray-300 transition-all">
                   Annuler
                 </button>
                 <button onClick={handleConfirmDelete}
-                  className="flex-1 px-4 py-2.5 bg-red-600 text-white rounded-xl text-sm font-medium hover:bg-red-700 transition-colors">
+                  className="flex-1 px-4 py-3 bg-gradient-to-r from-red-500 to-rose-500 text-white rounded-xl text-sm font-semibold hover:from-red-600 hover:to-rose-600 transition-all shadow-lg shadow-red-200 hover:shadow-xl hover:shadow-red-300 flex items-center justify-center gap-2">
+                  <Trash2 className="w-4 h-4" />
                   Supprimer
                 </button>
               </div>
