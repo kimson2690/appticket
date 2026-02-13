@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import {
   Image, Video, Plus, Trash2, Eye, EyeOff, X, Pencil,
   AlertTriangle, CheckCircle, XCircle, Upload,
-  GripVertical, ExternalLink, Calendar, Clock, CalendarDays
+  GripVertical, ExternalLink, Calendar, Clock, CalendarDays,
+  FileText, Link, Hash, CheckCircle2, ShieldAlert, Type
 } from 'lucide-react';
 
 interface Advertisement {
@@ -396,42 +397,58 @@ const AdvertisementManagement: React.FC = () => {
 
       {/* Create/Edit Modal */}
       {showModal && (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={() => { setShowModal(false); resetForm(); }}>
-          <div className="bg-white rounded-2xl shadow-2xl max-w-xl w-full max-h-[90vh] overflow-hidden" onClick={e => e.stopPropagation()}>
-            <div className="bg-gradient-to-r from-orange-500 to-orange-600 p-5 text-white">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
-                  {editingAd ? <Pencil className="w-5 h-5" /> : <Plus className="w-5 h-5" />}
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-md flex items-center justify-center z-50 p-4 animate-[fadeIn_0.2s_ease-out]" onClick={() => { setShowModal(false); resetForm(); }}>
+          <div className="bg-white rounded-3xl shadow-2xl max-w-xl w-full max-h-[90vh] overflow-hidden animate-[slideUp_0.3s_ease-out]" onClick={e => e.stopPropagation()}
+            style={{ boxShadow: '0 25px 60px -15px rgba(0, 0, 0, 0.3)' }}>
+            <div className="relative overflow-hidden px-6 pt-6 pb-5">
+              <div className="absolute inset-0 bg-gradient-to-br from-orange-50 via-amber-50 to-orange-50"></div>
+              <div className="absolute top-0 right-0 w-32 h-32 bg-orange-200/30 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2"></div>
+              <div className="relative flex items-center justify-between">
+                <div className="flex items-center gap-3.5">
+                  <div className="w-12 h-12 bg-gradient-to-br from-orange-500 to-amber-500 rounded-2xl flex items-center justify-center shadow-lg shadow-orange-200">
+                    {editingAd ? <Pencil className="w-5 h-5 text-white" /> : <Plus className="w-5 h-5 text-white" />}
+                  </div>
+                  <div>
+                    <h2 className="text-lg font-bold text-gray-900">{editingAd ? 'Modifier la Publicité' : 'Nouvelle Publicité'}</h2>
+                    <p className="text-xs text-gray-500 mt-0.5">Remplissez les informations de la publicité</p>
+                  </div>
                 </div>
-                <div>
-                  <h2 className="text-lg font-bold">{editingAd ? 'Modifier la Publicité' : 'Nouvelle Publicité'}</h2>
-                  <p className="text-sm text-orange-100">Remplissez les informations de la publicité</p>
-                </div>
+                <button onClick={() => { setShowModal(false); resetForm(); }}
+                  className="p-2 rounded-xl hover:bg-white/80 text-gray-400 hover:text-gray-600 transition-all">
+                  <X className="w-5 h-5" />
+                </button>
               </div>
             </div>
 
-            <form onSubmit={handleSubmit} className="p-5 space-y-4 overflow-y-auto max-h-[calc(90vh-140px)]">
+            <form onSubmit={handleSubmit} className="px-6 pt-6 pb-6 space-y-5 overflow-y-auto max-h-[calc(90vh-140px)]">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">Titre *</label>
+                <label className="flex items-center gap-1.5 text-xs font-semibold text-gray-600 uppercase tracking-wider mb-2">
+                  <Type className="w-3.5 h-3.5 text-orange-500" />
+                  Titre <span className="text-red-400">*</span>
+                </label>
                 <input type="text" value={formData.title} required
                   onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                  className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-300"
+                  className="w-full px-4 py-3 bg-gray-50 border-2 border-gray-100 rounded-xl text-sm text-gray-900 placeholder:text-gray-400 outline-none transition-all focus:border-orange-300 focus:bg-white focus:ring-4 focus:ring-orange-500/10 hover:border-gray-200"
                   placeholder="Ex: Promotion du mois" />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">Description</label>
+                <label className="flex items-center gap-1.5 text-xs font-semibold text-gray-600 uppercase tracking-wider mb-2">
+                  <FileText className="w-3.5 h-3.5 text-orange-500" />
+                  Description
+                </label>
                 <textarea value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-300"
+                  className="w-full px-4 py-3 bg-gray-50 border-2 border-gray-100 rounded-xl text-sm text-gray-900 placeholder:text-gray-400 outline-none transition-all focus:border-orange-300 focus:bg-white focus:ring-4 focus:ring-orange-500/10 hover:border-gray-200 resize-none"
                   rows={2} placeholder="Description optionnelle" />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                  {editingAd ? 'Média (laisser vide pour garder l\'actuel)' : 'Média (Image ou Vidéo) *'}
+                <label className="flex items-center gap-1.5 text-xs font-semibold text-gray-600 uppercase tracking-wider mb-2">
+                  <Upload className="w-3.5 h-3.5 text-orange-500" />
+                  {editingAd ? 'Média (laisser vide pour garder l\'actuel)' : 'Média (Image ou Vidéo)'} {!editingAd && <span className="text-red-400">*</span>}
                 </label>
-                <div className="border-2 border-dashed border-gray-200 rounded-xl p-5 text-center hover:border-orange-300 transition-colors">
+                <div className="border-2 border-dashed border-gray-200 rounded-xl p-5 text-center hover:border-orange-300 transition-colors bg-gray-50/50">
                   {mediaPreview ? (
                     <div className="space-y-3">
                       {(mediaFile?.type.startsWith('video')) || (!mediaFile && editingAd?.media_type === 'video') ? (
@@ -441,16 +458,16 @@ const AdvertisementManagement: React.FC = () => {
                       )}
                       <button type="button"
                         onClick={() => { setMediaFile(null); setMediaPreview(null); }}
-                        className="text-xs text-red-500 hover:text-red-700 font-medium">
+                        className="text-xs text-red-500 hover:text-red-700 font-semibold">
                         {editingAd && !mediaFile ? 'Changer le média' : 'Supprimer et choisir un autre'}
                       </button>
                     </div>
                   ) : (
                     <label className="cursor-pointer block">
-                      <div className="w-10 h-10 bg-gray-50 rounded-xl flex items-center justify-center mx-auto mb-2">
-                        <Upload className="w-5 h-5 text-gray-400" />
+                      <div className="w-10 h-10 bg-orange-50 rounded-xl flex items-center justify-center mx-auto mb-2">
+                        <Upload className="w-5 h-5 text-orange-400" />
                       </div>
-                      <p className="text-xs text-gray-600 font-medium">Cliquez pour uploader</p>
+                      <p className="text-xs text-gray-600 font-semibold">Cliquez pour uploader</p>
                       <p className="text-[10px] text-gray-400 mt-1">JPG, PNG, GIF, WebP, MP4, WebM, MOV (max 50 Mo)</p>
                       <p className="text-[10px] text-orange-500 mt-1 font-medium">Taille recommandée : 1200 × 400 px</p>
                       <input type="file"
@@ -462,57 +479,72 @@ const AdvertisementManagement: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">Lien (optionnel)</label>
+                <label className="flex items-center gap-1.5 text-xs font-semibold text-gray-600 uppercase tracking-wider mb-2">
+                  <Link className="w-3.5 h-3.5 text-orange-500" />
+                  Lien (optionnel)
+                </label>
                 <input type="url" value={formData.link_url}
                   onChange={(e) => setFormData({ ...formData, link_url: e.target.value })}
-                  className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-300"
+                  className="w-full px-4 py-3 bg-gray-50 border-2 border-gray-100 rounded-xl text-sm text-gray-900 placeholder:text-gray-400 outline-none transition-all focus:border-orange-300 focus:bg-white focus:ring-4 focus:ring-orange-500/10 hover:border-gray-200"
                   placeholder="https://example.com" />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-5">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Ordre d'affichage</label>
+                  <label className="flex items-center gap-1.5 text-xs font-semibold text-gray-600 uppercase tracking-wider mb-2">
+                    <Hash className="w-3.5 h-3.5 text-orange-500" />
+                    Ordre d'affichage
+                  </label>
                   <input type="number" min={0} value={formData.display_order}
                     onChange={(e) => setFormData({ ...formData, display_order: parseInt(e.target.value) || 0 })}
-                    className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-300" />
+                    className="w-full px-4 py-3 bg-gray-50 border-2 border-gray-100 rounded-xl text-sm text-gray-900 outline-none transition-all focus:border-orange-300 focus:bg-white focus:ring-4 focus:ring-orange-500/10 hover:border-gray-200" />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Statut</label>
+                  <label className="flex items-center gap-1.5 text-xs font-semibold text-gray-600 uppercase tracking-wider mb-2">
+                    <CheckCircle className="w-3.5 h-3.5 text-orange-500" />
+                    Statut
+                  </label>
                   <select value={formData.status}
                     onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                    className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-300">
+                    className="w-full px-4 py-3 bg-gray-50 border-2 border-gray-100 rounded-xl text-sm text-gray-900 outline-none transition-all focus:border-orange-300 focus:bg-white focus:ring-4 focus:ring-orange-500/10 hover:border-gray-200 appearance-none cursor-pointer">
                     <option value="active">Active</option>
                     <option value="inactive">Inactive</option>
                   </select>
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-5">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Date de début</label>
+                  <label className="flex items-center gap-1.5 text-xs font-semibold text-gray-600 uppercase tracking-wider mb-2">
+                    <Calendar className="w-3.5 h-3.5 text-orange-500" />
+                    Date de début
+                  </label>
                   <input type="date" value={formData.start_date}
                     onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
-                    className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-300" />
+                    className="w-full px-4 py-3 bg-gray-50 border-2 border-gray-100 rounded-xl text-sm text-gray-900 outline-none transition-all focus:border-orange-300 focus:bg-white focus:ring-4 focus:ring-orange-500/10 hover:border-gray-200" />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Date de fin</label>
+                  <label className="flex items-center gap-1.5 text-xs font-semibold text-gray-600 uppercase tracking-wider mb-2">
+                    <Clock className="w-3.5 h-3.5 text-orange-500" />
+                    Date de fin
+                  </label>
                   <input type="date" value={formData.end_date}
                     onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
-                    className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-300" />
+                    className="w-full px-4 py-3 bg-gray-50 border-2 border-gray-100 rounded-xl text-sm text-gray-900 outline-none transition-all focus:border-orange-300 focus:bg-white focus:ring-4 focus:ring-orange-500/10 hover:border-gray-200" />
                 </div>
               </div>
 
-              <div className="flex gap-3 pt-4 border-t border-gray-100">
+              <div className="flex gap-3 pt-3">
                 <button type="button" onClick={() => { setShowModal(false); resetForm(); }}
-                  className="flex-1 px-4 py-2.5 border border-gray-200 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">
+                  className="flex-1 px-4 py-3 border-2 border-gray-200 rounded-xl text-sm font-semibold text-gray-600 hover:bg-gray-50 hover:border-gray-300 transition-all">
                   Annuler
                 </button>
                 <button type="submit" disabled={submitting}
-                  className="flex-1 px-4 py-2.5 bg-orange-500 text-white rounded-xl text-sm font-medium hover:bg-orange-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
+                  className="flex-1 px-4 py-3 bg-orange-500 text-white rounded-xl text-sm font-semibold hover:bg-orange-600 transition-all shadow-lg shadow-orange-200 hover:shadow-xl hover:shadow-orange-300 hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:hover:shadow-lg flex items-center justify-center gap-2">
                   {submitting ? (
                     <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div> Envoi...</>
                   ) : (
-                    <><Upload className="w-4 h-4" /> {editingAd ? 'Mettre à jour' : 'Publier'}</>
+                    <><CheckCircle2 className="w-4 h-4" /> {editingAd ? 'Mettre à jour' : 'Publier'}</>
                   )}
                 </button>
               </div>
@@ -523,28 +555,44 @@ const AdvertisementManagement: React.FC = () => {
 
       {/* Delete Modal */}
       {showDeleteModal && (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={() => { setShowDeleteModal(false); setAdToDelete(null); }}>
-          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden" onClick={e => e.stopPropagation()}>
-            <div className="bg-gradient-to-r from-red-500 to-red-600 p-5 text-white">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
-                  <Trash2 className="w-5 h-5" />
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-md flex items-center justify-center z-50 p-4 animate-[fadeIn_0.2s_ease-out]" onClick={() => { setShowDeleteModal(false); setAdToDelete(null); }}>
+          <div className="bg-white rounded-3xl shadow-2xl max-w-md w-full overflow-hidden animate-[slideUp_0.3s_ease-out]" onClick={e => e.stopPropagation()}
+            style={{ boxShadow: '0 25px 60px -15px rgba(0, 0, 0, 0.3)' }}>
+            <div className="relative overflow-hidden px-6 pt-6 pb-5">
+              <div className="absolute inset-0 bg-gradient-to-br from-red-50 via-rose-50 to-red-50"></div>
+              <div className="absolute top-0 right-0 w-32 h-32 bg-red-200/30 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2"></div>
+              <div className="relative flex items-center justify-between">
+                <div className="flex items-center gap-3.5">
+                  <div className="w-12 h-12 bg-gradient-to-br from-red-500 to-rose-500 rounded-2xl flex items-center justify-center shadow-lg shadow-red-200">
+                    <ShieldAlert className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-bold text-gray-900">Supprimer la publicité</h3>
+                    <p className="text-xs text-gray-500 mt-0.5">Cette action est irréversible</p>
+                  </div>
                 </div>
-                <div>
-                  <h3 className="text-lg font-bold">Supprimer la publicité</h3>
-                  <p className="text-sm text-red-100">Cette action est irréversible</p>
-                </div>
+                <button onClick={() => { setShowDeleteModal(false); setAdToDelete(null); }}
+                  className="p-2 rounded-xl hover:bg-white/80 text-gray-400 hover:text-gray-600 transition-all">
+                  <X className="w-5 h-5" />
+                </button>
               </div>
             </div>
-            <div className="p-5">
-              <p className="text-sm text-gray-600 mb-5">Le fichier média sera également supprimé définitivement.</p>
+            <div className="px-6 pt-6 pb-6">
+              <div className="bg-red-50 border-2 border-red-100 rounded-xl p-4 mb-5">
+                <p className="text-sm text-gray-700">Le fichier média sera également supprimé définitivement.</p>
+                <div className="flex items-start gap-2 mt-3 bg-red-100/50 rounded-lg p-2.5">
+                  <AlertTriangle className="w-4 h-4 text-red-500 flex-shrink-0 mt-0.5" />
+                  <p className="text-xs text-red-700 font-semibold">Cette action ne peut pas être annulée.</p>
+                </div>
+              </div>
               <div className="flex gap-3">
                 <button onClick={() => { setShowDeleteModal(false); setAdToDelete(null); }}
-                  className="flex-1 px-4 py-2.5 border border-gray-200 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">
+                  className="flex-1 px-4 py-3 border-2 border-gray-200 rounded-xl text-sm font-semibold text-gray-600 hover:bg-gray-50 hover:border-gray-300 transition-all">
                   Annuler
                 </button>
                 <button onClick={handleDelete}
-                  className="flex-1 px-4 py-2.5 bg-red-600 text-white rounded-xl text-sm font-medium hover:bg-red-700 transition-colors">
+                  className="flex-1 px-4 py-3 bg-red-500 text-white rounded-xl text-sm font-semibold hover:bg-red-600 transition-all shadow-lg shadow-red-200 hover:shadow-xl hover:shadow-red-300 flex items-center justify-center gap-2">
+                  <Trash2 className="w-4 h-4" />
                   Supprimer
                 </button>
               </div>

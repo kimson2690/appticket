@@ -21,7 +21,12 @@ import {
   TrendingUp,
   CalendarDays,
   ChevronDown,
-  Filter
+  Filter,
+  Lock,
+  Hash,
+  User as UserIcon,
+  CheckCircle2,
+  ShieldAlert
 } from 'lucide-react';
 import { apiService, type Employee, type Company } from '../services/api';
 import Pagination from './Pagination';
@@ -670,62 +675,84 @@ const EmployeeManagement: React.FC = () => {
 
       {/* Create/Edit Modal */}
       {showModal && (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={() => setShowModal(false)}>
-          <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden" onClick={e => e.stopPropagation()}>
-            <div className="bg-gradient-to-r from-orange-500 to-orange-600 p-5 text-white">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
-                  {selectedEmployee ? <Edit className="w-5 h-5" /> : <Plus className="w-5 h-5" />}
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-md flex items-center justify-center z-50 p-4 animate-[fadeIn_0.2s_ease-out]" onClick={() => setShowModal(false)}>
+          <div className="bg-white rounded-3xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden animate-[slideUp_0.3s_ease-out]" onClick={e => e.stopPropagation()}
+            style={{ boxShadow: '0 25px 60px -15px rgba(0, 0, 0, 0.3)' }}>
+            <div className="relative overflow-hidden px-6 pt-6 pb-5">
+              <div className="absolute inset-0 bg-gradient-to-br from-orange-50 via-amber-50 to-orange-50"></div>
+              <div className="absolute top-0 right-0 w-32 h-32 bg-orange-200/30 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2"></div>
+              <div className="relative flex items-center justify-between">
+                <div className="flex items-center gap-3.5">
+                  <div className="w-12 h-12 bg-gradient-to-br from-orange-500 to-amber-500 rounded-2xl flex items-center justify-center shadow-lg shadow-orange-200">
+                    {selectedEmployee ? <Edit className="w-5 h-5 text-white" /> : <Plus className="w-5 h-5 text-white" />}
+                  </div>
+                  <div>
+                    <h2 className="text-lg font-bold text-gray-900">{selectedEmployee ? 'Modifier l\'Employé' : 'Nouvel Employé'}</h2>
+                    <p className="text-xs text-gray-500 mt-0.5">Remplissez les informations de l'employé</p>
+                  </div>
                 </div>
-                <div>
-                  <h2 className="text-lg font-bold">{selectedEmployee ? 'Modifier l\'Employé' : 'Nouvel Employé'}</h2>
-                  <p className="text-sm text-orange-100">Remplissez les informations de l'employé</p>
-                </div>
+                <button onClick={() => setShowModal(false)}
+                  className="p-2 rounded-xl hover:bg-white/80 text-gray-400 hover:text-gray-600 transition-all">
+                  <X className="w-5 h-5" />
+                </button>
               </div>
             </div>
 
-            <form onSubmit={handleSubmit} className="p-5 space-y-4 overflow-y-auto max-h-[calc(90vh-140px)]">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <form onSubmit={handleSubmit} className="px-6 pt-6 pb-6 space-y-5 overflow-y-auto max-h-[calc(90vh-140px)]">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Nom complet *</label>
+                  <label className="flex items-center gap-1.5 text-xs font-semibold text-gray-600 uppercase tracking-wider mb-2">
+                    <UserIcon className="w-3.5 h-3.5 text-orange-500" />
+                    Nom complet <span className="text-red-400">*</span>
+                  </label>
                   <input type="text" required value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-300"
+                    className="w-full px-4 py-3 bg-gray-50 border-2 border-gray-100 rounded-xl text-sm text-gray-900 placeholder:text-gray-400 outline-none transition-all focus:border-orange-300 focus:bg-white focus:ring-4 focus:ring-orange-500/10 hover:border-gray-200"
                     placeholder="Ex: Moussa Kaboré" />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Email *</label>
+                  <label className="flex items-center gap-1.5 text-xs font-semibold text-gray-600 uppercase tracking-wider mb-2">
+                    <Mail className="w-3.5 h-3.5 text-orange-500" />
+                    Email <span className="text-red-400">*</span>
+                  </label>
                   <input type="email" required value={formData.email}
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-300"
+                    className="w-full px-4 py-3 bg-gray-50 border-2 border-gray-100 rounded-xl text-sm text-gray-900 placeholder:text-gray-400 outline-none transition-all focus:border-orange-300 focus:bg-white focus:ring-4 focus:ring-orange-500/10 hover:border-gray-200"
                     placeholder="moussa@entreprise.bf" />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Téléphone</label>
+                  <label className="flex items-center gap-1.5 text-xs font-semibold text-gray-600 uppercase tracking-wider mb-2">
+                    <Phone className="w-3.5 h-3.5 text-orange-500" />
+                    Téléphone
+                  </label>
                   <input type="tel" value={formData.phone}
                     onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                    className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-300"
+                    className="w-full px-4 py-3 bg-gray-50 border-2 border-gray-100 rounded-xl text-sm text-gray-900 placeholder:text-gray-400 outline-none transition-all focus:border-orange-300 focus:bg-white focus:ring-4 focus:ring-orange-500/10 hover:border-gray-200"
                     placeholder="+226 70 12 34 56" />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                    {selectedEmployee ? 'Nouveau mot de passe' : 'Mot de passe *'}
+                  <label className="flex items-center gap-1.5 text-xs font-semibold text-gray-600 uppercase tracking-wider mb-2">
+                    <Lock className="w-3.5 h-3.5 text-orange-500" />
+                    {selectedEmployee ? 'Nouveau mot de passe' : 'Mot de passe'} {!selectedEmployee && <span className="text-red-400">*</span>}
                   </label>
                   <input type="password" required={!selectedEmployee} value={formData.password}
                     onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                    className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-300"
+                    className="w-full px-4 py-3 bg-gray-50 border-2 border-gray-100 rounded-xl text-sm text-gray-900 placeholder:text-gray-400 outline-none transition-all focus:border-orange-300 focus:bg-white focus:ring-4 focus:ring-orange-500/10 hover:border-gray-200"
                     placeholder={selectedEmployee ? "Laisser vide pour ne pas changer" : "••••••••"} />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Entreprise *</label>
+                  <label className="flex items-center gap-1.5 text-xs font-semibold text-gray-600 uppercase tracking-wider mb-2">
+                    <Building2 className="w-3.5 h-3.5 text-orange-500" />
+                    Entreprise <span className="text-red-400">*</span>
+                  </label>
                   {isCompanyManager ? (
-                    <div className="w-full px-3.5 py-2.5 border border-gray-200 bg-gray-50 rounded-xl text-sm text-gray-700">
+                    <div className="w-full px-4 py-3 bg-gray-50 border-2 border-gray-100 rounded-xl text-sm text-gray-700">
                       {currentUser.companyName || 'Entreprise non définie'}
                     </div>
                   ) : (
                     <select required value={formData.company_id}
                       onChange={(e) => setFormData({ ...formData, company_id: e.target.value })}
-                      className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-300">
+                      className="w-full px-4 py-3 bg-gray-50 border-2 border-gray-100 rounded-xl text-sm text-gray-900 outline-none transition-all focus:border-orange-300 focus:bg-white focus:ring-4 focus:ring-orange-500/10 hover:border-gray-200 appearance-none cursor-pointer">
                       <option value="">Sélectionner une entreprise</option>
                       {companies.map((company) => (
                         <option key={company.id} value={company.id}>{company.name}</option>
@@ -734,59 +761,78 @@ const EmployeeManagement: React.FC = () => {
                   )}
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Département</label>
+                  <label className="flex items-center gap-1.5 text-xs font-semibold text-gray-600 uppercase tracking-wider mb-2">
+                    <Briefcase className="w-3.5 h-3.5 text-orange-500" />
+                    Département
+                  </label>
                   <input type="text" value={formData.department}
                     onChange={(e) => setFormData({ ...formData, department: e.target.value })}
-                    className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-300"
+                    className="w-full px-4 py-3 bg-gray-50 border-2 border-gray-100 rounded-xl text-sm text-gray-900 placeholder:text-gray-400 outline-none transition-all focus:border-orange-300 focus:bg-white focus:ring-4 focus:ring-orange-500/10 hover:border-gray-200"
                     placeholder="Ex: IT, RH, Finance" />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Poste</label>
+                  <label className="flex items-center gap-1.5 text-xs font-semibold text-gray-600 uppercase tracking-wider mb-2">
+                    <Briefcase className="w-3.5 h-3.5 text-orange-500" />
+                    Poste
+                  </label>
                   <input type="text" value={formData.position}
                     onChange={(e) => setFormData({ ...formData, position: e.target.value })}
-                    className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-300"
+                    className="w-full px-4 py-3 bg-gray-50 border-2 border-gray-100 rounded-xl text-sm text-gray-900 placeholder:text-gray-400 outline-none transition-all focus:border-orange-300 focus:bg-white focus:ring-4 focus:ring-orange-500/10 hover:border-gray-200"
                     placeholder="Ex: Développeur, Manager" />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Numéro d'employé</label>
+                  <label className="flex items-center gap-1.5 text-xs font-semibold text-gray-600 uppercase tracking-wider mb-2">
+                    <Hash className="w-3.5 h-3.5 text-orange-500" />
+                    Numéro d'employé
+                  </label>
                   <input type="text" value={formData.employee_number}
                     onChange={(e) => setFormData({ ...formData, employee_number: e.target.value })}
-                    className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-300"
+                    className="w-full px-4 py-3 bg-gray-50 border-2 border-gray-100 rounded-xl text-sm text-gray-900 placeholder:text-gray-400 outline-none transition-all focus:border-orange-300 focus:bg-white focus:ring-4 focus:ring-orange-500/10 hover:border-gray-200"
                     placeholder="Ex: EMP001" />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Solde de tickets initial</label>
+                  <label className="flex items-center gap-1.5 text-xs font-semibold text-gray-600 uppercase tracking-wider mb-2">
+                    <Ticket className="w-3.5 h-3.5 text-orange-500" />
+                    Solde de tickets initial
+                  </label>
                   <input type="number" min="0" value={formData.ticket_balance}
                     onChange={(e) => setFormData({ ...formData, ticket_balance: parseInt(e.target.value) || 0 })}
-                    className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-300"
+                    className="w-full px-4 py-3 bg-gray-50 border-2 border-gray-100 rounded-xl text-sm text-gray-900 placeholder:text-gray-400 outline-none transition-all focus:border-orange-300 focus:bg-white focus:ring-4 focus:ring-orange-500/10 hover:border-gray-200"
                     placeholder="0" />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Statut</label>
+                  <label className="flex items-center gap-1.5 text-xs font-semibold text-gray-600 uppercase tracking-wider mb-2">
+                    <CheckCircle className="w-3.5 h-3.5 text-orange-500" />
+                    Statut
+                  </label>
                   <select value={formData.status}
                     onChange={(e) => setFormData({ ...formData, status: e.target.value as 'active' | 'inactive' | 'suspended' })}
-                    className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-300">
+                    className="w-full px-4 py-3 bg-gray-50 border-2 border-gray-100 rounded-xl text-sm text-gray-900 outline-none transition-all focus:border-orange-300 focus:bg-white focus:ring-4 focus:ring-orange-500/10 hover:border-gray-200 appearance-none cursor-pointer">
                     <option value="active">Actif</option>
                     <option value="inactive">Inactif</option>
                     <option value="suspended">Suspendu</option>
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Date d'embauche</label>
+                  <label className="flex items-center gap-1.5 text-xs font-semibold text-gray-600 uppercase tracking-wider mb-2">
+                    <Calendar className="w-3.5 h-3.5 text-orange-500" />
+                    Date d'embauche
+                  </label>
                   <input type="date" value={formData.hire_date}
                     onChange={(e) => setFormData({ ...formData, hire_date: e.target.value })}
-                    className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-300" />
+                    className="w-full px-4 py-3 bg-gray-50 border-2 border-gray-100 rounded-xl text-sm text-gray-900 outline-none transition-all focus:border-orange-300 focus:bg-white focus:ring-4 focus:ring-orange-500/10 hover:border-gray-200" />
                 </div>
               </div>
 
-              <div className="flex gap-3 pt-4 border-t border-gray-100">
+              <div className="flex gap-3 pt-3">
                 <button type="button" onClick={() => setShowModal(false)}
-                  className="flex-1 px-4 py-2.5 border border-gray-200 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">
+                  className="flex-1 px-4 py-3 border-2 border-gray-200 rounded-xl text-sm font-semibold text-gray-600 hover:bg-gray-50 hover:border-gray-300 transition-all">
                   Annuler
                 </button>
                 <button type="submit"
-                  className="flex-1 px-4 py-2.5 bg-orange-500 text-white rounded-xl text-sm font-medium hover:bg-orange-600 transition-colors">
-                  {selectedEmployee ? 'Modifier' : 'Créer'}
+                  className="flex-1 px-4 py-3 bg-orange-500 text-white rounded-xl text-sm font-semibold hover:bg-orange-600 transition-all shadow-lg shadow-orange-200 hover:shadow-xl hover:shadow-orange-300 hover:-translate-y-0.5 active:translate-y-0 flex items-center justify-center gap-2">
+                  <CheckCircle2 className="w-4 h-4" />
+                  {selectedEmployee ? 'Enregistrer' : 'Créer l\'employé'}
                 </button>
               </div>
             </form>
@@ -796,30 +842,43 @@ const EmployeeManagement: React.FC = () => {
 
       {/* Delete Confirmation Modal */}
       {showDeleteModal && selectedEmployee && (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={() => setShowDeleteModal(false)}>
-          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden" onClick={e => e.stopPropagation()}>
-            <div className="bg-gradient-to-r from-red-500 to-red-600 p-5 text-white">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
-                  <Trash2 className="w-5 h-5" />
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-md flex items-center justify-center z-50 p-4 animate-[fadeIn_0.2s_ease-out]" onClick={() => setShowDeleteModal(false)}>
+          <div className="bg-white rounded-3xl shadow-2xl max-w-md w-full overflow-hidden animate-[slideUp_0.3s_ease-out]" onClick={e => e.stopPropagation()}
+            style={{ boxShadow: '0 25px 60px -15px rgba(0, 0, 0, 0.3)' }}>
+            <div className="relative overflow-hidden px-6 pt-6 pb-5">
+              <div className="absolute inset-0 bg-gradient-to-br from-red-50 via-rose-50 to-red-50"></div>
+              <div className="absolute top-0 right-0 w-32 h-32 bg-red-200/30 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2"></div>
+              <div className="relative flex items-center justify-between">
+                <div className="flex items-center gap-3.5">
+                  <div className="w-12 h-12 bg-gradient-to-br from-red-500 to-rose-500 rounded-2xl flex items-center justify-center shadow-lg shadow-red-200">
+                    <ShieldAlert className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-bold text-gray-900">Supprimer l'employé</h3>
+                    <p className="text-xs text-gray-500 mt-0.5">Cette action est irréversible</p>
+                  </div>
                 </div>
-                <div>
-                  <h3 className="text-lg font-bold">Supprimer l'employé</h3>
-                  <p className="text-sm text-red-100">Cette action est irréversible</p>
-                </div>
+                <button onClick={() => setShowDeleteModal(false)}
+                  className="p-2 rounded-xl hover:bg-white/80 text-gray-400 hover:text-gray-600 transition-all">
+                  <X className="w-5 h-5" />
+                </button>
               </div>
             </div>
-            <div className="p-5">
-              <p className="text-sm text-gray-600 mb-5">
-                Êtes-vous sûr de vouloir supprimer <span className="font-semibold text-gray-900">"{selectedEmployee.name}"</span> ?
-              </p>
+            <div className="px-6 pt-6 pb-6">
+              <div className="bg-red-50 border-2 border-red-100 rounded-xl p-4 mb-5">
+                <p className="text-sm text-gray-700">
+                  Êtes-vous sûr de vouloir supprimer <span className="font-bold text-gray-900">"{selectedEmployee.name}"</span> ?
+                </p>
+                <p className="text-xs text-gray-500 mt-2">Toutes les données associées seront supprimées.</p>
+              </div>
               <div className="flex gap-3">
                 <button onClick={() => setShowDeleteModal(false)}
-                  className="flex-1 px-4 py-2.5 border border-gray-200 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">
+                  className="flex-1 px-4 py-3 border-2 border-gray-200 rounded-xl text-sm font-semibold text-gray-600 hover:bg-gray-50 hover:border-gray-300 transition-all">
                   Annuler
                 </button>
                 <button onClick={handleConfirmDelete}
-                  className="flex-1 px-4 py-2.5 bg-red-600 text-white rounded-xl text-sm font-medium hover:bg-red-700 transition-colors">
+                  className="flex-1 px-4 py-3 bg-red-500 text-white rounded-xl text-sm font-semibold hover:bg-red-600 transition-all shadow-lg shadow-red-200 hover:shadow-xl hover:shadow-red-300 flex items-center justify-center gap-2">
+                  <Trash2 className="w-4 h-4" />
                   Supprimer
                 </button>
               </div>
@@ -830,30 +889,42 @@ const EmployeeManagement: React.FC = () => {
 
       {/* Reject Confirmation Modal */}
       {showRejectModal && (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={() => { setShowRejectModal(false); setEmployeeToReject(null); }}>
-          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden" onClick={e => e.stopPropagation()}>
-            <div className="bg-gradient-to-r from-amber-500 to-orange-500 p-5 text-white">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
-                  <XCircle className="w-5 h-5" />
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-md flex items-center justify-center z-50 p-4 animate-[fadeIn_0.2s_ease-out]" onClick={() => { setShowRejectModal(false); setEmployeeToReject(null); }}>
+          <div className="bg-white rounded-3xl shadow-2xl max-w-md w-full overflow-hidden animate-[slideUp_0.3s_ease-out]" onClick={e => e.stopPropagation()}
+            style={{ boxShadow: '0 25px 60px -15px rgba(0, 0, 0, 0.3)' }}>
+            <div className="relative overflow-hidden px-6 pt-6 pb-5">
+              <div className="absolute inset-0 bg-gradient-to-br from-amber-50 via-orange-50 to-amber-50"></div>
+              <div className="absolute top-0 right-0 w-32 h-32 bg-amber-200/30 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2"></div>
+              <div className="relative flex items-center justify-between">
+                <div className="flex items-center gap-3.5">
+                  <div className="w-12 h-12 bg-gradient-to-br from-amber-500 to-orange-500 rounded-2xl flex items-center justify-center shadow-lg shadow-amber-200">
+                    <XCircle className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-bold text-gray-900">Rejeter la demande</h3>
+                    <p className="text-xs text-gray-500 mt-0.5">L'employé devra soumettre une nouvelle demande</p>
+                  </div>
                 </div>
-                <div>
-                  <h3 className="text-lg font-bold">Rejeter la demande</h3>
-                  <p className="text-sm text-orange-100">L'employé devra soumettre une nouvelle demande</p>
-                </div>
+                <button onClick={() => { setShowRejectModal(false); setEmployeeToReject(null); }}
+                  className="p-2 rounded-xl hover:bg-white/80 text-gray-400 hover:text-gray-600 transition-all">
+                  <X className="w-5 h-5" />
+                </button>
               </div>
             </div>
-            <div className="p-5">
-              <p className="text-sm text-gray-600 mb-5">
-                Êtes-vous sûr de vouloir rejeter cette demande d'inscription ? Cette action est <span className="font-semibold text-gray-900">irréversible</span>.
-              </p>
+            <div className="px-6 pt-6 pb-6">
+              <div className="bg-amber-50 border-2 border-amber-100 rounded-xl p-4 mb-5">
+                <p className="text-sm text-gray-700">
+                  Êtes-vous sûr de vouloir rejeter cette demande d'inscription ? Cette action est <span className="font-bold text-gray-900">irréversible</span>.
+                </p>
+              </div>
               <div className="flex gap-3">
                 <button onClick={() => { setShowRejectModal(false); setEmployeeToReject(null); }}
-                  className="flex-1 px-4 py-2.5 border border-gray-200 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">
+                  className="flex-1 px-4 py-3 border-2 border-gray-200 rounded-xl text-sm font-semibold text-gray-600 hover:bg-gray-50 hover:border-gray-300 transition-all">
                   Annuler
                 </button>
                 <button onClick={handleConfirmReject}
-                  className="flex-1 px-4 py-2.5 bg-orange-500 text-white rounded-xl text-sm font-medium hover:bg-orange-600 transition-colors">
+                  className="flex-1 px-4 py-3 bg-amber-500 text-white rounded-xl text-sm font-semibold hover:bg-amber-600 transition-all shadow-lg shadow-amber-200 hover:shadow-xl hover:shadow-amber-300 flex items-center justify-center gap-2">
+                  <XCircle className="w-4 h-4" />
                   Rejeter
                 </button>
               </div>

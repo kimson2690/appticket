@@ -409,7 +409,7 @@ const RestaurantManagement: React.FC = () => {
               </div>
             </div>
 
-            <form onSubmit={handleSubmit} className="px-6 pb-6 space-y-5 overflow-y-auto max-h-[calc(90vh-140px)]">
+            <form onSubmit={handleSubmit} className="px-6 pt-6 pb-6 space-y-5 overflow-y-auto max-h-[calc(90vh-140px)]">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <div>
                   <label className="flex items-center gap-1.5 text-xs font-semibold text-gray-600 uppercase tracking-wider mb-2">
@@ -585,7 +585,7 @@ const RestaurantManagement: React.FC = () => {
                   Annuler
                 </button>
                 <button type="submit"
-                  className="flex-1 px-4 py-3 bg-gradient-to-r from-orange-500 to-amber-500 text-white rounded-xl text-sm font-semibold hover:from-orange-600 hover:to-amber-600 transition-all shadow-lg shadow-orange-200 hover:shadow-xl hover:shadow-orange-300 hover:-translate-y-0.5 active:translate-y-0 flex items-center justify-center gap-2">
+                  className="flex-1 px-4 py-3 bg-orange-500 text-white rounded-xl text-sm font-semibold hover:bg-orange-600 transition-all shadow-lg shadow-orange-200 hover:shadow-xl hover:shadow-orange-300 hover:-translate-y-0.5 active:translate-y-0 flex items-center justify-center gap-2">
                   <CheckCircle2 className="w-4 h-4" />
                   {selectedRestaurant ? 'Enregistrer' : 'Créer le restaurant'}
                 </button>
@@ -619,7 +619,7 @@ const RestaurantManagement: React.FC = () => {
                 </button>
               </div>
             </div>
-            <div className="px-6 pb-6">
+            <div className="px-6 pt-6 pb-6">
               <div className="bg-red-50 border-2 border-red-100 rounded-xl p-4 mb-5">
                 <p className="text-sm text-gray-700">
                   Êtes-vous sûr de vouloir supprimer <span className="font-bold text-gray-900">"{selectedRestaurant.name}"</span> ?
@@ -632,7 +632,7 @@ const RestaurantManagement: React.FC = () => {
                   Annuler
                 </button>
                 <button onClick={handleConfirmDelete}
-                  className="flex-1 px-4 py-3 bg-gradient-to-r from-red-500 to-rose-500 text-white rounded-xl text-sm font-semibold hover:from-red-600 hover:to-rose-600 transition-all shadow-lg shadow-red-200 hover:shadow-xl hover:shadow-red-300 flex items-center justify-center gap-2">
+                  className="flex-1 px-4 py-3 bg-red-500 text-white rounded-xl text-sm font-semibold hover:bg-red-600 transition-all shadow-lg shadow-red-200 hover:shadow-xl hover:shadow-red-300 flex items-center justify-center gap-2">
                   <Trash2 className="w-4 h-4" />
                   Supprimer
                 </button>
