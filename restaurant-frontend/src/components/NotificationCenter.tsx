@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Bell, X, Check, AlertTriangle, Info, ChevronRight } from 'lucide-react';
+import { Bell, X, Check, AlertTriangle, Info, ChevronRight, BellRing, BellOff } from 'lucide-react';
 import { apiService, type AppNotification } from '../services/api';
+import { usePushNotifications } from '../hooks/usePushNotifications';
 
 interface NotificationCenterProps {
   onNotificationCountChange?: (count: number) => void;
@@ -14,6 +15,14 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({ onNotificationC
   const [isLoading, setIsLoading] = useState(false);
   const [expandedNotifications, setExpandedNotifications] = useState<Set<string>>(new Set());
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const push = usePushNotifications();
+
+  // Auto-subscribe aux push notifications si permission déjà accordée
+  useEffect(() => {
+    if (push.isSupported && push.permission === 'granted' && !push.isSubscribed && !push.isLoading) {
+      push.subscribe();
+    }
+  }, [push.isSupported, push.permission, push.isSubscribed, push.isLoading]);
 
   // Charger les notifications
   const loadNotifications = async () => {
@@ -201,16 +210,71 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({ onNotificationC
               <h3 className="text-lg font-semibold text-gray-900">Notifications</h3>
               <p className="text-xs text-gray-500">{unreadCount} non lue{unreadCount > 1 ? 's' : ''}</p>
             </div>
-            {unreadCount > 0 && (
-              <button
-                onClick={markAllAsRead}
-                className="text-xs text-orange-600 hover:text-orange-700 font-medium flex items-center gap-1"
-              >
-                <Check className="w-3 h-3" />
-                Tout marquer lu
-              </button>
-            )}
+            <div className="flex items-center gap-2">
+              {push.isSupported && (
+                <button
+                  onClick={() => push.isSubscribed ? push.unsubscribe() : push.subscribe()}
+                  disabled={push.isLoading || push.permission === 'denied'}
+                  className={`p-1.5 rounded-lg transition-colors ${
+                    push.isSubscribed
+                      ? 'bg-orange-100 text-orange-600 hover:bg-orange-200'
+                      : push.permission === 'denied'
+                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                        : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+                  }`}
+                  title={
+                    push.isSubscribed
+                      ? 'Notifications push activées'
+                      : push.permission === 'denied'
+                        ? 'Notifications push bloquées par le navigateur'
+                        : 'Activer les notifications push'
+                  }
+                >
+                  {push.isSubscribed ? <BellRing className="w-3.5 h-3.5" /> : <BellOff className="w-3.5 h-3.5" />}
+                </button>
+              )}
+              {unreadCount > 0 && (
+                <button
+                  onClick={markAllAsRead}
+                  className="text-xs text-orange-600 hover:text-orange-700 font-medium flex items-center gap-1"
+                >
+                  <Check className="w-3 h-3" />
+                  Tout marquer lu
+                </button>
+              )}
+            </div>
           </div>
+
+          {/* Bannière push si pas encore activé */}
+          {push.isSupported && !push.isSubscribed && push.permission !== 'denied' && (
+            <div className="px-4 py-3 bg-gradient-to-r from-orange-50 to-amber-50 border-b border-orange-100">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 bg-orange-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                  <BellRing className="w-4 h-4 text-orange-500" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-semibold text-gray-800">Activer les notifications push</p>
+                  <p className="text-[10px] text-gray-500">Recevez vos alertes même quand l'app est en arrière-plan</p>
+                </div>
+                <button
+                  onClick={() => push.subscribe()}
+                  disabled={push.isLoading}
+                  className="px-3 py-1.5 bg-orange-500 text-white text-xs font-semibold rounded-lg hover:bg-orange-600 transition-colors shadow-sm flex-shrink-0"
+                >
+                  {push.isLoading ? '...' : 'Activer'}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Bannière si push bloqué */}
+          {push.isSupported && push.permission === 'denied' && (
+            <div className="px-4 py-2.5 bg-red-50 border-b border-red-100">
+              <p className="text-[10px] text-red-600 font-medium">
+                ⚠️ Les notifications push sont bloquées. Modifiez les paramètres de votre navigateur pour les réactiver.
+              </p>
+            </div>
+          )}
 
           {/* Liste des notifications */}
           <div className="max-h-[500px] overflow-y-auto">

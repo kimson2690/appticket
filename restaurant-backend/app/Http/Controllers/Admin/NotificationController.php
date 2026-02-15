@@ -32,11 +32,11 @@ class NotificationController extends Controller
                 $q->where('user_id', $userId)
                   ->orWhere(function($roleQuery) use ($userRole, $userCompanyId, $userRestaurantId) {
                       $roleQuery->where('role', $userRole);
-                      
+
                       if ($userRole === 'Gestionnaire Entreprise' && $userCompanyId) {
                           $roleQuery->where('company_id', $userCompanyId);
                       }
-                      
+
                       if ($userRole === 'Gestionnaire Restaurant' && $userRestaurantId) {
                           $roleQuery->where('restaurant_id', $userRestaurantId);
                       }
@@ -130,7 +130,7 @@ class NotificationController extends Controller
     {
         try {
             $notification = \App\Models\Notification::find($id);
-            
+
             if (!$notification) {
                 return response()->json([
                     'success' => false,
@@ -177,6 +177,38 @@ class NotificationController extends Controller
             ]);
 
             Log::info('Notification créée en MySQL', $notification->toArray());
+
+            // Envoyer une notification push
+            try {
+                $pushService = new \App\Services\PushNotificationService();
+                $pushData = [
+                    'notification_id' => $notification->id,
+                    'type' => $data['type'] ?? 'info',
+                    'action_url' => $data['action_url'] ?? null,
+                ];
+
+                if (!empty($data['user_id'])) {
+                    // Push vers un utilisateur spécifique
+                    $pushService->sendToUser(
+                        $data['user_id'],
+                        $data['title'],
+                        $data['message'],
+                        $pushData
+                    );
+                } elseif (!empty($data['role'])) {
+                    // Push vers tous les utilisateurs d'un rôle
+                    $pushService->sendToRole(
+                        $data['role'],
+                        $data['title'],
+                        $data['message'],
+                        $pushData,
+                        $data['company_id'] ?? null,
+                        $data['restaurant_id'] ?? null
+                    );
+                }
+            } catch (\Exception $pushError) {
+                Log::warning('Push notification échouée (non bloquant): ' . $pushError->getMessage());
+            }
 
             return $notification->toArray();
 

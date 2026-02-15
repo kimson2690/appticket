@@ -3,7 +3,22 @@ const qrcode = require('qrcode-terminal');
 const express = require('express');
 const bodyParser = require('body-parser');
 const cors = require('cors');
+const webpush = require('web-push');
 require('dotenv').config();
+
+// ============================================
+// CONFIGURATION WEB PUSH (VAPID)
+// ============================================
+const VAPID_PUBLIC_KEY = process.env.VAPID_PUBLIC_KEY;
+const VAPID_PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY;
+const VAPID_SUBJECT = process.env.VAPID_SUBJECT || 'mailto:appticket@kura-immo.com';
+
+if (VAPID_PUBLIC_KEY && VAPID_PRIVATE_KEY) {
+    webpush.setVapidDetails(VAPID_SUBJECT, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY);
+    console.log('🔔 Web Push configuré avec VAPID');
+} else {
+    console.warn('⚠️  Clés VAPID manquantes - Push notifications désactivées');
+}
 
 const app = express();
 const PORT = process.env.WHATSAPP_SERVICE_PORT || 3001;
@@ -329,13 +344,106 @@ Vous avez *${data.tickets_count} ticket(s)* qui expire(nt) dans ${data.days_left
 }
 
 // ============================================
+// ROUTES WEB PUSH NOTIFICATIONS
+// ============================================
+
+/**
+ * POST /push/send - Envoyer une notification push
+ * Body: { subscription: { endpoint, keys: { p256dh, auth } }, title, body, icon, badge, data }
+ */
+app.post('/push/send', async (req, res) => {
+    try {
+        if (!VAPID_PUBLIC_KEY || !VAPID_PRIVATE_KEY) {
+            return res.status(503).json({
+                success: false,
+                error: 'Web Push non configuré (clés VAPID manquantes)'
+            });
+        }
+
+        const { subscription, title, body, icon, badge, data } = req.body;
+
+        if (!subscription || !subscription.endpoint || !subscription.keys) {
+            return res.status(400).json({
+                success: false,
+                error: 'Subscription invalide: endpoint et keys requis'
+            });
+        }
+
+        const payload = JSON.stringify({
+            title: title || 'AppTicket',
+            body: body || '',
+            icon: icon || '/AppTicket.png',
+            badge: badge || '/AppTicket.png',
+            data: data || {},
+            timestamp: Date.now()
+        });
+
+        const pushSubscription = {
+            endpoint: subscription.endpoint,
+            keys: {
+                p256dh: subscription.keys.p256dh,
+                auth: subscription.keys.auth
+            }
+        };
+
+        await webpush.sendNotification(pushSubscription, payload, {
+            TTL: 86400, // 24h
+            urgency: 'high'
+        });
+
+        console.log(`🔔 Push envoyé: "${title}"`);
+
+        res.json({
+            success: true,
+            message: 'Notification push envoyée'
+        });
+
+    } catch (error) {
+        console.error('❌ Erreur push:', error.statusCode || error.message);
+
+        // 410 Gone ou 404 = subscription expirée
+        if (error.statusCode === 410 || error.statusCode === 404) {
+            return res.status(410).json({
+                success: false,
+                expired: true,
+                error: 'Subscription expirée ou invalide'
+            });
+        }
+
+        res.status(500).json({
+            success: false,
+            expired: false,
+            error: error.message
+        });
+    }
+});
+
+/**
+ * GET /push/vapid-key - Récupérer la clé publique VAPID
+ */
+app.get('/push/vapid-key', (req, res) => {
+    if (!VAPID_PUBLIC_KEY) {
+        return res.status(503).json({
+            success: false,
+            error: 'Clé VAPID non configurée'
+        });
+    }
+
+    res.json({
+        success: true,
+        public_key: VAPID_PUBLIC_KEY
+    });
+});
+
+// ============================================
 // DÉMARRAGE DU SERVEUR
 // ============================================
 
 app.listen(PORT, () => {
-    console.log('\n🚀 WhatsApp Service démarré');
+    console.log('\n🚀 Service Notifications démarré');
     console.log(`📡 API disponible sur: http://localhost:${PORT}`);
     console.log(`📊 Health check: http://localhost:${PORT}/health`);
+    console.log(`🔔 Web Push: ${VAPID_PUBLIC_KEY ? 'Activé' : 'Désactivé'}`);
     console.log('\n⏳ En attente de connexion WhatsApp...\n');
 });
 

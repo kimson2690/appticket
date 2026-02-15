@@ -1,0 +1,23 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+
+class PushSubscription extends Model
+{
+    protected $table = 'push_subscriptions';
+
+    protected $fillable = [
+        'user_id',
+        'endpoint',
+        'p256dh_key',
+        'auth_token',
+        'user_agent',
+    ];
+
+    protected $casts = [
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
+    ];
+}

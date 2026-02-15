@@ -651,6 +651,26 @@ class ApiService {
     });
   }
 
+  // Push Notifications API
+  async getVapidPublicKey(): Promise<{ success: boolean; public_key: string }> {
+    const response = await this.request<{ success: boolean; public_key: string }>('/admin/push/vapid-key') as any;
+    return response;
+  }
+
+  async subscribePush(subscription: { endpoint: string; keys: { p256dh: string; auth: string } }): Promise<void> {
+    await this.request('/admin/push/subscribe', {
+      method: 'POST',
+      body: JSON.stringify(subscription),
+    });
+  }
+
+  async unsubscribePush(data: { endpoint: string }): Promise<void> {
+    await this.request('/admin/push/unsubscribe', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
   // Delivery Locations API
   async getDeliveryLocations(): Promise<ApiResponse<DeliveryLocation[]>> {
     return await this.request<DeliveryLocation[]>('/company/delivery-locations');
