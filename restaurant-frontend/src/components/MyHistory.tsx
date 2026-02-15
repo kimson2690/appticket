@@ -1,6 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { History, Package, ShoppingCart, CheckCircle, XCircle, Clock, MapPin, ChevronDown, ChevronUp, Utensils, Ticket, CalendarDays } from 'lucide-react';
+import { useSearchParams } from 'react-router-dom';
+import { History, Package, ShoppingCart, CheckCircle, XCircle, Clock, MapPin, ChevronDown, ChevronUp, Utensils, Ticket, CalendarDays, Star } from 'lucide-react';
 import Pagination from './Pagination';
+import ReviewModal from './ReviewModal';
+import StarRating from './StarRating';
+import { apiService } from '../services/api';
 
 interface TicketAssignment {
   id: string;
@@ -54,6 +58,7 @@ interface OrderData {
 }
 
 const MyHistory: React.FC = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [history, setHistory] = useState<TicketAssignment[]>([]);
   const [orders, setOrders] = useState<OrderData[]>([]);
   const [loading, setLoading] = useState(true);
@@ -62,6 +67,8 @@ const MyHistory: React.FC = () => {
   const [orderFilter, setOrderFilter] = useState<'all' | 'confirmed' | 'rejected' | 'pending'>('all');
   const [ordersPage, setOrdersPage] = useState(1);
   const [ticketsPage, setTicketsPage] = useState(1);
+  const [reviewModalOrder, setReviewModalOrder] = useState<any>(null);
+  const [reviewedOrders, setReviewedOrders] = useState<Record<string, any>>({});
   const ITEMS_PER_PAGE = 10;
 
   const baseUrl = 'http://localhost:8001/api';
@@ -69,6 +76,28 @@ const MyHistory: React.FC = () => {
   useEffect(() => {
     loadData();
   }, []);
+
+  // Auto-ouvrir le modal de notation si ?review=ORDER_ID est dans l'URL
+  useEffect(() => {
+    const reviewOrderId = searchParams.get('review');
+    if (reviewOrderId && orders.length > 0 && !loading) {
+      const order = orders.find(o => o.id === reviewOrderId);
+      if (order && order.status === 'confirmed' && !reviewedOrders[reviewOrderId]) {
+        setReviewModalOrder({
+          id: order.id,
+          restaurant_id: order.restaurant_id,
+          restaurant_name: order.restaurant?.name || 'Restaurant',
+          items: order.items || [],
+          total_amount: order.total_amount,
+          confirmed_at: order.confirmed_at || '',
+          created_at: order.created_at,
+        });
+        setExpandedOrder(order.id);
+        // Nettoyer le paramètre URL
+        setSearchParams({}, { replace: true });
+      }
+    }
+  }, [orders, loading, reviewedOrders, searchParams]);
 
   const loadData = async () => {
     try {
@@ -92,11 +121,38 @@ const MyHistory: React.FC = () => {
 
       if (historyData.success) setHistory(historyData.data);
       if (ordersData.success) setOrders(ordersData.data);
+
+      // Charger les avis existants
+      try {
+        const reviews = await apiService.getMyReviews();
+        const reviewMap: Record<string, any> = {};
+        reviews.forEach((r: any) => { reviewMap[r.order_id] = r; });
+        setReviewedOrders(reviewMap);
+      } catch (e) {
+        console.error('Erreur chargement avis:', e);
+      }
     } catch (error) {
       console.error('Erreur:', error);
     } finally {
       setLoading(false);
     }
+  };
+
+  // Vérifier si une commande est éligible à la notation (confirmée, < 48h, non notée)
+  const isEligibleForReview = (order: OrderData) => {
+    if (order.status !== 'confirmed') return false;
+    if (reviewedOrders[order.id]) return false;
+    if (!order.confirmed_at) return false;
+    const confirmedDate = new Date(order.confirmed_at);
+    const now = new Date();
+    const hoursDiff = (now.getTime() - confirmedDate.getTime()) / (1000 * 60 * 60);
+    return hoursDiff <= 48;
+  };
+
+  const handleSubmitReview = async (data: any) => {
+    await apiService.submitReview(data);
+    setReviewedOrders(prev => ({ ...prev, [data.order_id]: data }));
+    setReviewModalOrder(null);
   };
 
   const formatDate = (dateString: string) => {
@@ -443,6 +499,44 @@ const MyHistory: React.FC = () => {
                             <p className="text-sm text-gray-700">{order.notes}</p>
                           </div>
                         )}
+
+                        {/* Avis existant */}
+                        {reviewedOrders[order.id] && (
+                          <div className="mt-3 bg-amber-50 border border-amber-200 rounded-lg p-4">
+                            <div className="flex items-center gap-2 mb-2">
+                              <Star className="w-4 h-4 text-amber-500 fill-amber-500" />
+                              <span className="text-sm font-semibold text-amber-800">Votre avis</span>
+                            </div>
+                            <StarRating rating={reviewedOrders[order.id].overall_rating} readonly size="sm" />
+                            {reviewedOrders[order.id].comment && (
+                              <p className="text-sm text-gray-600 mt-2 italic">"{reviewedOrders[order.id].comment}"</p>
+                            )}
+                          </div>
+                        )}
+
+                        {/* Bouton noter */}
+                        {isEligibleForReview(order) && (
+                          <div className="mt-3">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setReviewModalOrder({
+                                  id: order.id,
+                                  restaurant_id: order.restaurant_id,
+                                  restaurant_name: order.restaurant?.name || 'Restaurant',
+                                  items: order.items || [],
+                                  total_amount: order.total_amount,
+                                  confirmed_at: order.confirmed_at || '',
+                                  created_at: order.created_at,
+                                });
+                              }}
+                              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-amber-500 to-orange-500 text-white text-sm font-semibold rounded-xl hover:from-amber-600 hover:to-orange-600 transition-all shadow-md shadow-amber-200"
+                            >
+                              <Star className="w-4 h-4" />
+                              Noter cette commande
+                            </button>
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
@@ -550,6 +644,14 @@ const MyHistory: React.FC = () => {
             </div>
           )}
         </div>
+      )}
+      {/* Modal de notation */}
+      {reviewModalOrder && (
+        <ReviewModal
+          order={reviewModalOrder}
+          onClose={() => setReviewModalOrder(null)}
+          onSubmit={handleSubmitReview}
+        />
       )}
     </div>
   );

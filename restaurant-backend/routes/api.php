@@ -25,6 +25,8 @@ use App\Http\Controllers\Employee\EmployeeDashboardController;
 use App\Http\Controllers\Employee\OrderController;
 use App\Http\Controllers\Employee\EmployeeRestaurantController;
 use App\Http\Controllers\Employee\EmployeeMenuController;
+use App\Http\Controllers\Employee\ReviewController as EmployeeReviewController;
+use App\Http\Controllers\Restaurant\ReviewController as RestaurantReviewController;
 use App\Http\Controllers\Company\ReportingController;
 use App\Http\Controllers\Company\AccountingReportController;
 use App\Http\Controllers\Company\DeliveryLocationController;
@@ -194,6 +196,10 @@ Route::prefix('restaurant')->group(function () {
     Route::get('/reports/company-orders', [\App\Http\Controllers\Restaurant\RestaurantReportingController::class, 'getCompanyOrders']);
     Route::get('/reports/employee-orders', [\App\Http\Controllers\Restaurant\RestaurantReportingController::class, 'getEmployeeOrders']);
 
+    // Avis & Notations (côté restaurant)
+    Route::get('/reviews', [RestaurantReviewController::class, 'index']);
+    Route::get('/reviews/statistics', [RestaurantReviewController::class, 'statistics']);
+
     // Statistiques du dashboard
     Route::get('/dashboard/stats', [DashboardStatsController::class, 'getRestaurantStats']);
 });
@@ -216,6 +222,12 @@ Route::prefix('employee')->group(function () {
     Route::get('/orders', [OrderController::class, 'index']);
     Route::post('/orders', [OrderController::class, 'store']);
     Route::get('/orders/{id}', [OrderController::class, 'show']);
+
+    // Avis & Notations
+    Route::get('/reviews/pending', [EmployeeReviewController::class, 'pendingReviews']);
+    Route::get('/reviews', [EmployeeReviewController::class, 'myReviews']);
+    Route::post('/reviews', [EmployeeReviewController::class, 'store']);
+    Route::get('/reviews/order/{orderId}', [EmployeeReviewController::class, 'showByOrder']);
 
     // Statistiques du dashboard
     Route::get('/dashboard/stats', [DashboardStatsController::class, 'getEmployeeStats']);

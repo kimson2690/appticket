@@ -35,7 +35,7 @@ class OrderManagementController extends Controller
             $orders = $this->loadOrders();
             $employees = $this->loadEmployees();
             $menuItems = MenuItem::all()->toArray();
-            
+
             // Charger les lieux de livraison depuis la base de données
             $deliveryLocations = DeliveryLocation::all()->keyBy('id')->toArray();
 
@@ -45,7 +45,7 @@ class OrderManagementController extends Controller
 
             // Filtrer les commandes du restaurant
             $restaurantOrders = collect($orders);
-            
+
             if ($userRole !== 'Administrateur') {
                 $restaurantOrders = $restaurantOrders->where('restaurant_id', $restaurantId);
             }
@@ -140,11 +140,11 @@ class OrderManagementController extends Controller
         try {
             $restaurantId = $request->header('X-User-Restaurant-Id');
             $userId = $request->header('X-User-Id', '0');
-            
+
             // Récupérer le nom depuis la base de données pour éviter les problèmes d'encodage du header
             $user = \App\Models\User::find($userId);
             $confirmedBy = $user ? $user->name : 'Gestionnaire';
-            
+
             Log::info('Validation commande - User ID: ' . $userId . ' -> Nom depuis BDD: ' . $confirmedBy);
 
             $orders = $this->loadOrders();
@@ -170,7 +170,7 @@ class OrderManagementController extends Controller
             $orders[$orderIndex]['updated_at'] = now()->toDateTimeString();
 
             $this->saveOrders($orders);
-            
+
             // Mettre à jour les souches de tickets pour refléter la consommation
             $this->updateTicketBatchUsage($order['employee_id'], $order['total_amount']);
 
@@ -178,7 +178,7 @@ class OrderManagementController extends Controller
 
             // Récupérer le nom du restaurant (priorité aux données de la commande)
             $restaurantName = 'Restaurant'; // Valeur par défaut
-            
+
             // Priorité 1: Utiliser restaurant_name des items de la commande
             if (!empty($order['items'][0]['restaurant_name'])) {
                 $restaurantName = $order['items'][0]['restaurant_name'];
@@ -206,7 +206,21 @@ class OrderManagementController extends Controller
                     'confirmed_at' => $orders[$orderIndex]['confirmed_at']
                 ]
             ]);
-            
+
+            // Notification pour inviter à noter la commande (envoyée avec un léger délai conceptuel)
+            NotificationController::createNotification([
+                'type' => 'info',
+                'title' => '⭐ Notez votre commande',
+                'message' => "Comment était votre repas chez $restaurantName ? Donnez votre avis pour aider les autres employés !",
+                'user_id' => $order['employee_id'],
+                'action_url' => '/employee/history',
+                'metadata' => [
+                    'order_id' => $id,
+                    'restaurant_name' => $restaurantName,
+                    'type' => 'review_invitation'
+                ]
+            ]);
+
             // Charger les informations du lieu de livraison si spécifié
             $deliveryLocation = null;
             if (isset($order['delivery_location_id'])) {
@@ -221,13 +235,13 @@ class OrderManagementController extends Controller
                     ];
                 }
             }
-            
+
             // Envoyer email de validation à l'employé
             try {
                 $employeeName = $order['employee_name'];
                 $employees = $this->loadEmployees();
                 $employee = collect($employees)->firstWhere('id', $order['employee_id']);
-                
+
                 if ($employee && isset($employee['email'])) {
                     Mail::to($employee['email'])->send(new OrderValidated(
                         $employeeName,
@@ -237,13 +251,13 @@ class OrderManagementController extends Controller
                     ));
                     Log::info("Email de validation commande envoyé à: {$employee['email']}");
                 }
-                
+
                 // Envoyer notification WhatsApp (GRATUIT)
                 if ($employee) {
                     // Enrichir l'order avec les infos complètes pour WhatsApp
                     $order['restaurant_name'] = $restaurantName;
                     $order['delivery_location'] = $deliveryLocation;
-                    
+
                     $whatsapp = new WhatsAppService();
                     $whatsapp->notifyOrderValidated($order, $employee);
                 }
@@ -275,11 +289,11 @@ class OrderManagementController extends Controller
 
             $restaurantId = $request->header('X-User-Restaurant-Id');
             $userId = $request->header('X-User-Id', '0');
-            
+
             // Récupérer le nom depuis la base de données pour éviter les problèmes d'encodage
             $user = \App\Models\User::find($userId);
             $rejectedBy = $user ? $user->name : 'Gestionnaire';
-            
+
             Log::info('Rejet commande - User ID: ' . $userId . ' -> Nom depuis BDD: ' . $rejectedBy);
 
             $orders = $this->loadOrders();
@@ -309,7 +323,7 @@ class OrderManagementController extends Controller
 
             // Rembourser l'employé directement dans MySQL
             $employee = \App\Models\Employee::find($order['employee_id']);
-            
+
             if ($employee) {
                 $employee->increment('ticket_balance', $order['total_amount']);
                 Log::info('Remboursement de ' . $order['total_amount'] . 'F à ' . $employee->name . ' (Nouveau solde: ' . $employee->ticket_balance . 'F)');
@@ -321,7 +335,7 @@ class OrderManagementController extends Controller
 
             // Récupérer le nom du restaurant (priorité aux données de la commande)
             $restaurantName = 'Restaurant'; // Valeur par défaut
-            
+
             // Priorité 1: Utiliser restaurant_name des items de la commande
             if (!empty($order['items'][0]['restaurant_name'])) {
                 $restaurantName = $order['items'][0]['restaurant_name'];
@@ -352,7 +366,7 @@ class OrderManagementController extends Controller
                     'refunded' => true
                 ]
             ]);
-            
+
             // Charger les informations du lieu de livraison si spécifié
             $deliveryLocation = null;
             if (isset($order['delivery_location_id'])) {
@@ -367,13 +381,13 @@ class OrderManagementController extends Controller
                     ];
                 }
             }
-            
+
             // Envoyer email de rejet à l'employé
             try {
                 $employeeName = $order['employee_name'];
                 $employees = $this->loadEmployees();
                 $employee = collect($employees)->firstWhere('id', $order['employee_id']);
-                
+
                 if ($employee && isset($employee['email'])) {
                     Mail::to($employee['email'])->send(new OrderRejected(
                         $employeeName,
@@ -384,13 +398,13 @@ class OrderManagementController extends Controller
                     ));
                     Log::info("Email de rejet commande envoyé à: {$employee['email']}");
                 }
-                
+
                 // Envoyer notification WhatsApp (GRATUIT)
                 if ($employee) {
                     // Enrichir l'order avec les infos complètes pour WhatsApp
                     $orders[$orderIndex]['restaurant_name'] = $restaurantName;
                     $orders[$orderIndex]['delivery_location'] = $deliveryLocation;
-                    
+
                     $whatsapp = new WhatsAppService();
                     $whatsapp->notifyOrderRejected($orders[$orderIndex], $employee);
                 }
@@ -471,7 +485,7 @@ class OrderManagementController extends Controller
             ->where('status', 'active')
             ->orderBy('created_at', 'asc')
             ->first();
-        
+
         if (!$batch) {
             return; // Pas de souches à mettre à jour
         }
@@ -479,11 +493,11 @@ class OrderManagementController extends Controller
         // Calculer combien de tickets ont été utilisés
         $ticketValue = $batch->ticket_value ?? 500;
         $ticketsUsed = intval($amount / $ticketValue);
-        
+
         // Mettre à jour les compteurs
         $batch->increment('used_tickets', $ticketsUsed);
         $batch->decrement('remaining_tickets', $ticketsUsed);
-        
+
         Log::info("Souche {$batch->id} mise à jour: +{$ticketsUsed} tickets utilisés");
     }
 
@@ -494,7 +508,7 @@ class OrderManagementController extends Controller
     {
         // Utiliser iconv pour translittérer les caractères accentués en ASCII
         $cleanName = iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $name);
-        
+
         // Si iconv échoue, essayer une méthode de remplacement manuelle
         if ($cleanName === false || empty($cleanName)) {
             $transliterations = [
@@ -513,15 +527,15 @@ class OrderManagementController extends Controller
             ];
             $cleanName = strtr($name, $transliterations);
         }
-        
+
         // Enlever tous les caractères non-ASCII restants
         $cleanName = preg_replace('/[^\x20-\x7E]/', '', $cleanName);
-        
+
         // Si le nettoyage échoue complètement, retourner un nom par défaut
         if (empty($cleanName)) {
             return 'Gestionnaire';
         }
-        
+
         return trim($cleanName);
     }
 }

@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Order extends Model
 {
@@ -52,5 +53,10 @@ class Order extends Model
     public function deliveryLocation(): BelongsTo
     {
         return $this->belongsTo(DeliveryLocation::class, 'delivery_location_id', 'id');
+    }
+
+    public function review(): HasOne
+    {
+        return $this->hasOne(Review::class, 'order_id', 'id');
     }
 }

@@ -109,6 +109,14 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({ onNotificationC
     if (!notification.read) {
       markAsRead(notification.id);
     }
+
+    // Cas spécial : invitation de notation → ouvrir directement le modal
+    const metadata = notification.metadata as any;
+    if (metadata?.type === 'review_invitation' && metadata?.order_id) {
+      setIsOpen(false);
+      navigate(`/admin/my-history?review=${metadata.order_id}`);
+      return;
+    }
     
     // Naviguer vers l'URL d'action si elle existe
     if (notification.action_url) {

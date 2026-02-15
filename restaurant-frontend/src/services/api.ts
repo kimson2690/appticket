@@ -671,6 +671,49 @@ class ApiService {
     });
   }
 
+  // Reviews API (Employee)
+  async getPendingReviews(): Promise<any[]> {
+    const response = await this.request<any>('/employee/reviews/pending') as any;
+    return response.data || [];
+  }
+
+  async getMyReviews(): Promise<any[]> {
+    const response = await this.request<any>('/employee/reviews') as any;
+    return response.data || [];
+  }
+
+  async submitReview(data: {
+    order_id: string;
+    overall_rating: number;
+    food_rating: number | null;
+    service_rating: number | null;
+    comment: string;
+    is_anonymous: boolean;
+    items: { menu_item_id: string; menu_item_name: string; rating: number; comment: string }[];
+  }): Promise<any> {
+    const response = await this.request<any>('/employee/reviews', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+    return response;
+  }
+
+  async getReviewByOrder(orderId: string): Promise<any> {
+    const response = await this.request<any>(`/employee/reviews/order/${orderId}`) as any;
+    return response.data || null;
+  }
+
+  // Reviews API (Restaurant)
+  async getRestaurantReviews(): Promise<any[]> {
+    const response = await this.request<any>('/restaurant/reviews') as any;
+    return response.data || [];
+  }
+
+  async getRestaurantReviewStats(): Promise<any> {
+    const response = await this.request<any>('/restaurant/reviews/statistics') as any;
+    return response.data || {};
+  }
+
   // Delivery Locations API
   async getDeliveryLocations(): Promise<ApiResponse<DeliveryLocation[]>> {
     return await this.request<DeliveryLocation[]>('/company/delivery-locations');

@@ -24,6 +24,7 @@ import DashboardStats from './DashboardStats';
 import TicketAnalytics from './TicketAnalytics';
 import AdvertisementManagement from './AdvertisementManagement';
 import AdSlider from './AdSlider';
+import ReviewDashboard from './ReviewDashboard';
 import { 
   LayoutDashboard, 
   Users, 
@@ -44,7 +45,8 @@ import {
   ShoppingCart,
   MapPin,
   FileSpreadsheet,
-  Megaphone
+  Megaphone,
+  Star
 } from 'lucide-react';
 
 interface AdminDashboardProps {
@@ -106,6 +108,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
     { id: 'weekly-planning', label: 'Planning Hebdo', icon: Calendar, roles: ['Gestionnaire Restaurant'] },
     { id: 'orders', label: 'Commandes', icon: ShoppingCart, roles: ['Gestionnaire Restaurant'] },
     { id: 'restaurant-reports', label: 'Rapports Commandes', icon: BarChart3, roles: ['Gestionnaire Restaurant'] },
+    { id: 'restaurant-reviews', label: 'Avis & Notations', icon: Star, roles: ['Gestionnaire Restaurant'] },
     
     // Menus pour les employés
     { id: 'my-tickets', label: 'Mes Tickets', icon: Wallet, roles: ['Utilisateur'] },
@@ -332,6 +335,10 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
 
           {activeMenu === 'restaurant-reports' && (
             <RestaurantReporting />
+          )}
+
+          {activeMenu === 'restaurant-reviews' && (
+            <ReviewDashboard />
           )}
 
           {activeMenu === 'weekly-planning' && (
