@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Search, Edit, Trash2, ChefHat, CheckCircle, XCircle, Eye, EyeOff, Clock, Upload, X as XIcon, CalendarDays, ChevronDown, Filter } from 'lucide-react';
+import { Plus, Search, Edit, Trash2, ChefHat, CheckCircle, XCircle, Eye, EyeOff, Clock, Upload, X as XIcon, CalendarDays, ChevronDown, Filter, DollarSign, FileText, Tag, Image, CheckCircle2, ShieldAlert, AlertTriangle } from 'lucide-react';
 import { apiService, type MenuItem } from '../services/api';
 
 interface MenuItemForm {
@@ -447,35 +447,50 @@ const MenuManagement: React.FC = () => {
 
       {/* Modal Ajout/Modification */}
       {showModal && (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 z-50" onClick={() => { setShowModal(false); setEditingItem(null); resetForm(); }}>
-          <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden" onClick={e => e.stopPropagation()}>
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-md flex items-center justify-center p-4 z-50 animate-[fadeIn_0.2s_ease-out]" onClick={() => { setShowModal(false); setEditingItem(null); resetForm(); }}>
+          <div className="bg-white rounded-3xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden animate-[slideUp_0.3s_ease-out]" onClick={e => e.stopPropagation()}
+            style={{ boxShadow: '0 25px 60px -15px rgba(0, 0, 0, 0.3)' }}>
             {/* Modal header */}
-            <div className="bg-gradient-to-r from-orange-500 to-orange-600 p-5 text-white">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
-                  {editingItem ? <Edit className="w-5 h-5" /> : <Plus className="w-5 h-5" />}
+            <div className="relative overflow-hidden px-6 pt-6 pb-5">
+              <div className="absolute inset-0 bg-gradient-to-br from-orange-50 via-amber-50 to-orange-50"></div>
+              <div className="absolute top-0 right-0 w-32 h-32 bg-orange-200/30 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2"></div>
+              <div className="relative flex items-center justify-between">
+                <div className="flex items-center gap-3.5">
+                  <div className="w-12 h-12 bg-gradient-to-br from-orange-500 to-amber-500 rounded-2xl flex items-center justify-center shadow-lg shadow-orange-200">
+                    {editingItem ? <Edit className="w-5 h-5 text-white" /> : <Plus className="w-5 h-5 text-white" />}
+                  </div>
+                  <div>
+                    <h2 className="text-lg font-bold text-gray-900">{editingItem ? 'Modifier le plat' : 'Nouveau plat'}</h2>
+                    <p className="text-xs text-gray-500 mt-0.5">Remplissez les informations du plat</p>
+                  </div>
                 </div>
-                <div>
-                  <h2 className="text-lg font-bold">{editingItem ? 'Modifier le plat' : 'Nouveau plat'}</h2>
-                  <p className="text-sm text-orange-100">Remplissez les informations du plat</p>
-                </div>
+                <button onClick={() => { setShowModal(false); setEditingItem(null); resetForm(); }}
+                  className="p-2 rounded-xl hover:bg-white/80 text-gray-400 hover:text-gray-600 transition-all">
+                  <XIcon className="w-5 h-5" />
+                </button>
               </div>
             </div>
 
-            <form onSubmit={handleSubmit} className="p-5 space-y-4 overflow-y-auto max-h-[calc(90vh-140px)]">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <form onSubmit={handleSubmit} className="px-6 pt-6 pb-6 space-y-5 overflow-y-auto max-h-[calc(90vh-140px)]">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Nom du plat *</label>
+                  <label className="flex items-center gap-1.5 text-xs font-semibold text-gray-600 uppercase tracking-wider mb-2">
+                    <ChefHat className="w-3.5 h-3.5 text-orange-500" />
+                    Nom du plat <span className="text-red-400">*</span>
+                  </label>
                   <input type="text" required value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-300"
+                    className="w-full px-4 py-3 bg-gray-50 border-2 border-gray-100 rounded-xl text-sm text-gray-900 placeholder:text-gray-400 outline-none transition-all focus:border-orange-300 focus:bg-white focus:ring-4 focus:ring-orange-500/10 hover:border-gray-200"
                     placeholder="Ex: Poulet Yassa" />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Catégorie *</label>
+                  <label className="flex items-center gap-1.5 text-xs font-semibold text-gray-600 uppercase tracking-wider mb-2">
+                    <Tag className="w-3.5 h-3.5 text-orange-500" />
+                    Catégorie <span className="text-red-400">*</span>
+                  </label>
                   <select required value={formData.category}
                     onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                    className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-300">
+                    className="w-full px-4 py-3 bg-gray-50 border-2 border-gray-100 rounded-xl text-sm text-gray-900 outline-none transition-all focus:border-orange-300 focus:bg-white focus:ring-4 focus:ring-orange-500/10 hover:border-gray-200 appearance-none cursor-pointer">
                     <option value="">Sélectionner</option>
                     {categories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
                   </select>
@@ -483,34 +498,48 @@ const MenuManagement: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">Description</label>
+                <label className="flex items-center gap-1.5 text-xs font-semibold text-gray-600 uppercase tracking-wider mb-2">
+                  <FileText className="w-3.5 h-3.5 text-orange-500" />
+                  Description
+                </label>
                 <textarea value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  rows={2} className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-300 resize-none"
+                  rows={2} className="w-full px-4 py-3 bg-gray-50 border-2 border-gray-100 rounded-xl text-sm text-gray-900 placeholder:text-gray-400 outline-none transition-all focus:border-orange-300 focus:bg-white focus:ring-4 focus:ring-orange-500/10 hover:border-gray-200 resize-none"
                   placeholder="Décrivez le plat..." />
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Prix (F CFA) *</label>
+                  <label className="flex items-center gap-1.5 text-xs font-semibold text-gray-600 uppercase tracking-wider mb-2">
+                    <DollarSign className="w-3.5 h-3.5 text-orange-500" />
+                    Prix (F CFA) <span className="text-red-400">*</span>
+                  </label>
                   <input type="number" required min="0" step="100" value={formData.price || ''}
                     onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) || 0 })}
-                    className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-300" />
+                    className="w-full px-4 py-3 bg-gray-50 border-2 border-gray-100 rounded-xl text-sm text-gray-900 outline-none transition-all focus:border-orange-300 focus:bg-white focus:ring-4 focus:ring-orange-500/10 hover:border-gray-200" />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Temps de préparation (min)</label>
+                  <label className="flex items-center gap-1.5 text-xs font-semibold text-gray-600 uppercase tracking-wider mb-2">
+                    <Clock className="w-3.5 h-3.5 text-orange-500" />
+                    Temps de préparation (min)
+                  </label>
                   <input type="number" min="0" value={formData.preparation_time || ''}
                     onChange={(e) => setFormData({ ...formData, preparation_time: e.target.value ? parseInt(e.target.value) : undefined })}
-                    className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-300" />
+                    className="w-full px-4 py-3 bg-gray-50 border-2 border-gray-100 rounded-xl text-sm text-gray-900 outline-none transition-all focus:border-orange-300 focus:bg-white focus:ring-4 focus:ring-orange-500/10 hover:border-gray-200" />
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">Photo du plat</label>
+                <label className="flex items-center gap-1.5 text-xs font-semibold text-gray-600 uppercase tracking-wider mb-2">
+                  <Image className="w-3.5 h-3.5 text-orange-500" />
+                  Photo du plat
+                </label>
                 {!imagePreview ? (
-                  <label className="flex flex-col items-center justify-center w-full h-28 border-2 border-gray-200 border-dashed rounded-xl cursor-pointer bg-gray-50 hover:bg-gray-100 transition-colors">
-                    <Upload className="w-8 h-8 text-gray-300 mb-1.5" />
-                    <p className="text-xs text-gray-500"><span className="font-semibold text-gray-600">Cliquez</span> ou glissez-déposez</p>
+                  <label className="flex flex-col items-center justify-center w-full h-28 border-2 border-gray-200 border-dashed rounded-xl cursor-pointer bg-gray-50/50 hover:border-orange-300 hover:bg-orange-50/30 transition-all">
+                    <div className="w-10 h-10 bg-orange-50 rounded-xl flex items-center justify-center mb-1.5">
+                      <Upload className="w-5 h-5 text-orange-400" />
+                    </div>
+                    <p className="text-xs text-gray-600 font-semibold">Cliquez ou glissez-déposez</p>
                     <p className="text-[10px] text-gray-400 mt-0.5">PNG, JPG (max. 2MB)</p>
                     <input type="file" className="hidden" accept="image/*" onChange={handleImageUpload} />
                   </label>
@@ -518,28 +547,32 @@ const MenuManagement: React.FC = () => {
                   <div className="relative">
                     <img src={imagePreview} alt="Aperçu" className="w-full h-40 object-cover rounded-xl" />
                     <button type="button" onClick={handleRemoveImage}
-                      className="absolute top-2 right-2 p-1.5 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors shadow-lg">
-                      <XIcon className="w-4 h-4" />
+                      className="absolute top-2 right-2 p-1.5 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors shadow-md">
+                      <XIcon className="w-3 h-3" />
                     </button>
                   </div>
                 )}
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-3 p-4 bg-gray-50 border-2 border-gray-100 rounded-xl hover:border-gray-200 transition-all">
                 <input type="checkbox" id="available" checked={formData.is_available}
                   onChange={(e) => setFormData({ ...formData, is_available: e.target.checked })}
                   className="w-4 h-4 text-orange-600 border-gray-300 rounded focus:ring-orange-500" />
-                <label htmlFor="available" className="text-sm font-medium text-gray-700">Disponible immédiatement</label>
+                <div className="flex items-center gap-1.5">
+                  <Eye className="w-3.5 h-3.5 text-orange-500" />
+                  <label htmlFor="available" className="text-xs font-semibold text-gray-700 cursor-pointer">Disponible immédiatement</label>
+                </div>
               </div>
 
-              <div className="flex gap-3 pt-4 border-t border-gray-100">
+              <div className="flex gap-3 pt-3">
                 <button type="button"
                   onClick={() => { setShowModal(false); setEditingItem(null); resetForm(); }}
-                  className="flex-1 px-4 py-2.5 border border-gray-200 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">
+                  className="flex-1 px-4 py-3 border-2 border-gray-200 rounded-xl text-sm font-semibold text-gray-600 hover:bg-gray-50 hover:border-gray-300 transition-all">
                   Annuler
                 </button>
                 <button type="submit"
-                  className="flex-1 px-4 py-2.5 bg-orange-500 text-white rounded-xl text-sm font-medium hover:bg-orange-600 transition-colors">
+                  className="flex-1 px-4 py-3 bg-orange-500 text-white rounded-xl text-sm font-semibold hover:bg-orange-600 transition-all shadow-lg shadow-orange-200 hover:shadow-xl hover:shadow-orange-300 hover:-translate-y-0.5 active:translate-y-0 flex items-center justify-center gap-2">
+                  <CheckCircle2 className="w-4 h-4" />
                   {editingItem ? 'Mettre à jour' : 'Ajouter le plat'}
                 </button>
               </div>
@@ -550,31 +583,47 @@ const MenuManagement: React.FC = () => {
 
       {/* Modal Suppression */}
       {showDeleteModal && (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 z-50" onClick={() => { setShowDeleteModal(false); setItemToDelete(null); }}>
-          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden" onClick={e => e.stopPropagation()}>
-            <div className="bg-gradient-to-r from-red-500 to-red-600 p-5 text-white">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
-                  <Trash2 className="w-5 h-5" />
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-md flex items-center justify-center p-4 z-50 animate-[fadeIn_0.2s_ease-out]" onClick={() => { setShowDeleteModal(false); setItemToDelete(null); }}>
+          <div className="bg-white rounded-3xl shadow-2xl max-w-md w-full overflow-hidden animate-[slideUp_0.3s_ease-out]" onClick={e => e.stopPropagation()}
+            style={{ boxShadow: '0 25px 60px -15px rgba(0, 0, 0, 0.3)' }}>
+            <div className="relative overflow-hidden px-6 pt-6 pb-5">
+              <div className="absolute inset-0 bg-gradient-to-br from-red-50 via-rose-50 to-red-50"></div>
+              <div className="absolute top-0 right-0 w-32 h-32 bg-red-200/30 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2"></div>
+              <div className="relative flex items-center justify-between">
+                <div className="flex items-center gap-3.5">
+                  <div className="w-12 h-12 bg-gradient-to-br from-red-500 to-rose-500 rounded-2xl flex items-center justify-center shadow-lg shadow-red-200">
+                    <ShieldAlert className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-bold text-gray-900">Supprimer le plat</h3>
+                    <p className="text-xs text-gray-500 mt-0.5">Cette action est irréversible</p>
+                  </div>
                 </div>
-                <div>
-                  <h3 className="text-lg font-bold">Supprimer le plat</h3>
-                  <p className="text-sm text-red-100">Cette action est irréversible</p>
-                </div>
+                <button onClick={() => { setShowDeleteModal(false); setItemToDelete(null); }}
+                  className="p-2 rounded-xl hover:bg-white/80 text-gray-400 hover:text-gray-600 transition-all">
+                  <XIcon className="w-5 h-5" />
+                </button>
               </div>
             </div>
-            <div className="p-5">
-              <p className="text-sm text-gray-600 mb-5">
-                Êtes-vous sûr de vouloir supprimer ce plat ? Il ne sera plus visible dans le menu.
-              </p>
+            <div className="px-6 pt-6 pb-6">
+              <div className="bg-red-50 border-2 border-red-100 rounded-xl p-4 mb-5">
+                <p className="text-sm text-gray-700">
+                  Êtes-vous sûr de vouloir supprimer ce plat ? Il ne sera plus visible dans le menu.
+                </p>
+                <div className="flex items-start gap-2 mt-3 bg-red-100/50 rounded-lg p-2.5">
+                  <AlertTriangle className="w-4 h-4 text-red-500 flex-shrink-0 mt-0.5" />
+                  <p className="text-xs text-red-700 font-semibold">Cette action ne peut pas être annulée.</p>
+                </div>
+              </div>
               <div className="flex gap-3">
                 <button
                   onClick={() => { setShowDeleteModal(false); setItemToDelete(null); }}
-                  className="flex-1 px-4 py-2.5 border border-gray-200 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">
+                  className="flex-1 px-4 py-3 border-2 border-gray-200 rounded-xl text-sm font-semibold text-gray-600 hover:bg-gray-50 hover:border-gray-300 transition-all">
                   Annuler
                 </button>
                 <button onClick={handleDelete}
-                  className="flex-1 px-4 py-2.5 bg-red-600 text-white rounded-xl text-sm font-medium hover:bg-red-700 transition-colors">
+                  className="flex-1 px-4 py-3 bg-red-500 text-white rounded-xl text-sm font-semibold hover:bg-red-600 transition-all shadow-lg shadow-red-200 hover:shadow-xl hover:shadow-red-300 flex items-center justify-center gap-2">
+                  <Trash2 className="w-4 h-4" />
                   Supprimer
                 </button>
               </div>

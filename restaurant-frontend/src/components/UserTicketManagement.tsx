@@ -9,7 +9,12 @@ import {
   AlertTriangle,
   TrendingUp,
   CreditCard,
-  Zap
+  Zap,
+  FileText,
+  Hash,
+  Settings,
+  CheckCircle2,
+  Coins
 } from 'lucide-react';
 import { apiService, type Employee, type TicketBatch, type TicketConfiguration } from '../services/api';
 import Pagination from './Pagination';
@@ -527,28 +532,34 @@ const UserTicketManagement: React.FC = () => {
 
       {/* Modal Affectation Groupée */}
       {showBulkModal && (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl max-w-lg w-full shadow-2xl border border-gray-100">
-            <div className="border-b border-gray-100 px-6 py-4 rounded-t-2xl">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-purple-50 rounded-xl border border-purple-100">
-                    <Zap className="w-5 h-5 text-purple-600" />
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-md flex items-center justify-center z-50 p-4 animate-[fadeIn_0.2s_ease-out]">
+          <div className="bg-white rounded-3xl max-w-lg w-full shadow-2xl overflow-hidden animate-[slideUp_0.3s_ease-out]"
+            style={{ boxShadow: '0 25px 60px -15px rgba(0, 0, 0, 0.3)' }}>
+            <div className="relative overflow-hidden px-6 pt-6 pb-5">
+              <div className="absolute inset-0 bg-gradient-to-br from-purple-50 via-violet-50 to-purple-50"></div>
+              <div className="absolute top-0 right-0 w-32 h-32 bg-purple-200/30 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2"></div>
+              <div className="relative flex items-center justify-between">
+                <div className="flex items-center gap-3.5">
+                  <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-violet-500 rounded-2xl flex items-center justify-center shadow-lg shadow-purple-200">
+                    <Zap className="w-5 h-5 text-white" />
                   </div>
-                  <h2 className="text-lg font-bold text-gray-900">Affectation Groupée</h2>
+                  <div>
+                    <h2 className="text-lg font-bold text-gray-900">Affectation Groupée</h2>
+                    <p className="text-xs text-gray-500 mt-0.5">Distribuer des tickets à tous les employés actifs</p>
+                  </div>
                 </div>
                 <button
                   onClick={() => setShowBulkModal(false)}
-                  className="p-2 hover:bg-gray-100 rounded-xl transition-colors"
+                  className="p-2 rounded-xl hover:bg-white/80 text-gray-400 hover:text-gray-600 transition-all"
                 >
-                  <X className="w-4 h-4 text-gray-500" />
+                  <X className="w-5 h-5" />
                 </button>
               </div>
             </div>
 
-            <form onSubmit={handleBulkSubmit} className="p-6 space-y-5">
+            <form onSubmit={handleBulkSubmit} className="px-6 pt-6 pb-6 space-y-5">
               {/* Info */}
-              <div className="bg-purple-50 rounded-xl p-4 border border-purple-100">
+              <div className="bg-purple-50 border-2 border-purple-100 rounded-xl p-4">
                 <div className="flex items-start gap-3">
                   <AlertTriangle className="w-4 h-4 text-purple-600 flex-shrink-0 mt-0.5" />
                   <div>
@@ -563,8 +574,9 @@ const UserTicketManagement: React.FC = () => {
 
               {/* Configuration */}
               <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1.5">
-                  Configuration de tickets *
+                <label className="flex items-center gap-1.5 text-xs font-semibold text-gray-600 uppercase tracking-wider mb-2">
+                  <Settings className="w-3.5 h-3.5 text-purple-500" />
+                  Configuration de tickets <span className="text-red-400">*</span>
                 </label>
                 <select
                   value={formData.config_id}
@@ -576,7 +588,7 @@ const UserTicketManagement: React.FC = () => {
                       ticket_value: parseFloat(selectedConfig?.ticket_value || '500')
                     });
                   }}
-                  className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-purple-500 focus:border-purple-300"
+                  className="w-full px-4 py-3 bg-gray-50 border-2 border-gray-100 rounded-xl text-sm text-gray-900 outline-none transition-all focus:border-purple-300 focus:bg-white focus:ring-4 focus:ring-purple-500/10 hover:border-gray-200 appearance-none cursor-pointer"
                   required
                 >
                   <option value="">Sélectionner une configuration</option>
@@ -586,80 +598,85 @@ const UserTicketManagement: React.FC = () => {
                     </option>
                   ))}
                 </select>
-                <p className="mt-1 text-[10px] text-gray-400">
+                <p className="mt-1.5 text-[10px] text-gray-400">
                   Détermine le type et la durée de validité des souches
                 </p>
               </div>
 
               {/* Valeur du ticket */}
               <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1.5">
-                  Valeur de chaque ticket *
+                <label className="flex items-center gap-1.5 text-xs font-semibold text-gray-600 uppercase tracking-wider mb-2">
+                  <Coins className="w-3.5 h-3.5 text-purple-500" />
+                  Valeur de chaque ticket <span className="text-red-400">*</span>
                 </label>
                 <div className="relative">
                   <input
                     type="number"
                     value={formData.ticket_value}
                     onChange={(e) => setFormData({ ...formData, ticket_value: Number(e.target.value) })}
-                    className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-purple-500 focus:border-purple-300"
+                    className="w-full px-4 py-3 bg-gray-50 border-2 border-gray-100 rounded-xl text-sm text-gray-900 outline-none transition-all focus:border-purple-300 focus:bg-white focus:ring-4 focus:ring-purple-500/10 hover:border-gray-200"
                     min="100"
                     step="100"
                     required
                   />
-                  <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs text-gray-400 font-medium">F CFA</span>
+                  <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs text-gray-400 font-semibold">F CFA</span>
                 </div>
               </div>
 
               {/* Nombre de tickets par employé */}
               <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1.5">
-                  Nombre de tickets par souche *
+                <label className="flex items-center gap-1.5 text-xs font-semibold text-gray-600 uppercase tracking-wider mb-2">
+                  <Hash className="w-3.5 h-3.5 text-purple-500" />
+                  Nombre de tickets par souche <span className="text-red-400">*</span>
                 </label>
                 <input
                   type="number"
                   value={formData.tickets_count}
                   onChange={(e) => setFormData({ ...formData, tickets_count: Number(e.target.value) })}
-                  className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-purple-500 focus:border-purple-300"
+                  className="w-full px-4 py-3 bg-gray-50 border-2 border-gray-100 rounded-xl text-sm text-gray-900 outline-none transition-all focus:border-purple-300 focus:bg-white focus:ring-4 focus:ring-purple-500/10 hover:border-gray-200"
                   min="1"
                   required
                 />
-                <p className="mt-1.5 text-xs text-gray-500">
-                  <strong>{activeEmployees.length} souches</strong> seront créées avec <strong>{formData.tickets_count} tickets</strong> chacune
-                </p>
-                <p className="mt-0.5 text-xs text-gray-600">
-                  Valeur totale distribuée: <strong className="text-purple-600">{(formData.tickets_count * formData.ticket_value * activeEmployees.length).toLocaleString()}F</strong>
-                </p>
+                <div className="mt-2 bg-purple-50/50 border border-purple-100 rounded-lg p-2.5">
+                  <p className="text-xs text-gray-600">
+                    <strong className="text-gray-900">{activeEmployees.length} souches</strong> seront créées avec <strong className="text-gray-900">{formData.tickets_count} tickets</strong> chacune
+                  </p>
+                  <p className="mt-0.5 text-xs text-gray-600">
+                    Valeur totale distribuée: <strong className="text-purple-600">{(formData.tickets_count * formData.ticket_value * activeEmployees.length).toLocaleString()}F</strong>
+                  </p>
+                </div>
               </div>
 
               {/* Notes */}
               <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                <label className="flex items-center gap-1.5 text-xs font-semibold text-gray-600 uppercase tracking-wider mb-2">
+                  <FileText className="w-3.5 h-3.5 text-purple-500" />
                   Notes (optionnel)
                 </label>
                 <textarea
                   value={formData.notes}
                   onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                  className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-purple-500 focus:border-purple-300"
+                  className="w-full px-4 py-3 bg-gray-50 border-2 border-gray-100 rounded-xl text-sm text-gray-900 placeholder:text-gray-400 outline-none transition-all focus:border-purple-300 focus:bg-white focus:ring-4 focus:ring-purple-500/10 hover:border-gray-200 resize-none"
                   rows={3}
                   placeholder="Ex: Distribution mensuelle de tickets..."
                 />
               </div>
 
               {/* Boutons */}
-              <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-100">
+              <div className="flex gap-3 pt-3">
                 <button
                   type="button"
                   onClick={() => setShowBulkModal(false)}
-                  className="px-5 py-2.5 border border-gray-200 text-gray-700 rounded-xl text-sm font-semibold hover:bg-gray-50 transition-colors"
+                  className="flex-1 px-4 py-3 border-2 border-gray-200 rounded-xl text-sm font-semibold text-gray-600 hover:bg-gray-50 hover:border-gray-300 transition-all"
                 >
                   Annuler
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2.5 bg-purple-500 text-white rounded-xl text-sm font-semibold hover:bg-purple-600 transition-colors flex items-center gap-2 shadow-sm shadow-purple-100"
+                  className="flex-1 px-4 py-3 bg-purple-500 text-white rounded-xl text-sm font-semibold hover:bg-purple-600 transition-all shadow-lg shadow-purple-200 hover:shadow-xl hover:shadow-purple-300 hover:-translate-y-0.5 active:translate-y-0 flex items-center justify-center gap-2"
                 >
-                  <Zap className="w-4 h-4" />
-                  <span>Affecter à tous</span>
+                  <CheckCircle2 className="w-4 h-4" />
+                  Affecter à tous
                 </button>
               </div>
             </form>

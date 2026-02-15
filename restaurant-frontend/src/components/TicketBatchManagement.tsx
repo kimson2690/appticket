@@ -13,7 +13,10 @@ import {
   TrendingUp,
   Clock,
   Users,
-  DollarSign
+  DollarSign,
+  CheckCircle2,
+  ShieldAlert,
+  Settings
 } from 'lucide-react';
 import { apiService, type TicketBatch, type TicketConfiguration } from '../services/api';
 import Pagination from './Pagination';
@@ -775,25 +778,37 @@ const TicketBatchManagement: React.FC = () => {
 
       {/* Modal de création */}
       {showModal && (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl max-w-2xl w-full shadow-2xl border border-gray-100">
-            <div className="border-b border-gray-100 px-6 py-4 rounded-t-2xl">
-              <div className="flex items-center justify-between">
-                <h2 className="text-lg font-bold text-gray-900">Nouvelle Souche de Tickets</h2>
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-md flex items-center justify-center z-50 p-4 animate-[fadeIn_0.2s_ease-out]">
+          <div className="bg-white rounded-3xl max-w-2xl w-full shadow-2xl overflow-hidden animate-[slideUp_0.3s_ease-out]"
+            style={{ boxShadow: '0 25px 60px -15px rgba(0, 0, 0, 0.3)' }}>
+            <div className="relative overflow-hidden px-6 pt-6 pb-5">
+              <div className="absolute inset-0 bg-gradient-to-br from-orange-50 via-amber-50 to-orange-50"></div>
+              <div className="absolute top-0 right-0 w-32 h-32 bg-orange-200/30 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2"></div>
+              <div className="relative flex items-center justify-between">
+                <div className="flex items-center gap-3.5">
+                  <div className="w-12 h-12 bg-gradient-to-br from-orange-500 to-amber-500 rounded-2xl flex items-center justify-center shadow-lg shadow-orange-200">
+                    <Plus className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <h2 className="text-lg font-bold text-gray-900">Nouvelle Souche de Tickets</h2>
+                    <p className="text-xs text-gray-500 mt-0.5">Générez une nouvelle souche avec ses tickets</p>
+                  </div>
+                </div>
                 <button
                   onClick={() => setShowModal(false)}
-                  className="p-2 hover:bg-gray-100 rounded-xl transition-colors"
+                  className="p-2 rounded-xl hover:bg-white/80 text-gray-400 hover:text-gray-600 transition-all"
                 >
-                  <X className="w-4 h-4 text-gray-500" />
+                  <X className="w-5 h-5" />
                 </button>
               </div>
             </div>
 
-            <form onSubmit={handleSubmit} className="p-6 space-y-5">
+            <form onSubmit={handleSubmit} className="px-6 pt-6 pb-6 space-y-5">
               {/* Configuration */}
               <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1.5">
-                  Configuration de tickets *
+                <label className="flex items-center gap-1.5 text-xs font-semibold text-gray-600 uppercase tracking-wider mb-2">
+                  <Settings className="w-3.5 h-3.5 text-orange-500" />
+                  Configuration de tickets <span className="text-red-400">*</span>
                 </label>
                 <select
                   value={formData.config_id}
@@ -810,7 +825,7 @@ const TicketBatchManagement: React.FC = () => {
                       validity_end: endDate.toISOString().split('T')[0]
                     });
                   }}
-                  className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-300"
+                  className="w-full px-4 py-3 bg-gray-50 border-2 border-gray-100 rounded-xl text-sm text-gray-900 outline-none transition-all focus:border-orange-300 focus:bg-white focus:ring-4 focus:ring-orange-500/10 hover:border-gray-200 appearance-none cursor-pointer"
                   required
                 >
                   <option value="">Sélectionnez une configuration</option>
@@ -824,16 +839,17 @@ const TicketBatchManagement: React.FC = () => {
 
               {/* Nombre de tickets */}
               <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1.5">
-                  Nombre de tickets dans la souche *
+                <label className="flex items-center gap-1.5 text-xs font-semibold text-gray-600 uppercase tracking-wider mb-2">
+                  <Hash className="w-3.5 h-3.5 text-orange-500" />
+                  Nombre de tickets dans la souche <span className="text-red-400">*</span>
                 </label>
                 <div className="relative">
-                  <Hash className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  <Hash className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
                   <input
                     type="number"
                     value={formData.total_tickets}
                     onChange={(e) => setFormData({ ...formData, total_tickets: Number(e.target.value) })}
-                    className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-300"
+                    className="w-full pl-10 pr-4 py-3 bg-gray-50 border-2 border-gray-100 rounded-xl text-sm text-gray-900 outline-none transition-all focus:border-orange-300 focus:bg-white focus:ring-4 focus:ring-orange-500/10 hover:border-gray-200"
                     placeholder="20"
                     min="1"
                     max="1000"
@@ -843,14 +859,15 @@ const TicketBatchManagement: React.FC = () => {
                 <p className="mt-1.5 text-[10px] text-gray-400">Exemple: 20 tickets = 1 souche de 20 tickets</p>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                 {/* Date de début */}
                 <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-1.5">
-                    Date de début de validité *
+                  <label className="flex items-center gap-1.5 text-xs font-semibold text-gray-600 uppercase tracking-wider mb-2">
+                    <Calendar className="w-3.5 h-3.5 text-orange-500" />
+                    Date de début <span className="text-red-400">*</span>
                   </label>
                   <div className="relative">
-                    <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                    <Calendar className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
                     <input
                       type="date"
                       value={formData.validity_start}
@@ -867,7 +884,7 @@ const TicketBatchManagement: React.FC = () => {
                           validity_end: endDate.toISOString().split('T')[0]
                         });
                       }}
-                      className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-300"
+                      className="w-full pl-10 pr-4 py-3 bg-gray-50 border-2 border-gray-100 rounded-xl text-sm text-gray-900 outline-none transition-all focus:border-orange-300 focus:bg-white focus:ring-4 focus:ring-orange-500/10 hover:border-gray-200"
                       required
                     />
                   </div>
@@ -875,18 +892,19 @@ const TicketBatchManagement: React.FC = () => {
 
                 {/* Date de fin */}
                 <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-1.5">
-                    Date de fin de validité *
+                  <label className="flex items-center gap-1.5 text-xs font-semibold text-gray-600 uppercase tracking-wider mb-2">
+                    <Clock className="w-3.5 h-3.5 text-orange-500" />
+                    Date de fin <span className="text-red-400">*</span>
                   </label>
                   <div className="relative">
-                    <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                    <Calendar className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
                     <input
                       type="date"
                       required
                       value={formData.validity_end}
                       min={formData.validity_start}
                       onChange={(e) => setFormData({ ...formData, validity_end: e.target.value })}
-                      className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-300"
+                      className="w-full pl-10 pr-4 py-3 bg-gray-50 border-2 border-gray-100 rounded-xl text-sm text-gray-900 outline-none transition-all focus:border-orange-300 focus:bg-white focus:ring-4 focus:ring-orange-500/10 hover:border-gray-200"
                     />
                   </div>
                   <p className="mt-1.5 text-[10px] text-gray-400">Modifiable manuellement ou calculée automatiquement</p>
@@ -894,20 +912,20 @@ const TicketBatchManagement: React.FC = () => {
               </div>
 
               {/* Boutons d'action */}
-              <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-100">
+              <div className="flex gap-3 pt-3">
                 <button
                   type="button"
                   onClick={() => setShowModal(false)}
-                  className="px-5 py-2.5 border border-gray-200 text-gray-700 rounded-xl text-sm font-semibold hover:bg-gray-50 transition-colors"
+                  className="flex-1 px-4 py-3 border-2 border-gray-200 rounded-xl text-sm font-semibold text-gray-600 hover:bg-gray-50 hover:border-gray-300 transition-all"
                 >
                   Annuler
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2.5 bg-orange-500 text-white rounded-xl text-sm font-semibold hover:bg-orange-600 transition-colors flex items-center gap-2 shadow-sm shadow-orange-100"
+                  className="flex-1 px-4 py-3 bg-orange-500 text-white rounded-xl text-sm font-semibold hover:bg-orange-600 transition-all shadow-lg shadow-orange-200 hover:shadow-xl hover:shadow-orange-300 hover:-translate-y-0.5 active:translate-y-0 flex items-center justify-center gap-2"
                 >
-                  <Package className="w-4 h-4" />
-                  <span>Générer la souche</span>
+                  <CheckCircle2 className="w-4 h-4" />
+                  Générer la souche
                 </button>
               </div>
             </form>
@@ -917,34 +935,55 @@ const TicketBatchManagement: React.FC = () => {
 
       {/* Modal de confirmation de suppression individuelle */}
       {showDeleteModal && (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl border border-gray-100">
-            <div className="flex items-center justify-center w-12 h-12 mx-auto mb-4 bg-red-50 rounded-2xl">
-              <AlertTriangle className="w-6 h-6 text-red-500" />
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-md flex items-center justify-center z-50 p-4 animate-[fadeIn_0.2s_ease-out]">
+          <div className="bg-white rounded-3xl max-w-md w-full overflow-hidden shadow-2xl animate-[slideUp_0.3s_ease-out]"
+            style={{ boxShadow: '0 25px 60px -15px rgba(0, 0, 0, 0.3)' }}>
+            <div className="relative overflow-hidden px-6 pt-6 pb-5">
+              <div className="absolute inset-0 bg-gradient-to-br from-red-50 via-rose-50 to-red-50"></div>
+              <div className="absolute top-0 right-0 w-32 h-32 bg-red-200/30 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2"></div>
+              <div className="relative flex items-center justify-between">
+                <div className="flex items-center gap-3.5">
+                  <div className="w-12 h-12 bg-gradient-to-br from-red-500 to-rose-500 rounded-2xl flex items-center justify-center shadow-lg shadow-red-200">
+                    <ShieldAlert className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-bold text-gray-900">Supprimer la souche</h3>
+                    <p className="text-xs text-gray-500 mt-0.5">Cette action est irréversible</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => { setShowDeleteModal(false); setBatchToDelete(null); }}
+                  className="p-2 rounded-xl hover:bg-white/80 text-gray-400 hover:text-gray-600 transition-all"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
             </div>
-            <h3 className="text-base font-bold text-gray-900 text-center mb-1">
-              Supprimer la souche
-            </h3>
-            <p className="text-sm text-gray-500 text-center mb-6">
-              Êtes-vous sûr de vouloir supprimer cette souche de tickets ? 
-              Cette action est <strong className="text-gray-700">irréversible</strong>.
-            </p>
-            <div className="flex gap-3">
-              <button
-                onClick={() => {
-                  setShowDeleteModal(false);
-                  setBatchToDelete(null);
-                }}
-                className="flex-1 px-4 py-2.5 border border-gray-200 text-gray-700 rounded-xl text-sm font-semibold hover:bg-gray-50 transition-colors"
-              >
-                Annuler
-              </button>
-              <button
-                onClick={handleConfirmDelete}
-                className="flex-1 px-4 py-2.5 bg-red-500 text-white rounded-xl text-sm font-semibold hover:bg-red-600 transition-colors shadow-sm shadow-red-100"
-              >
-                Supprimer
-              </button>
+            <div className="px-6 pt-6 pb-6">
+              <div className="bg-red-50 border-2 border-red-100 rounded-xl p-4 mb-5">
+                <p className="text-sm text-gray-700">
+                  Êtes-vous sûr de vouloir supprimer cette souche de tickets ?
+                </p>
+                <div className="flex items-start gap-2 mt-3 bg-red-100/50 rounded-lg p-2.5">
+                  <AlertTriangle className="w-4 h-4 text-red-500 flex-shrink-0 mt-0.5" />
+                  <p className="text-xs text-red-700 font-semibold">Cette action ne peut pas être annulée.</p>
+                </div>
+              </div>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => { setShowDeleteModal(false); setBatchToDelete(null); }}
+                  className="flex-1 px-4 py-3 border-2 border-gray-200 rounded-xl text-sm font-semibold text-gray-600 hover:bg-gray-50 hover:border-gray-300 transition-all"
+                >
+                  Annuler
+                </button>
+                <button
+                  onClick={handleConfirmDelete}
+                  className="flex-1 px-4 py-3 bg-red-500 text-white rounded-xl text-sm font-semibold hover:bg-red-600 transition-all shadow-lg shadow-red-200 hover:shadow-xl hover:shadow-red-300 flex items-center justify-center gap-2"
+                >
+                  <Trash2 className="w-4 h-4" />
+                  Supprimer
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -952,31 +991,55 @@ const TicketBatchManagement: React.FC = () => {
 
       {/* Modal de confirmation de suppression multiple */}
       {showBulkDeleteModal && (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl border border-gray-100">
-            <div className="flex items-center justify-center w-12 h-12 mx-auto mb-4 bg-red-50 rounded-2xl">
-              <AlertTriangle className="w-6 h-6 text-red-500" />
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-md flex items-center justify-center z-50 p-4 animate-[fadeIn_0.2s_ease-out]">
+          <div className="bg-white rounded-3xl max-w-md w-full overflow-hidden shadow-2xl animate-[slideUp_0.3s_ease-out]"
+            style={{ boxShadow: '0 25px 60px -15px rgba(0, 0, 0, 0.3)' }}>
+            <div className="relative overflow-hidden px-6 pt-6 pb-5">
+              <div className="absolute inset-0 bg-gradient-to-br from-red-50 via-rose-50 to-red-50"></div>
+              <div className="absolute top-0 right-0 w-32 h-32 bg-red-200/30 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2"></div>
+              <div className="relative flex items-center justify-between">
+                <div className="flex items-center gap-3.5">
+                  <div className="w-12 h-12 bg-gradient-to-br from-red-500 to-rose-500 rounded-2xl flex items-center justify-center shadow-lg shadow-red-200">
+                    <ShieldAlert className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-bold text-gray-900">Supprimer {selectedBatches.length} souche(s)</h3>
+                    <p className="text-xs text-gray-500 mt-0.5">Suppression multiple irréversible</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShowBulkDeleteModal(false)}
+                  className="p-2 rounded-xl hover:bg-white/80 text-gray-400 hover:text-gray-600 transition-all"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
             </div>
-            <h3 className="text-base font-bold text-gray-900 text-center mb-1">
-              Supprimer {selectedBatches.length} souche(s)
-            </h3>
-            <p className="text-sm text-gray-500 text-center mb-6">
-              Êtes-vous sûr de vouloir supprimer <strong className="text-gray-700">{selectedBatches.length} souche(s)</strong> de tickets ? 
-              Cette action est <strong className="text-gray-700">irréversible</strong>.
-            </p>
-            <div className="flex gap-3">
-              <button
-                onClick={() => setShowBulkDeleteModal(false)}
-                className="flex-1 px-4 py-2.5 border border-gray-200 text-gray-700 rounded-xl text-sm font-semibold hover:bg-gray-50 transition-colors"
-              >
-                Annuler
-              </button>
-              <button
-                onClick={handleConfirmBulkDelete}
-                className="flex-1 px-4 py-2.5 bg-red-500 text-white rounded-xl text-sm font-semibold hover:bg-red-600 transition-colors shadow-sm shadow-red-100"
-              >
-                Supprimer tout
-              </button>
+            <div className="px-6 pt-6 pb-6">
+              <div className="bg-red-50 border-2 border-red-100 rounded-xl p-4 mb-5">
+                <p className="text-sm text-gray-700">
+                  Êtes-vous sûr de vouloir supprimer <strong className="text-gray-900">{selectedBatches.length} souche(s)</strong> de tickets ?
+                </p>
+                <div className="flex items-start gap-2 mt-3 bg-red-100/50 rounded-lg p-2.5">
+                  <AlertTriangle className="w-4 h-4 text-red-500 flex-shrink-0 mt-0.5" />
+                  <p className="text-xs text-red-700 font-semibold">Cette action ne peut pas être annulée.</p>
+                </div>
+              </div>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowBulkDeleteModal(false)}
+                  className="flex-1 px-4 py-3 border-2 border-gray-200 rounded-xl text-sm font-semibold text-gray-600 hover:bg-gray-50 hover:border-gray-300 transition-all"
+                >
+                  Annuler
+                </button>
+                <button
+                  onClick={handleConfirmBulkDelete}
+                  className="flex-1 px-4 py-3 bg-red-500 text-white rounded-xl text-sm font-semibold hover:bg-red-600 transition-all shadow-lg shadow-red-200 hover:shadow-xl hover:shadow-red-300 flex items-center justify-center gap-2"
+                >
+                  <Trash2 className="w-4 h-4" />
+                  Supprimer tout
+                </button>
+              </div>
             </div>
           </div>
         </div>
