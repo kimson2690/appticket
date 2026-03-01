@@ -11,6 +11,8 @@ interface CompanyOrder {
   rejected_orders: number;
   total_amount: number;
   employees_count: number;
+  direct_payments?: number;
+  direct_payment_amount?: number;
 }
 
 interface EmployeeOrder {
@@ -23,6 +25,8 @@ interface EmployeeOrder {
   pending_orders: number;
   rejected_orders: number;
   total_amount: number;
+  direct_payments?: number;
+  direct_payment_amount?: number;
 }
 
 interface OrdersSummary {
@@ -358,6 +362,7 @@ const RestaurantReporting: React.FC = () => {
                       <th className="px-4 py-4 text-center text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Validées</th>
                       <th className="px-4 py-4 text-center text-[10px] font-semibold text-gray-400 uppercase tracking-wider">En Attente</th>
                       <th className="px-4 py-4 text-center text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Rejetées</th>
+                      <th className="px-4 py-4 text-center text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Paiements Directs</th>
                       <th className="px-4 py-4 text-right text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Chiffre d'Affaires</th>
                       <th className="px-4 py-4 text-center text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Employés</th>
                     </tr>
@@ -365,7 +370,7 @@ const RestaurantReporting: React.FC = () => {
                   <tbody>
                     {companyOrders.length === 0 ? (
                       <tr>
-                        <td colSpan={7} className="px-6 py-16 text-center">
+                        <td colSpan={8} className="px-6 py-16 text-center">
                           <div className="w-12 h-12 bg-gray-50 rounded-2xl flex items-center justify-center mx-auto mb-3">
                             <Building2 className="w-6 h-6 text-gray-300" />
                           </div>
@@ -401,6 +406,15 @@ const RestaurantReporting: React.FC = () => {
                               {order.rejected_orders}
                             </span>
                           </td>
+                          <td className="px-4 py-4 text-center">
+                            {order.direct_payments ? (
+                              <span className="inline-flex items-center justify-center min-w-[28px] px-2 py-0.5 rounded-lg text-xs font-bold bg-purple-50 text-purple-600 border border-purple-100">
+                                {order.direct_payments}
+                              </span>
+                            ) : (
+                              <span className="text-xs text-gray-300">—</span>
+                            )}
+                          </td>
                           <td className="px-4 py-4 text-right">
                             <span className="text-sm font-bold text-orange-600">{formatCurrency(order.total_amount)}</span>
                           </td>
@@ -424,13 +438,14 @@ const RestaurantReporting: React.FC = () => {
                       <th className="px-4 py-4 text-center text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Validées</th>
                       <th className="px-4 py-4 text-center text-[10px] font-semibold text-gray-400 uppercase tracking-wider">En Attente</th>
                       <th className="px-4 py-4 text-center text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Rejetées</th>
+                      <th className="px-4 py-4 text-center text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Paiements Directs</th>
                       <th className="px-4 py-4 text-right text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Montant Total</th>
                     </tr>
                   </thead>
                   <tbody>
                     {employeeOrders.length === 0 ? (
                       <tr>
-                        <td colSpan={7} className="px-6 py-16 text-center">
+                        <td colSpan={8} className="px-6 py-16 text-center">
                           <div className="w-12 h-12 bg-gray-50 rounded-2xl flex items-center justify-center mx-auto mb-3">
                             <Users className="w-6 h-6 text-gray-300" />
                           </div>
@@ -470,6 +485,15 @@ const RestaurantReporting: React.FC = () => {
                             <span className="inline-flex items-center justify-center min-w-[28px] px-2 py-0.5 rounded-lg text-xs font-bold bg-red-50 text-red-600 border border-red-100">
                               {order.rejected_orders}
                             </span>
+                          </td>
+                          <td className="px-4 py-4 text-center">
+                            {order.direct_payments ? (
+                              <span className="inline-flex items-center justify-center min-w-[28px] px-2 py-0.5 rounded-lg text-xs font-bold bg-purple-50 text-purple-600 border border-purple-100">
+                                {order.direct_payments}
+                              </span>
+                            ) : (
+                              <span className="text-xs text-gray-300">—</span>
+                            )}
                           </td>
                           <td className="px-4 py-4 text-right">
                             <span className="text-sm font-bold text-orange-600">{formatCurrency(order.total_amount)}</span>

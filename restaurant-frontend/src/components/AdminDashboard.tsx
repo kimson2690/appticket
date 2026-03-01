@@ -25,6 +25,7 @@ import TicketAnalytics from './TicketAnalytics';
 import AdvertisementManagement from './AdvertisementManagement';
 import AdSlider from './AdSlider';
 import ReviewDashboard from './ReviewDashboard';
+import DirectPayment from './DirectPayment';
 import { 
   LayoutDashboard, 
   Users, 
@@ -46,7 +47,8 @@ import {
   MapPin,
   FileSpreadsheet,
   Megaphone,
-  Star
+  Star,
+  CreditCard
 } from 'lucide-react';
 
 interface AdminDashboardProps {
@@ -67,7 +69,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
     name: localStorage.getItem('userName') || 'Utilisateur',
     email: localStorage.getItem('userEmail') || 'email@example.com',
     role: localStorage.getItem('userRole') || 'Utilisateur',
-    id: localStorage.getItem('userId') || '1'
+    id: localStorage.getItem('userId') || '1',
+    orderingEnabled: localStorage.getItem('orderingEnabled') !== 'false',
   };
 
   // Fonction pour obtenir les initiales de l'utilisateur
@@ -112,7 +115,10 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
     
     // Menus pour les employés
     { id: 'my-tickets', label: 'Mes Tickets', icon: Wallet, roles: ['Utilisateur'] },
-    { id: 'order-food', label: 'Commander', icon: Utensils, roles: ['Utilisateur'] },
+    ...(currentUser.orderingEnabled
+      ? [{ id: 'order-food', label: 'Commander', icon: Utensils, roles: ['Utilisateur'] }]
+      : [{ id: 'direct-payment', label: 'Paiement Tickets', icon: CreditCard, roles: ['Utilisateur'] }]
+    ),
     { id: 'my-history', label: 'Historique', icon: BarChart3, roles: ['Utilisateur'] },
   ];
 
@@ -403,6 +409,15 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
               <AdSlider />
               <div className="mt-6">
                 <RestaurantOrderSystem />
+              </div>
+            </>
+          )}
+
+          {activeMenu === 'direct-payment' && (
+            <>
+              <AdSlider />
+              <div className="mt-6">
+                <DirectPayment />
               </div>
             </>
           )}

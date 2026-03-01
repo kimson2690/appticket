@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Restaurant;
 
 use App\Http\Controllers\Controller;
 use App\Models\Company;
+use App\Models\DirectPayment;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
@@ -106,7 +107,7 @@ class RestaurantReportingController extends Controller
                 }
 
                 $ordersByCompany[$companyId]['total_orders']++;
-                
+
                 // Compter par statut
                 if ($order['status'] === 'confirmed') {
                     $ordersByCompany[$companyId]['confirmed_orders']++;
@@ -124,9 +125,65 @@ class RestaurantReportingController extends Controller
                 }
             }
 
+            // Inclure les paiements directs
+            $directPaymentsQuery = DirectPayment::where('restaurant_id', $restaurantId)
+                ->where('status', 'completed');
+
+            if (!empty($validated['start_date'])) {
+                $directPaymentsQuery->whereDate('created_at', '>=', $validated['start_date']);
+            }
+            if (!empty($validated['end_date'])) {
+                $directPaymentsQuery->whereDate('created_at', '<=', $validated['end_date']);
+            }
+            if (!empty($validated['company_id'])) {
+                $directPaymentsQuery->where('company_id', $validated['company_id']);
+            }
+
+            $directPayments = $directPaymentsQuery->get();
+
+            foreach ($directPayments as $dp) {
+                $companyId = (string) $dp->company_id;
+
+                if (!isset($ordersByCompany[$companyId])) {
+                    $company = collect($companies)->first(function ($c) use ($companyId) {
+                        return (string)$c['id'] === $companyId;
+                    });
+                    $ordersByCompany[$companyId] = [
+                        'company_id' => $companyId,
+                        'company_name' => $company['name'] ?? 'Entreprise Inconnue',
+                        'total_amount' => 0,
+                        'total_orders' => 0,
+                        'confirmed_orders' => 0,
+                        'pending_orders' => 0,
+                        'rejected_orders' => 0,
+                        'direct_payments' => 0,
+                        'direct_payment_amount' => 0,
+                        'employees_count' => 0,
+                        'employee_ids' => []
+                    ];
+                }
+
+                if (!isset($ordersByCompany[$companyId]['direct_payments'])) {
+                    $ordersByCompany[$companyId]['direct_payments'] = 0;
+                    $ordersByCompany[$companyId]['direct_payment_amount'] = 0;
+                }
+
+                $ordersByCompany[$companyId]['direct_payments']++;
+                $ordersByCompany[$companyId]['direct_payment_amount'] += (float) $dp->amount;
+                $ordersByCompany[$companyId]['total_amount'] += (float) $dp->amount;
+                $ordersByCompany[$companyId]['total_orders']++;
+                $ordersByCompany[$companyId]['confirmed_orders']++;
+
+                $empId = $dp->employee_id;
+                if (!in_array($empId, $ordersByCompany[$companyId]['employee_ids'])) {
+                    $ordersByCompany[$companyId]['employee_ids'][] = $empId;
+                    $ordersByCompany[$companyId]['employees_count']++;
+                }
+            }
+
             // Nettoyer et trier
             $results = array_values($ordersByCompany);
-            
+
             // Si un filtre company_id est appliqué, ne retourner que cette entreprise
             if (!empty($validated['company_id'])) {
                 $results = array_filter($results, function($result) use ($validated) {
@@ -134,7 +191,7 @@ class RestaurantReportingController extends Controller
                     return (string)$result['company_id'] === (string)$validated['company_id'];
                 });
                 $results = array_values($results); // Réindexer le tableau
-                
+
                 // Si l'entreprise n'a aucune commande, créer une entrée vide
                 if (empty($results)) {
                     $company = collect($companies)->firstWhere('id', $validated['company_id']);
@@ -152,7 +209,7 @@ class RestaurantReportingController extends Controller
                     }
                 }
             }
-            
+
             usort($results, function ($a, $b) {
                 return $b['total_orders'] - $a['total_orders'];
             });
@@ -277,6 +334,52 @@ class RestaurantReportingController extends Controller
                 } elseif ($order['status'] === 'rejected') {
                     $ordersByEmployee[$employeeId]['rejected_orders']++;
                 }
+            }
+
+            // Inclure les paiements directs
+            $dpQuery = DirectPayment::where('restaurant_id', $restaurantId)
+                ->where('status', 'completed');
+
+            if (!empty($validated['start_date'])) {
+                $dpQuery->whereDate('created_at', '>=', $validated['start_date']);
+            }
+            if (!empty($validated['end_date'])) {
+                $dpQuery->whereDate('created_at', '<=', $validated['end_date']);
+            }
+            if (!empty($validated['company_id'])) {
+                $dpQuery->where('company_id', $validated['company_id']);
+            }
+
+            foreach ($dpQuery->get() as $dp) {
+                $employeeId = $dp->employee_id;
+
+                if (!isset($ordersByEmployee[$employeeId])) {
+                    $employee = collect($employees)->firstWhere('id', $employeeId);
+                    $ordersByEmployee[$employeeId] = [
+                        'employee_id' => $employeeId,
+                        'employee_name' => $dp->employee_name ?? ($employee['name'] ?? 'Inconnu'),
+                        'employee_email' => $employee['email'] ?? '',
+                        'company_id' => (string) $dp->company_id,
+                        'total_orders' => 0,
+                        'confirmed_orders' => 0,
+                        'pending_orders' => 0,
+                        'rejected_orders' => 0,
+                        'direct_payments' => 0,
+                        'direct_payment_amount' => 0,
+                        'total_amount' => 0
+                    ];
+                }
+
+                if (!isset($ordersByEmployee[$employeeId]['direct_payments'])) {
+                    $ordersByEmployee[$employeeId]['direct_payments'] = 0;
+                    $ordersByEmployee[$employeeId]['direct_payment_amount'] = 0;
+                }
+
+                $ordersByEmployee[$employeeId]['direct_payments']++;
+                $ordersByEmployee[$employeeId]['direct_payment_amount'] += (float) $dp->amount;
+                $ordersByEmployee[$employeeId]['total_amount'] += (float) $dp->amount;
+                $ordersByEmployee[$employeeId]['total_orders']++;
+                $ordersByEmployee[$employeeId]['confirmed_orders']++;
             }
 
             $results = array_values($ordersByEmployee);

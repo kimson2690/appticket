@@ -117,6 +117,7 @@ class AuthController extends Controller
                 }
 
                 // Vérifier si l'entreprise associée est suspendue
+                $company = null;
                 if ($employee->company_id) {
                     $company = \App\Models\Company::find($employee->company_id);
                     if ($company && $company->status === 'suspended') {
@@ -152,7 +153,8 @@ class AuthController extends Controller
                         'restaurant_id' => null,
                         'restaurant_name' => null,
                         'status' => $employee->status,
-                        'must_change_password' => (bool) $employee->must_change_password
+                        'must_change_password' => (bool) $employee->must_change_password,
+                        'ordering_enabled' => $company ? (bool) $company->ordering_enabled : true,
                     ],
                     'token' => $token
                 ]);

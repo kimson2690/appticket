@@ -38,6 +38,7 @@ interface Company {
   description?: string;
   logo?: string;
   status: 'active' | 'inactive' | 'suspended';
+  ordering_enabled?: boolean;
   employee_count: number;
   ticket_balance: number;
   created_at: string;
@@ -712,6 +713,37 @@ class ApiService {
   async getRestaurantReviewStats(): Promise<any> {
     const response = await this.request<any>('/restaurant/reviews/statistics') as any;
     return response.data || {};
+  }
+
+  // Direct Payments API (Employee)
+  async submitDirectPayment(data: {
+    restaurant_id: string;
+    amount: number;
+    notes?: string;
+  }): Promise<any> {
+    const response = await this.request<any>('/employee/direct-payments', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+    return response;
+  }
+
+  async getDirectPaymentHistory(): Promise<any[]> {
+    const response = await this.request<any>('/employee/direct-payments') as any;
+    return response.data || [];
+  }
+
+  async checkOrderingMode(): Promise<{ ordering_enabled: boolean }> {
+    const response = await this.request<any>('/employee/direct-payments/check-mode') as any;
+    return response.data || { ordering_enabled: true };
+  }
+
+  // Company settings
+  async toggleOrderingEnabled(companyId: string, enabled: boolean): Promise<any> {
+    return await this.request<any>(`/admin/companies/${companyId}`, {
+      method: 'PUT',
+      body: JSON.stringify({ ordering_enabled: enabled }),
+    });
   }
 
   // Delivery Locations API

@@ -26,6 +26,7 @@ use App\Http\Controllers\Employee\OrderController;
 use App\Http\Controllers\Employee\EmployeeRestaurantController;
 use App\Http\Controllers\Employee\EmployeeMenuController;
 use App\Http\Controllers\Employee\ReviewController as EmployeeReviewController;
+use App\Http\Controllers\Employee\DirectPaymentController;
 use App\Http\Controllers\Restaurant\ReviewController as RestaurantReviewController;
 use App\Http\Controllers\Company\ReportingController;
 use App\Http\Controllers\Company\AccountingReportController;
@@ -228,6 +229,11 @@ Route::prefix('employee')->group(function () {
     Route::get('/reviews', [EmployeeReviewController::class, 'myReviews']);
     Route::post('/reviews', [EmployeeReviewController::class, 'store']);
     Route::get('/reviews/order/{orderId}', [EmployeeReviewController::class, 'showByOrder']);
+
+    // Paiement direct par tickets
+    Route::post('/direct-payments', [DirectPaymentController::class, 'store']);
+    Route::get('/direct-payments', [DirectPaymentController::class, 'history']);
+    Route::get('/direct-payments/check-mode', [DirectPaymentController::class, 'checkMode']);
 
     // Statistiques du dashboard
     Route::get('/dashboard/stats', [DashboardStatsController::class, 'getEmployeeStats']);

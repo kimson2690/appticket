@@ -52,6 +52,7 @@ class CompanyController extends Controller
                         'website' => $company->website,
                         'description' => $company->description,
                         'status' => $company->status,
+                        'ordering_enabled' => (bool) $company->ordering_enabled,
                         'employee_count' => $totalEmployees,
                         'ticket_balance' => (int) $ticketBalance,
                         'created_at' => $company->created_at->format('Y-m-d'),
@@ -176,6 +177,7 @@ class CompanyController extends Controller
                     'website' => $company->website,
                     'description' => $company->description,
                     'status' => $company->status,
+                    'ordering_enabled' => (bool) $company->ordering_enabled,
                     'employee_count' => $totalEmployees,
                     'ticket_balance' => (int) $ticketBalance,
                     'created_at' => $company->created_at->format('Y-m-d'),
@@ -215,6 +217,7 @@ class CompanyController extends Controller
                 'website' => 'nullable|url|max:255',
                 'description' => 'nullable|string|max:1000',
                 'status' => ['required', Rule::in(['active', 'inactive', 'suspended'])],
+                'ordering_enabled' => 'nullable|boolean',
             ]);
 
             $company->update($validated);
