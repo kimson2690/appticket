@@ -8,7 +8,7 @@ interface ModernLoginProps {
 }
 
 const ModernLogin: React.FC<ModernLoginProps> = ({ onShowRegister }) => {
-  const [email, setEmail] = useState('');
+  const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
@@ -21,10 +21,10 @@ const ModernLogin: React.FC<ModernLoginProps> = ({ onShowRegister }) => {
     setError(null);
     
     try {
-      console.log('Tentative de connexion avec:', { email, password });
+      console.log('Tentative de connexion avec:', { identifier, password });
       
       // Utiliser l'API réelle pour l'authentification
-      const response = await apiService.login(email, password);
+      const response = await apiService.login(identifier, password);
       
       console.log('Réponse de l\'API complète:', response);
       console.log('Structure de response.user:', response.user);
@@ -218,14 +218,15 @@ const ModernLogin: React.FC<ModernLoginProps> = ({ onShowRegister }) => {
             {/* Formulaire moderne */}
             <form onSubmit={handleSubmit} className="space-y-5">
               <div className="group">
-                <label className="mb-2 block text-xs font-semibold text-white/80 uppercase tracking-wider">Email</label>
+                <label className="mb-2 block text-xs font-semibold text-white/80 uppercase tracking-wider">Identifiant</label>
                 <div className="relative">
                   <Mail className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-orange-400 group-focus-within:text-orange-300 transition-colors" />
                   <input 
-                    type="email" 
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="fatimata@techcorp.bf" 
+                    type="text" 
+                    value={identifier}
+                    onChange={(e) => setIdentifier(e.target.value)}
+                    placeholder="fatimata@techcorp.bf ou +22670123456" 
+                    autoComplete="username"
                     className="w-full rounded-2xl border-2 border-white/10 bg-white/5 px-12 py-4 text-white placeholder:text-white/40 outline-none transition-all focus:border-orange-500/50 focus:bg-white/10 focus:ring-4 focus:ring-orange-500/20 hover:bg-white/10"
                     required
                   />

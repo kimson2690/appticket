@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Company;
 
 use App\Http\Controllers\Controller;
+use App\Models\DirectPayment;
 use App\Models\Restaurant;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -35,6 +36,7 @@ class ReportingController extends Controller
 
             // Charger les données
             $orders = $this->loadOrders();
+            $directPayments = $this->loadDirectPayments();
             $employees = $this->loadEmployees();
             $restaurants = $this->loadRestaurants();
 
@@ -46,46 +48,63 @@ class ReportingController extends Controller
 
             // Filtrer les commandes validées des employés de l'entreprise
             $filteredOrders = collect($orders)->filter(function ($order) use ($companyEmployeeIds, $validated) {
-                // Doit être validée
-                if ($order['status'] !== 'confirmed') {
-                    return false;
-                }
+                if ($order['status'] !== 'confirmed') return false;
+                if (!in_array($order['employee_id'], $companyEmployeeIds)) return false;
 
-                // Doit être d'un employé de l'entreprise
-                if (!in_array($order['employee_id'], $companyEmployeeIds)) {
-                    return false;
-                }
-
-                // Filtre par date de début
                 if (!empty($validated['start_date'])) {
                     $orderDate = date('Y-m-d', strtotime($order['created_at']));
-                    if ($orderDate < $validated['start_date']) {
-                        return false;
-                    }
+                    if ($orderDate < $validated['start_date']) return false;
                 }
-
-                // Filtre par date de fin
                 if (!empty($validated['end_date'])) {
                     $orderDate = date('Y-m-d', strtotime($order['created_at']));
-                    if ($orderDate > $validated['end_date']) {
-                        return false;
-                    }
+                    if ($orderDate > $validated['end_date']) return false;
                 }
-
-                // Filtre par restaurant
                 if (!empty($validated['restaurant_id'])) {
-                    if ($order['restaurant_id'] !== $validated['restaurant_id']) {
-                        return false;
-                    }
+                    if ($order['restaurant_id'] !== $validated['restaurant_id']) return false;
                 }
 
                 return true;
-            });
+            })->values();
+
+            // Filtrer les paiements directs (consommations)
+            $filteredDirectPayments = collect($directPayments)->filter(function ($dp) use ($companyEmployeeIds, $validated) {
+                if (($dp['status'] ?? null) !== 'completed') return false;
+                if (!in_array((string)($dp['employee_id'] ?? ''), array_map('strval', $companyEmployeeIds))) return false;
+
+                if (!empty($validated['start_date'])) {
+                    $d = date('Y-m-d', strtotime($dp['created_at']));
+                    if ($d < $validated['start_date']) return false;
+                }
+                if (!empty($validated['end_date'])) {
+                    $d = date('Y-m-d', strtotime($dp['created_at']));
+                    if ($d > $validated['end_date']) return false;
+                }
+                if (!empty($validated['restaurant_id'])) {
+                    if ((string)$dp['restaurant_id'] !== (string)$validated['restaurant_id']) return false;
+                }
+
+                return true;
+            })->map(function ($dp) {
+                return [
+                    'id' => $dp['id'] ?? null,
+                    'restaurant_id' => $dp['restaurant_id'] ?? null,
+                    'employee_id' => $dp['employee_id'] ?? null,
+                    'employee_name' => $dp['employee_name'] ?? null,
+                    'total_amount' => (float)($dp['ticket_amount_used'] ?? $dp['amount'] ?? 0),
+                    'created_at' => $dp['created_at'] ?? null,
+                    '_type' => 'direct_payment',
+                ];
+            })->values();
+
+            $allConsumptions = $filteredOrders->map(function ($o) {
+                $o['_type'] = 'order';
+                return $o;
+            })->values()->merge($filteredDirectPayments)->values();
 
             // Grouper par restaurant avec détails employés
             $expensesByRestaurant = [];
 
-            foreach ($filteredOrders as $order) {
+            foreach ($allConsumptions as $order) {
                 $restaurantId = $order['restaurant_id'];
 
                 if (!isset($expensesByRestaurant[$restaurantId])) {
@@ -101,7 +120,7 @@ class ReportingController extends Controller
                     ];
                 }
 
-                $expensesByRestaurant[$restaurantId]['total_amount'] += $order['total_amount'];
+                $expensesByRestaurant[$restaurantId]['total_amount'] += (float) $order['total_amount'];
                 $expensesByRestaurant[$restaurantId]['total_orders']++;
 
                 // Compter les employés uniques
@@ -121,7 +140,7 @@ class ReportingController extends Controller
                         'total_orders' => 0,
                     ];
                 }
-                $expensesByRestaurant[$restaurantId]['employee_breakdown'][$empId]['total_amount'] += $order['total_amount'];
+                $expensesByRestaurant[$restaurantId]['employee_breakdown'][$empId]['total_amount'] += (float) $order['total_amount'];
                 $expensesByRestaurant[$restaurantId]['employee_breakdown'][$empId]['total_orders']++;
             }
 
@@ -193,6 +212,7 @@ class ReportingController extends Controller
             ]);
 
             $orders = $this->loadOrders();
+            $directPayments = $this->loadDirectPayments();
             $employees = $this->loadEmployees();
             $restaurants = $this->loadRestaurants();
 
@@ -221,18 +241,60 @@ class ReportingController extends Controller
                     return true;
                 });
 
-                if ($employeeOrders->count() > 0) {
-                    $totalAmount = $employeeOrders->sum('total_amount');
-                    $totalOrders = $employeeOrders->count();
+                $employeeDirectPayments = collect($directPayments)->filter(function ($dp) use ($employee, $validated) {
+                    if ((string)($dp['employee_id'] ?? '') !== (string)$employee['id']) return false;
+                    if (($dp['status'] ?? null) !== 'completed') return false;
+
+                    if (!empty($validated['start_date'])) {
+                        $d = date('Y-m-d', strtotime($dp['created_at']));
+                        if ($d < $validated['start_date']) return false;
+                    }
+                    if (!empty($validated['end_date'])) {
+                        $d = date('Y-m-d', strtotime($dp['created_at']));
+                        if ($d > $validated['end_date']) return false;
+                    }
+                    if (!empty($validated['restaurant_id'])) {
+                        if ((string)$dp['restaurant_id'] !== (string)$validated['restaurant_id']) return false;
+                    }
+
+                    return true;
+                })->values();
+
+                if ($employeeOrders->count() > 0 || $employeeDirectPayments->count() > 0) {
+                    $totalAmount = (float)$employeeOrders->sum('total_amount')
+                        + (float)$employeeDirectPayments->sum(fn($dp) => (float)($dp['ticket_amount_used'] ?? $dp['amount'] ?? 0));
+                    $totalOrders = $employeeOrders->count() + $employeeDirectPayments->count();
                     $globalTotalAmount += $totalAmount;
                     $globalTotalOrders += $totalOrders;
 
                     // Dernière commande
-                    $lastOrder = $employeeOrders->sortByDesc('created_at')->first();
+                    $lastOrder = collect([])
+                        ->merge($employeeOrders->map(fn($o) => ['created_at' => $o['created_at'] ?? null, '_type' => 'order']))
+                        ->merge($employeeDirectPayments->map(fn($dp) => ['created_at' => $dp['created_at'] ?? null, '_type' => 'direct_payment']))
+                        ->sortByDesc('created_at')
+                        ->first();
 
                     // Breakdown par restaurant
                     $restaurantBreakdown = [];
-                    foreach ($employeeOrders->groupBy('restaurant_id') as $restId => $restOrders) {
+                    $allEmpConsumptions = collect([])
+                        ->merge($employeeOrders->map(fn($o) => [
+                            'restaurant_id' => $o['restaurant_id'],
+                            'total_amount' => (float)($o['total_amount'] ?? 0),
+                            'created_at' => $o['created_at'] ?? null,
+                            'id' => $o['id'] ?? null,
+                            'items' => $o['items'] ?? null,
+                            '_type' => 'order',
+                        ]))
+                        ->merge($employeeDirectPayments->map(fn($dp) => [
+                            'restaurant_id' => $dp['restaurant_id'],
+                            'total_amount' => (float)($dp['ticket_amount_used'] ?? $dp['amount'] ?? 0),
+                            'created_at' => $dp['created_at'] ?? null,
+                            'id' => $dp['id'] ?? null,
+                            'items' => [],
+                            '_type' => 'direct_payment',
+                        ]));
+
+                    foreach ($allEmpConsumptions->groupBy('restaurant_id') as $restId => $restOrders) {
                         $restaurant = collect($restaurants)->firstWhere('id', $restId);
                         $restaurantBreakdown[] = [
                             'restaurant_id' => $restId,
@@ -244,7 +306,7 @@ class ReportingController extends Controller
                     usort($restaurantBreakdown, fn($a, $b) => $b['total_amount'] - $a['total_amount']);
 
                     // Historique des commandes récentes (5 dernières)
-                    $recentOrders = $employeeOrders->sortByDesc('created_at')->take(5)->map(function ($order) use ($restaurants) {
+                    $recentOrders = $allEmpConsumptions->sortByDesc('created_at')->take(5)->map(function ($order) use ($restaurants) {
                         $restaurant = collect($restaurants)->firstWhere('id', $order['restaurant_id']);
                         return [
                             'id' => $order['id'],
@@ -314,6 +376,11 @@ class ReportingController extends Controller
     private function loadOrders()
     {
         return \App\Models\Order::all()->toArray();
+    }
+
+    private function loadDirectPayments()
+    {
+        return DirectPayment::all()->toArray();
     }
 
     /**

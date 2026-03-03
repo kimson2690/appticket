@@ -3,10 +3,10 @@
 namespace App\Http\Controllers\Company;
 
 use App\Http\Controllers\Controller;
+use App\Models\DirectPayment;
 use App\Services\ExcelReportService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Storage;
 use Carbon\Carbon;
 
 class AccountingReportController extends Controller
@@ -48,6 +48,7 @@ class AccountingReportController extends Controller
             $users = $this->loadUsers();
             $ticketBatches = $this->loadTicketBatches();
             $orders = $this->loadOrders();
+            $directPayments = $this->loadDirectPayments();
 
             // Filtrer par entreprise si nécessaire
             if ($userRole === 'Gestionnaire Entreprise') {
@@ -61,7 +62,7 @@ class AccountingReportController extends Controller
             $companyName = $company['name'] ?? 'Entreprise';
 
             // Calculer les données du rapport
-            $data = $this->calculateReportData($users, $ticketBatches, $orders, $month, $year, $companyName);
+            $data = $this->calculateReportData($users, $ticketBatches, $orders, $directPayments, $month, $year, $companyName);
 
             return response()->json([
                 'success' => true,
@@ -113,6 +114,7 @@ class AccountingReportController extends Controller
             $users = $this->loadUsers();
             $ticketBatches = $this->loadTicketBatches();
             $orders = $this->loadOrders();
+            $directPayments = $this->loadDirectPayments();
 
             // Filtrer par entreprise
             if ($userRole === 'Gestionnaire Entreprise') {
@@ -125,7 +127,7 @@ class AccountingReportController extends Controller
             $companyName = $company['name'] ?? 'Entreprise';
 
             // Calculer les données
-            $data = $this->calculateReportData($users, $ticketBatches, $orders, $month, $year, $companyName);
+            $data = $this->calculateReportData($users, $ticketBatches, $orders, $directPayments, $month, $year, $companyName);
 
             // Générer le fichier Excel
             $excelService = new ExcelReportService();
@@ -158,12 +160,13 @@ class AccountingReportController extends Controller
     /**
      * Calcule toutes les données du rapport
      */
-    private function calculateReportData($users, $ticketBatches, $orders, $month, $year, $companyName)
+    private function calculateReportData($users, $ticketBatches, $orders, $directPayments, $month, $year, $companyName)
     {
         // Convertir en collections
         $users = collect($users);
         $ticketBatches = collect($ticketBatches);
         $orders = collect($orders);
+        $directPayments = collect($directPayments);
 
         // IDs des employés de l'entreprise
         $employeeIds = $users->pluck('id')->map(fn($id) => (string)$id)->toArray();
@@ -186,6 +189,17 @@ class AccountingReportController extends Controller
                 && in_array((string)$order['employee_id'], $employeeIds);
         });
 
+        // Filtrer les paiements directs du mois (consommations)
+        $monthDirectPayments = $directPayments->filter(function($dp) use ($startDate, $endDate, $employeeIds) {
+            $createdAt = Carbon::parse($dp['created_at']);
+            return $createdAt->between($startDate, $endDate)
+                && ($dp['status'] ?? null) === 'completed'
+                && in_array((string)$dp['employee_id'], $employeeIds);
+        });
+
+        // Total consommations (commandes confirmées + paiements directs)
+        $monthConsumptions = $monthOrders->values()->merge($monthDirectPayments->values());
+
         // Déterminer la valeur unitaire d'un ticket (depuis les souches du mois ou toutes les souches)
         $ticketValue = $monthBatches->avg('ticket_value');
         if (!$ticketValue) {
@@ -200,13 +214,13 @@ class AccountingReportController extends Controller
         });
 
         // Calculer les tickets réellement consommés (montant / valeur unitaire ticket)
-        $ticketsUsedAmount = (float)$monthOrders->sum(function($order) {
-            return (float)($order['ticket_amount_used'] ?? $order['total_amount']);
+        $ticketsUsedAmount = (float)$monthConsumptions->sum(function($entry) {
+            return (float)($entry['ticket_amount_used'] ?? $entry['amount'] ?? $entry['total_amount']);
         });
         $ticketsUsedCount = $ticketValue > 0 ? (int)round($ticketsUsedAmount / $ticketValue) : 0;
 
         // Nombre de commandes (distinct du nombre de tickets)
-        $ordersCount = $monthOrders->count();
+        $ordersCount = $monthConsumptions->count();
 
         // Tickets restants
         $ticketsRemainingCount = max(0, $ticketsAssignedCount - $ticketsUsedCount);
@@ -217,23 +231,23 @@ class AccountingReportController extends Controller
 
         // Statistiques
         $activeEmployees = $users->where('status', 'active')->count();
-        $restaurantsUsed = $monthOrders->pluck('restaurant_id')->unique()->count();
+        $restaurantsUsed = $monthConsumptions->pluck('restaurant_id')->unique()->count();
         $averageOrderAmount = $ordersCount > 0 ? round($ticketsUsedAmount / $ordersCount, 0) : 0;
 
         // Charger les noms de restaurants
         $restaurants = \App\Models\Restaurant::all()->keyBy('id');
 
         // Données par employé
-        $byEmployee = $this->getDataByEmployee($users, $monthBatches, $monthOrders, $ticketValue, $restaurants);
+        $byEmployee = $this->getDataByEmployee($users, $monthBatches, $monthOrders, $monthDirectPayments, $ticketValue, $restaurants);
 
         // Données par restaurant
-        $byRestaurant = $this->getDataByRestaurant($monthOrders, $restaurants);
+        $byRestaurant = $this->getDataByRestaurant($monthOrders, $monthDirectPayments, $restaurants);
 
         // Données par date
-        $byDate = $this->getDataByDate($monthBatches, $monthOrders, $ticketValue, $restaurants);
+        $byDate = $this->getDataByDate($monthBatches, $monthOrders, $monthDirectPayments, $ticketValue, $restaurants);
 
         // Réconciliation
-        $reconciliation = $this->getReconciliation($monthBatches, $monthOrders, $startDate, $endDate, $ticketValue);
+        $reconciliation = $this->getReconciliation($monthBatches, $monthOrders, $monthDirectPayments, $startDate, $endDate, $ticketValue);
 
         return [
             'summary' => [
@@ -260,9 +274,11 @@ class AccountingReportController extends Controller
     /**
      * Données par employé
      */
-    private function getDataByEmployee($users, $batches, $orders, $ticketValue, $restaurants)
+    private function getDataByEmployee($users, $batches, $orders, $directPayments, $ticketValue, $restaurants)
     {
         $result = [];
+
+        $directPayments = collect($directPayments);
 
         foreach ($users as $user) {
             if ($user['status'] !== 'active') continue;
@@ -276,12 +292,18 @@ class AccountingReportController extends Controller
 
             // Tickets consommés (montant / valeur ticket)
             $userOrders = $orders->filter(fn($o) => (string)$o['employee_id'] === $userId);
-            $amountUsed = (float)$userOrders->sum(fn($o) => (float)($o['ticket_amount_used'] ?? $o['total_amount']));
+            $userDirectPayments = $directPayments->filter(fn($dp) => (string)$dp['employee_id'] === $userId);
+
+            $amountUsed = (float)$userOrders->sum(fn($o) => (float)($o['ticket_amount_used'] ?? $o['total_amount']))
+                + (float)$userDirectPayments->sum(fn($dp) => (float)($dp['ticket_amount_used'] ?? $dp['amount']));
             $ticketsUsed = $ticketValue > 0 ? (int)round($amountUsed / $ticketValue) : 0;
-            $ordersCount = $userOrders->count();
+            $ordersCount = $userOrders->count() + $userDirectPayments->count();
 
             // Restaurants fréquentés
-            $userRestaurants = $userOrders->pluck('restaurant_id')->unique()->map(function($rid) use ($restaurants) {
+            $userRestaurants = $userOrders->values()->merge($userDirectPayments->values())
+                ->pluck('restaurant_id')
+                ->unique()
+                ->map(function($rid) use ($restaurants) {
                 $r = $restaurants->get($rid);
                 return $r ? $r->name : null;
             })->filter()->values()->toArray();
@@ -314,13 +336,18 @@ class AccountingReportController extends Controller
     /**
      * Données par restaurant
      */
-    private function getDataByRestaurant($orders, $restaurants)
+    private function getDataByRestaurant($orders, $directPayments, $restaurants)
     {
         $result = [];
 
-        $totalAmount = (float)$orders->sum(fn($o) => (float)($o['ticket_amount_used'] ?? $o['total_amount']));
+        $orders = collect($orders);
+        $directPayments = collect($directPayments);
 
-        $grouped = $orders->groupBy('restaurant_id');
+        $consumptions = $orders->values()->merge($directPayments->values());
+
+        $totalAmount = (float)$consumptions->sum(fn($o) => (float)($o['ticket_amount_used'] ?? $o['amount'] ?? $o['total_amount']));
+
+        $grouped = $consumptions->groupBy('restaurant_id');
 
         foreach ($grouped as $restaurantId => $restaurantOrders) {
             // Nom du restaurant depuis le modèle
@@ -328,7 +355,7 @@ class AccountingReportController extends Controller
             if (!$restaurant) continue; // Ignorer les restaurants supprimés
 
             $ordersCount = $restaurantOrders->count();
-            $amount = (float)$restaurantOrders->sum(fn($o) => (float)($o['ticket_amount_used'] ?? $o['total_amount']));
+            $amount = (float)$restaurantOrders->sum(fn($o) => (float)($o['ticket_amount_used'] ?? $o['amount'] ?? $o['total_amount']));
             $average = $ordersCount > 0 ? $amount / $ordersCount : 0;
             $percentage = $totalAmount > 0 ? ($amount / $totalAmount) * 100 : 0;
 
@@ -352,9 +379,11 @@ class AccountingReportController extends Controller
     /**
      * Données par date (chronologique)
      */
-    private function getDataByDate($batches, $orders, $ticketValue, $restaurants)
+    private function getDataByDate($batches, $orders, $directPayments, $ticketValue, $restaurants)
     {
         $result = [];
+
+        $directPayments = collect($directPayments);
 
         // Affectations
         foreach ($batches as $batch) {
@@ -385,6 +414,22 @@ class AccountingReportController extends Controller
             ];
         }
 
+        foreach ($directPayments as $dp) {
+            $restaurant = $restaurants->get($dp['restaurant_id']);
+            $restaurantName = $restaurant ? $restaurant->name : 'Restaurant #' . $dp['restaurant_id'];
+            $amount = (float)($dp['ticket_amount_used'] ?? $dp['amount']);
+            $ticketsCount = $ticketValue > 0 ? (int)round($amount / $ticketValue) : 1;
+
+            $result[] = [
+                'date' => Carbon::parse($dp['created_at'])->format('Y-m-d'),
+                'type' => 'Paiement Direct',
+                'employee' => $dp['employee_name'] ?? 'N/A',
+                'restaurant' => $restaurantName,
+                'tickets_count' => $ticketsCount,
+                'amount' => $amount
+            ];
+        }
+
         // Trier par date
         usort($result, fn($a, $b) => $a['date'] <=> $b['date']);
 
@@ -394,11 +439,13 @@ class AccountingReportController extends Controller
     /**
      * Réconciliation quotidienne
      */
-    private function getReconciliation($batches, $orders, $startDate, $endDate, $ticketValue)
+    private function getReconciliation($batches, $orders, $directPayments, $startDate, $endDate, $ticketValue)
     {
         $result = [];
         $cumulAssigned = 0;
         $cumulUsed = 0;
+
+        $directPayments = collect($directPayments);
 
         $currentDate = $startDate->copy();
 
@@ -418,8 +465,13 @@ class AccountingReportController extends Controller
                 return Carbon::parse($order['created_at'])->format('Y-m-d') === $dateStr;
             });
 
-            $usedAmount = (float)$dayOrders->sum(fn($o) => (float)($o['ticket_amount_used'] ?? $o['total_amount']));
-            $usedCount = $ticketValue > 0 ? (int)round($usedAmount / $ticketValue) : $dayOrders->count();
+            $dayDirectPayments = $directPayments->filter(function($dp) use ($dateStr) {
+                return Carbon::parse($dp['created_at'])->format('Y-m-d') === $dateStr;
+            });
+
+            $usedAmount = (float)$dayOrders->sum(fn($o) => (float)($o['ticket_amount_used'] ?? $o['total_amount']))
+                + (float)$dayDirectPayments->sum(fn($dp) => (float)($dp['ticket_amount_used'] ?? $dp['amount']));
+            $usedCount = $ticketValue > 0 ? (int)round($usedAmount / $ticketValue) : ($dayOrders->count() + $dayDirectPayments->count());
 
             // Cumuls
             $cumulAssigned += $assignedAmount;
@@ -475,6 +527,11 @@ class AccountingReportController extends Controller
     private function loadOrders()
     {
         return \App\Models\Order::all()->toArray();
+    }
+
+    private function loadDirectPayments()
+    {
+        return DirectPayment::all()->toArray();
     }
 
     private function loadRestaurants()

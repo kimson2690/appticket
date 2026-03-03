@@ -7,6 +7,7 @@ use App\Models\Company;
 use App\Models\Restaurant;
 use App\Models\User;
 use App\Models\Employee;
+use App\Models\DirectPayment;
 use App\Models\Order;
 use App\Models\UserTicket;
 use App\Models\TicketBatch;
@@ -26,7 +27,8 @@ class DashboardStatsController extends Controller
             $totalUsers = Employee::count() + User::count();
             $totalCompanies = Company::count();
             $totalRestaurants = Restaurant::count();
-            $totalOrders = Order::where('status', 'confirmed')->count();
+            $totalOrders = Order::where('status', 'confirmed')->count()
+                + DirectPayment::where('status', 'completed')->count();
 
             Log::info('📊 [DashboardStats] Données chargées depuis MySQL', [
                 'employees' => Employee::count(),
@@ -115,10 +117,16 @@ class DashboardStatsController extends Controller
             // Statistiques générales (uniquement commandes confirmées)
             $totalEmployees = count($companyEmployeeIds);
             $totalOrders = Order::whereIn('employee_id', $companyEmployeeIds)
-                ->where('status', 'confirmed')->count();
-            $totalSpent = Order::whereIn('employee_id', $companyEmployeeIds)
+                ->where('status', 'confirmed')->count()
+                + DirectPayment::whereIn('employee_id', $companyEmployeeIds)
+                    ->where('status', 'completed')
+                    ->count();
+            $totalSpent = (float) Order::whereIn('employee_id', $companyEmployeeIds)
                 ->where('status', 'confirmed')
-                ->sum('total_amount');
+                ->sum('total_amount')
+                + (float) DirectPayment::whereIn('employee_id', $companyEmployeeIds)
+                    ->where('status', 'completed')
+                    ->sum('amount');
 
             // Dépenses par restaurant
             $expensesByRestaurant = $this->getExpensesByRestaurant($companyEmployeeIds);
@@ -190,11 +198,17 @@ class DashboardStatsController extends Controller
             // Statistiques générales (seulement commandes confirmées)
             $totalOrders = Order::where('restaurant_id', $restaurantId)
                 ->where('status', 'confirmed')
-                ->count();
+                ->count()
+                + DirectPayment::where('restaurant_id', $restaurantId)
+                    ->where('status', 'completed')
+                    ->count();
 
-            $totalRevenue = Order::where('restaurant_id', $restaurantId)
+            $totalRevenue = (float) Order::where('restaurant_id', $restaurantId)
                 ->where('status', 'confirmed')
-                ->sum('total_amount');
+                ->sum('total_amount')
+                + (float) DirectPayment::where('restaurant_id', $restaurantId)
+                    ->where('status', 'completed')
+                    ->sum('amount');
 
             $avgOrderValue = $totalOrders > 0 ? $totalRevenue / $totalOrders : 0;
 
@@ -245,9 +259,15 @@ class DashboardStatsController extends Controller
 
             // Statistiques générales (uniquement commandes confirmées)
             $totalOrders = Order::where('employee_id', $userId)
-                ->where('status', 'confirmed')->count();
-            $totalSpent = Order::where('employee_id', $userId)
-                ->where('status', 'confirmed')->sum('total_amount');
+                ->where('status', 'confirmed')->count()
+                + DirectPayment::where('employee_id', $userId)
+                    ->where('status', 'completed')
+                    ->count();
+            $totalSpent = (float) Order::where('employee_id', $userId)
+                ->where('status', 'confirmed')->sum('total_amount')
+                + (float) DirectPayment::where('employee_id', $userId)
+                    ->where('status', 'completed')
+                    ->sum('amount');
             $totalAssigned = UserTicket::where('employee_id', $userId)->sum('tickets_count');
 
             // Utilisation mensuelle (6 derniers mois)
@@ -291,10 +311,15 @@ class DashboardStatsController extends Controller
                 ->selectRaw('COUNT(*) as count, SUM(total_amount) as amount')
                 ->first();
 
+            $dpStats = DirectPayment::where('status', 'completed')
+                ->whereBetween('created_at', [$startOfMonth, $endOfMonth])
+                ->selectRaw('COUNT(*) as count, SUM(amount) as amount')
+                ->first();
+
             $result[] = [
                 'month' => $startOfMonth->format('M'),
-                'orders' => (int) ($stats->count ?? 0),
-                'amount' => (float) ($stats->amount ?? 0),
+                'orders' => (int) ($stats->count ?? 0) + (int) ($dpStats->count ?? 0),
+                'amount' => (float) ($stats->amount ?? 0) + (float) ($dpStats->amount ?? 0),
             ];
         }
         return $result;
@@ -305,28 +330,56 @@ class DashboardStatsController extends Controller
      */
     private function getTopRestaurantsByRevenue()
     {
-        $stats = Order::select('restaurant_id')
+        $orderStats = Order::select('restaurant_id')
             ->where('status', 'confirmed')
             ->selectRaw('COUNT(*) as orders')
             ->selectRaw('SUM(total_amount) as revenue')
             ->groupBy('restaurant_id')
-            ->orderByDesc('revenue')
             ->get();
 
-        $result = [];
-        $restaurants = Restaurant::all()->keyBy('id');
+        $dpStats = DirectPayment::select('restaurant_id')
+            ->where('status', 'completed')
+            ->selectRaw('COUNT(*) as orders')
+            ->selectRaw('SUM(amount) as revenue')
+            ->groupBy('restaurant_id')
+            ->get();
 
-        foreach ($stats as $stat) {
-            $restaurant = $restaurants->get($stat->restaurant_id);
-            if (!$restaurant) continue; // Ignorer les restaurants supprimés
-            $result[] = [
+        $byRestaurant = [];
+        foreach ($orderStats as $stat) {
+            $rid = (string) $stat->restaurant_id;
+            $byRestaurant[$rid] = [
                 'restaurant_id' => $stat->restaurant_id,
-                'restaurant_name' => $restaurant->name,
                 'orders' => (int) $stat->orders,
                 'revenue' => (float) $stat->revenue,
             ];
         }
+        foreach ($dpStats as $stat) {
+            $rid = (string) $stat->restaurant_id;
+            if (!isset($byRestaurant[$rid])) {
+                $byRestaurant[$rid] = [
+                    'restaurant_id' => $stat->restaurant_id,
+                    'orders' => 0,
+                    'revenue' => 0.0,
+                ];
+            }
+            $byRestaurant[$rid]['orders'] += (int) $stat->orders;
+            $byRestaurant[$rid]['revenue'] += (float) $stat->revenue;
+        }
 
+        $result = [];
+        $restaurants = Restaurant::all()->keyBy('id');
+        foreach ($byRestaurant as $row) {
+            $restaurant = $restaurants->get($row['restaurant_id']);
+            if (!$restaurant) continue;
+            $result[] = [
+                'restaurant_id' => $row['restaurant_id'],
+                'restaurant_name' => $restaurant->name,
+                'orders' => (int) $row['orders'],
+                'revenue' => (float) $row['revenue'],
+            ];
+        }
+
+        usort($result, fn($a, $b) => $b['revenue'] <=> $a['revenue']);
         return $result;
     }
 
@@ -341,23 +394,51 @@ class DashboardStatsController extends Controller
             ->selectRaw('COUNT(orders.id) as orders_count')
             ->selectRaw('SUM(orders.total_amount) as total_amount')
             ->groupBy('employees.company_id')
-            ->orderByDesc('orders_count')
             ->get();
 
-        $result = [];
-        $companies = Company::all()->keyBy('id');
+        $dpStats = DirectPayment::where('status', 'completed')
+            ->select('company_id')
+            ->selectRaw('COUNT(id) as orders_count')
+            ->selectRaw('SUM(amount) as total_amount')
+            ->groupBy('company_id')
+            ->get();
 
+        $byCompany = [];
         foreach ($stats as $stat) {
-            $company = $companies->get($stat->company_id);
-            if (!$company) continue; // Ignorer les entreprises supprimées
-            $result[] = [
+            $cid = (string) $stat->company_id;
+            $byCompany[$cid] = [
                 'company_id' => $stat->company_id,
-                'company_name' => $company->name,
                 'orders' => (int) $stat->orders_count,
                 'amount' => (float) $stat->total_amount,
             ];
         }
+        foreach ($dpStats as $stat) {
+            $cid = (string) $stat->company_id;
+            if (!isset($byCompany[$cid])) {
+                $byCompany[$cid] = [
+                    'company_id' => $stat->company_id,
+                    'orders' => 0,
+                    'amount' => 0.0,
+                ];
+            }
+            $byCompany[$cid]['orders'] += (int) $stat->orders_count;
+            $byCompany[$cid]['amount'] += (float) $stat->total_amount;
+        }
 
+        $result = [];
+        $companies = Company::all()->keyBy('id');
+        foreach ($byCompany as $row) {
+            $company = $companies->get($row['company_id']);
+            if (!$company) continue;
+            $result[] = [
+                'company_id' => $row['company_id'],
+                'company_name' => $company->name,
+                'orders' => (int) $row['orders'],
+                'amount' => (float) $row['amount'],
+            ];
+        }
+
+        usort($result, fn($a, $b) => $b['orders'] <=> $a['orders']);
         return $result;
     }
 
@@ -416,7 +497,7 @@ class DashboardStatsController extends Controller
      */
     private function getExpensesByRestaurant(array $employeeIds)
     {
-        $stats = Order::whereIn('employee_id', $employeeIds)
+        $orderStats = Order::whereIn('employee_id', $employeeIds)
             ->where('status', 'confirmed')
             ->select('restaurant_id')
             ->selectRaw('COUNT(*) as orders_count')
@@ -424,16 +505,46 @@ class DashboardStatsController extends Controller
             ->groupBy('restaurant_id')
             ->get();
 
+        $dpStats = DirectPayment::whereIn('employee_id', $employeeIds)
+            ->where('status', 'completed')
+            ->select('restaurant_id')
+            ->selectRaw('COUNT(*) as orders_count')
+            ->selectRaw('SUM(amount) as amount')
+            ->groupBy('restaurant_id')
+            ->get();
+
         $result = [];
         $restaurants = Restaurant::all()->keyBy('id');
 
-        foreach ($stats as $stat) {
-            $restaurant = $restaurants->get($stat->restaurant_id);
+        $byRestaurant = [];
+        foreach ($orderStats as $stat) {
+            $rid = (string) $stat->restaurant_id;
+            $byRestaurant[$rid] = [
+                'restaurant_id' => $stat->restaurant_id,
+                'orders' => (int) $stat->orders_count,
+                'amount' => (float) $stat->amount,
+            ];
+        }
+        foreach ($dpStats as $stat) {
+            $rid = (string) $stat->restaurant_id;
+            if (!isset($byRestaurant[$rid])) {
+                $byRestaurant[$rid] = [
+                    'restaurant_id' => $stat->restaurant_id,
+                    'orders' => 0,
+                    'amount' => 0.0,
+                ];
+            }
+            $byRestaurant[$rid]['orders'] += (int) $stat->orders_count;
+            $byRestaurant[$rid]['amount'] += (float) $stat->amount;
+        }
+
+        foreach ($byRestaurant as $row) {
+            $restaurant = $restaurants->get($row['restaurant_id']);
             if (!$restaurant) continue; // Ignorer les restaurants supprimés
             $result[] = [
                 'name' => $restaurant->name,
-                'amount' => (float) $stat->amount,
-                'orders' => (int) $stat->orders_count,
+                'amount' => (float) $row['amount'],
+                'orders' => (int) $row['orders'],
             ];
         }
 
@@ -445,24 +556,46 @@ class DashboardStatsController extends Controller
      */
     private function getExpensesByEmployee(array $employeeIds)
     {
-        $stats = Order::whereIn('employee_id', $employeeIds)
+        $orderStats = Order::whereIn('employee_id', $employeeIds)
             ->where('status', 'confirmed')
             ->select('employee_id', 'employee_name')
             ->selectRaw('COUNT(*) as orders_count')
             ->selectRaw('SUM(total_amount) as amount')
             ->groupBy('employee_id', 'employee_name')
-            ->orderByDesc('amount')
             ->get();
 
-        $result = [];
-        foreach ($stats as $stat) {
-            $result[] = [
+        $dpStats = DirectPayment::whereIn('employee_id', $employeeIds)
+            ->where('status', 'completed')
+            ->select('employee_id', 'employee_name')
+            ->selectRaw('COUNT(*) as orders_count')
+            ->selectRaw('SUM(amount) as amount')
+            ->groupBy('employee_id', 'employee_name')
+            ->get();
+
+        $byEmployee = [];
+        foreach ($orderStats as $stat) {
+            $eid = (string) $stat->employee_id;
+            $byEmployee[$eid] = [
                 'name' => $stat->employee_name,
-                'amount' => (float) $stat->amount,
                 'orders' => (int) $stat->orders_count,
+                'amount' => (float) $stat->amount,
             ];
         }
+        foreach ($dpStats as $stat) {
+            $eid = (string) $stat->employee_id;
+            if (!isset($byEmployee[$eid])) {
+                $byEmployee[$eid] = [
+                    'name' => $stat->employee_name,
+                    'orders' => 0,
+                    'amount' => 0.0,
+                ];
+            }
+            $byEmployee[$eid]['orders'] += (int) $stat->orders_count;
+            $byEmployee[$eid]['amount'] += (float) $stat->amount;
+        }
 
+        $result = array_values($byEmployee);
+        usort($result, fn($a, $b) => $b['amount'] <=> $a['amount']);
         return $result;
     }
 
@@ -476,10 +609,14 @@ class DashboardStatsController extends Controller
             $startOfMonth = now()->subMonths($i)->startOfMonth();
             $endOfMonth = now()->subMonths($i)->endOfMonth();
 
-            $amount = Order::whereIn('employee_id', $employeeIds)
+            $amount = (float) Order::whereIn('employee_id', $employeeIds)
                 ->where('status', 'confirmed')
                 ->whereBetween('created_at', [$startOfMonth, $endOfMonth])
-                ->sum('total_amount');
+                ->sum('total_amount')
+                + (float) DirectPayment::whereIn('employee_id', $employeeIds)
+                    ->where('status', 'completed')
+                    ->whereBetween('created_at', [$startOfMonth, $endOfMonth])
+                    ->sum('amount');
 
             $result[] = [
                 'month' => $startOfMonth->format('M'),
@@ -505,10 +642,16 @@ class DashboardStatsController extends Controller
                 ->selectRaw('COUNT(*) as count, SUM(total_amount) as amount')
                 ->first();
 
+            $dpStats = DirectPayment::where('restaurant_id', $restaurantId)
+                ->where('status', 'completed')
+                ->whereBetween('created_at', [$startOfMonth, $endOfMonth])
+                ->selectRaw('COUNT(*) as count, SUM(amount) as amount')
+                ->first();
+
             $result[] = [
                 'month' => $startOfMonth->format('M'),
-                'orders' => $stats->count ?? 0,
-                'amount' => $stats->amount ?? 0,
+                'orders' => (int)($stats->count ?? 0) + (int)($dpStats->count ?? 0),
+                'amount' => (float)($stats->amount ?? 0) + (float)($dpStats->amount ?? 0),
             ];
         }
         return $result;
@@ -527,18 +670,41 @@ class DashboardStatsController extends Controller
             ->selectRaw('COUNT(orders.id) as orders_count')
             ->selectRaw('SUM(orders.total_amount) as amount')
             ->groupBy('companies.name')
-            ->orderByDesc('amount')
             ->get();
 
-        $result = [];
+        $dpStats = DirectPayment::where('direct_payments.restaurant_id', $restaurantId)
+            ->where('direct_payments.status', 'completed')
+            ->join('companies', 'direct_payments.company_id', '=', 'companies.id')
+            ->select('companies.name as company_name')
+            ->selectRaw('COUNT(direct_payments.id) as orders_count')
+            ->selectRaw('SUM(direct_payments.amount) as amount')
+            ->groupBy('companies.name')
+            ->get();
+
+        $byCompany = [];
         foreach ($stats as $stat) {
-            $result[] = [
+            $key = (string) $stat->company_name;
+            $byCompany[$key] = [
                 'name' => $stat->company_name,
                 'amount' => (float) $stat->amount,
                 'orders' => (int) $stat->orders_count,
             ];
         }
+        foreach ($dpStats as $stat) {
+            $key = (string) $stat->company_name;
+            if (!isset($byCompany[$key])) {
+                $byCompany[$key] = [
+                    'name' => $stat->company_name,
+                    'amount' => 0.0,
+                    'orders' => 0,
+                ];
+            }
+            $byCompany[$key]['amount'] += (float) $stat->amount;
+            $byCompany[$key]['orders'] += (int) $stat->orders_count;
+        }
 
+        $result = array_values($byCompany);
+        usort($result, fn($a, $b) => $b['amount'] <=> $a['amount']);
         return $result;
     }
 
@@ -595,10 +761,14 @@ class DashboardStatsController extends Controller
             $startOfMonth = now()->subMonths($i)->startOfMonth();
             $endOfMonth = now()->subMonths($i)->endOfMonth();
 
-            $amount = Order::where('employee_id', $employeeId)
+            $amount = (float) Order::where('employee_id', $employeeId)
                 ->where('status', 'confirmed')
                 ->whereBetween('created_at', [$startOfMonth, $endOfMonth])
-                ->sum('total_amount');
+                ->sum('total_amount')
+                + (float) DirectPayment::where('employee_id', $employeeId)
+                    ->where('status', 'completed')
+                    ->whereBetween('created_at', [$startOfMonth, $endOfMonth])
+                    ->sum('amount');
 
             $result[] = [
                 'month' => $startOfMonth->format('M'),
@@ -613,27 +783,58 @@ class DashboardStatsController extends Controller
      */
     private function getFavoriteRestaurants($employeeId)
     {
-        $stats = Order::where('employee_id', $employeeId)
+        $orderStats = Order::where('employee_id', $employeeId)
             ->where('status', 'confirmed')
             ->select('restaurant_id')
             ->selectRaw('COUNT(*) as orders_count')
             ->selectRaw('SUM(total_amount) as amount')
             ->groupBy('restaurant_id')
-            ->orderByDesc('orders_count')
             ->get();
 
-        $result = [];
-        $restaurants = Restaurant::all()->keyBy('id');
+        $dpStats = DirectPayment::where('employee_id', $employeeId)
+            ->where('status', 'completed')
+            ->select('restaurant_id')
+            ->selectRaw('COUNT(*) as orders_count')
+            ->selectRaw('SUM(amount) as amount')
+            ->groupBy('restaurant_id')
+            ->get();
 
-        foreach ($stats as $stat) {
-            $restaurant = $restaurants->get($stat->restaurant_id);
-            if (!$restaurant) continue; // Ignorer les restaurants supprimés
-            $result[] = [
-                'name' => $restaurant->name,
+        $byRestaurant = [];
+        foreach ($orderStats as $stat) {
+            $rid = (string) $stat->restaurant_id;
+            $byRestaurant[$rid] = [
+                'restaurant_id' => $stat->restaurant_id,
                 'orders' => (int) $stat->orders_count,
                 'amount' => (float) $stat->amount,
             ];
         }
+        foreach ($dpStats as $stat) {
+            $rid = (string) $stat->restaurant_id;
+            if (!isset($byRestaurant[$rid])) {
+                $byRestaurant[$rid] = [
+                    'restaurant_id' => $stat->restaurant_id,
+                    'orders' => 0,
+                    'amount' => 0.0,
+                ];
+            }
+            $byRestaurant[$rid]['orders'] += (int) $stat->orders_count;
+            $byRestaurant[$rid]['amount'] += (float) $stat->amount;
+        }
+
+        $result = [];
+        $restaurants = Restaurant::all()->keyBy('id');
+
+        foreach ($byRestaurant as $row) {
+            $restaurant = $restaurants->get($row['restaurant_id']);
+            if (!$restaurant) continue; // Ignorer les restaurants supprimés
+            $result[] = [
+                'name' => $restaurant->name,
+                'orders' => (int) $row['orders'],
+                'amount' => (float) $row['amount'],
+            ];
+        }
+
+        usort($result, fn($a, $b) => $b['orders'] <=> $a['orders']);
 
         return $result;
     }

@@ -351,7 +351,7 @@ class ApiService {
   }
 
   // Auth API
-  async login(email: string, password: string): Promise<{ success: boolean; user: any; token: string }> {
+  async login(identifier: string, password: string): Promise<{ success: boolean; user: any; token: string }> {
     const url = `${API_BASE_URL}/login`;
     
     const response = await fetch(url, {
@@ -360,7 +360,7 @@ class ApiService {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
       },
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify({ identifier, email: identifier, password }),
     });
 
     const data = await response.json();

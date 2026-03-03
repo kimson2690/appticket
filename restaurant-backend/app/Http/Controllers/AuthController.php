@@ -11,29 +11,158 @@ use Illuminate\Support\Facades\Log;
 
 class AuthController extends Controller
 {
+    private function digitsOnly(?string $value): string
+    {
+        return preg_replace('/\D+/', '', (string) ($value ?? '')) ?: '';
+    }
+
+    private function phoneCandidates(?string $value): array
+    {
+        if (!$value) {
+            return [];
+        }
+
+        $trimmed = trim($value);
+        if ($trimmed === '') {
+            return [];
+        }
+
+        $hasPlus = str_starts_with($trimmed, '+');
+        $digits = preg_replace('/\D+/', '', $trimmed);
+
+        if (!$digits) {
+            return [];
+        }
+
+        $candidates = [];
+
+        // Raw trimmed (to match exact stored values if any)
+        $candidates[] = $trimmed;
+
+        // Digits-only stored formats (rare but possible)
+        $candidates[] = $digits;
+
+        // +<digits>
+        $candidates[] = '+' . $digits;
+
+        // Preserve original leading + if provided
+        if ($hasPlus) {
+            $candidates[] = '+' . $digits;
+        }
+
+        // Unique + non-empty
+        $candidates = array_values(array_unique(array_filter($candidates, fn ($v) => (string) $v !== '')));
+        return $candidates;
+    }
+
+    private function resolveUserByPhoneSuffix(string $digits): ?User
+    {
+        if (strlen($digits) < 6) {
+            return null;
+        }
+
+        $matches = User::with(['role', 'company', 'restaurant'])
+            ->whereNotNull('phone')
+            ->whereRaw(
+                "REPLACE(REPLACE(REPLACE(phone, ' ', ''), '-', ''), '+', '') LIKE ?",
+                ['%' . $digits]
+            )
+            ->limit(2)
+            ->get();
+
+        if ($matches->count() === 1) {
+            return $matches->first();
+        }
+
+        if ($matches->count() > 1) {
+            throw ValidationException::withMessages([
+                'identifier' => ['Numéro ambigu. Merci de saisir le numéro complet avec indicatif (ex: +336..., +226...).']
+            ]);
+        }
+
+        return null;
+    }
+
+    private function resolveEmployeeByPhoneSuffix(string $digits): ?\App\Models\Employee
+    {
+        if (strlen($digits) < 6) {
+            return null;
+        }
+
+        $matches = \App\Models\Employee::query()
+            ->whereNotNull('phone')
+            ->whereRaw(
+                "REPLACE(REPLACE(REPLACE(phone, ' ', ''), '-', ''), '+', '') LIKE ?",
+                ['%' . $digits]
+            )
+            ->limit(2)
+            ->get();
+
+        if ($matches->count() === 1) {
+            return $matches->first();
+        }
+
+        if ($matches->count() > 1) {
+            throw ValidationException::withMessages([
+                'identifier' => ['Numéro ambigu. Merci de saisir le numéro complet avec indicatif (ex: +336..., +226...).']
+            ]);
+        }
+
+        return null;
+    }
+
     /**
      * Authentifier un utilisateur
      */
     public function login(Request $request): JsonResponse
     {
         try {
-            $credentials = $request->validate([
-                'email' => 'required|email',
+            $payload = $request->validate([
+                'identifier' => 'nullable|string',
+                'email' => 'nullable|string',
                 'password' => 'required'
             ]);
 
-            Log::info('Tentative de connexion pour: ' . $credentials['email']);
+            $identifier = trim((string) ($payload['identifier'] ?? $payload['email'] ?? ''));
+            if ($identifier === '') {
+                throw ValidationException::withMessages([
+                    'identifier' => ['Email ou téléphone requis']
+                ]);
+            }
+
+            $password = (string) $payload['password'];
+
+            Log::info('Tentative de connexion pour: ' . $identifier);
+
+            $phoneCandidates = $this->phoneCandidates($identifier);
+            $identifierDigits = $this->digitsOnly($identifier);
+            $identifierIsEmail = filter_var($identifier, FILTER_VALIDATE_EMAIL) !== false;
 
             // Chercher d'abord dans les utilisateurs (admins, gestionnaires)
             $user = User::with(['role', 'company', 'restaurant'])
-                ->where('email', $credentials['email'])
+                ->where(function ($q) use ($identifier, $phoneCandidates, $identifierIsEmail) {
+                    if ($identifierIsEmail) {
+                        $q->where('email', $identifier);
+                    } else {
+                        $q->where('email', $identifier);
+                    }
+
+                    if (!empty($phoneCandidates)) {
+                        $q->orWhereIn('phone', $phoneCandidates)
+                            ->orWhereRaw("REPLACE(REPLACE(REPLACE(phone, ' ', ''), '-', ''), '+', '') = ?", [preg_replace('/\D+/', '', $identifier)]);
+                    }
+                })
                 ->first();
+
+            if (!$user && !$identifierIsEmail && $identifierDigits !== '') {
+                $user = $this->resolveUserByPhoneSuffix($identifierDigits);
+            }
 
             if ($user) {
                 Log::info('Utilisateur trouvé dans users table');
 
                 // Vérifier le mot de passe
-                if (!Hash::check($credentials['password'], $user->password)) {
+                if (!Hash::check($password, $user->password)) {
                     return response()->json([
                         'success' => false,
                         'message' => 'Identifiants incorrects'
@@ -91,13 +220,23 @@ class AuthController extends Controller
             // Si pas trouvé dans users, chercher dans employees (MySQL)
             Log::info('Utilisateur non trouvé dans users, recherche dans employees MySQL');
 
-            $employee = \App\Models\Employee::where('email', $credentials['email'])->first();
+            $employeeQuery = \App\Models\Employee::query();
+            $employeeQuery->where('email', $identifier);
+            if (!empty($phoneCandidates)) {
+                $employeeQuery->orWhereIn('phone', $phoneCandidates)
+                    ->orWhereRaw("REPLACE(REPLACE(REPLACE(phone, ' ', ''), '-', ''), '+', '') = ?", [preg_replace('/\D+/', '', $identifier)]);
+            }
+            $employee = $employeeQuery->first();
+
+            if (!$employee && !$identifierIsEmail && $identifierDigits !== '') {
+                $employee = $this->resolveEmployeeByPhoneSuffix($identifierDigits);
+            }
 
             if ($employee) {
                 Log::info('Employé trouvé dans MySQL');
 
                 // Vérifier le mot de passe
-                if ($employee->password && !Hash::check($credentials['password'], $employee->password)) {
+                if ($employee->password && !Hash::check($password, $employee->password)) {
                     return response()->json([
                         'success' => false,
                         'message' => 'Identifiants incorrects'

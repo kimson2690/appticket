@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Company;
 
 use App\Http\Controllers\Controller;
 use App\Models\Employee;
+use App\Models\DirectPayment;
 use App\Models\TicketBatch;
 use App\Models\UserTicket;
 use App\Models\Order;
@@ -82,6 +83,14 @@ class TicketAnalyticsController extends Controller
                     ->where('status', 'confirmed')
                     ->whereBetween('created_at', [$start, $end])
                     ->sum('total_amount');
+
+                // Paiements directs complétés du mois
+                $directAmount = (float) DirectPayment::whereIn('employee_id', $employeeIds)
+                    ->where('status', 'completed')
+                    ->whereBetween('created_at', [$start, $end])
+                    ->sum('amount');
+
+                $usedAmount += $directAmount;
 
                 // Souches expirées dans ce mois
                 $expiredInMonth = $batches->filter(fn($b) => Carbon::parse($b->validity_end)->between($start, $end));

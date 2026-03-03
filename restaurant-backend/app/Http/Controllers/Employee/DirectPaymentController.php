@@ -9,9 +9,11 @@ use App\Models\Employee;
 use App\Models\Restaurant;
 use App\Models\Company;
 use App\Models\TicketBatch;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
 
 class DirectPaymentController extends Controller
 {
@@ -173,6 +175,68 @@ class DirectPaymentController extends Controller
                 }
             } catch (\Exception $e) {
                 Log::warning('WhatsApp non envoyé pour paiement direct: ' . $e->getMessage());
+            }
+
+            // Notifier le restaurant et ses gestionnaires (WhatsApp + Email) - non bloquant
+            try {
+                $restaurantWhatsapp = $restaurant->whatsapp_phone ?? null;
+                $restaurantEmail = $restaurant->email ?? null;
+
+                $restaurantManagers = User::query()
+                    ->active()
+                    ->byRole('Gestionnaire Restaurant')
+                    ->where('restaurant_id', $restaurant->id)
+                    ->get(['id', 'name', 'email', 'phone']);
+
+                $whatsAppPhones = collect([$restaurantWhatsapp])
+                    ->merge($restaurantManagers->pluck('phone'))
+                    ->filter(fn($p) => !empty($p))
+                    ->unique()
+                    ->values();
+
+                $emails = collect([$restaurantEmail])
+                    ->merge($restaurantManagers->pluck('email'))
+                    ->filter(fn($e) => !empty($e))
+                    ->unique()
+                    ->values();
+
+                if (isset($whatsappService) && $whatsappService instanceof \App\Services\WhatsAppService && $whatsappService->isReady()) {
+                    foreach ($whatsAppPhones as $phone) {
+                        try {
+                            $whatsappService->sendMessage(
+                                $phone,
+                                "💰 *Paiement direct reçu*\n\n" .
+                                "Employé: {$userName}\n" .
+                                "Restaurant: {$restaurantName}\n" .
+                                "Montant: {$formattedAmount}\n" .
+                                "Référence: {$reference}"
+                            );
+                        } catch (\Exception $e) {
+                            Log::warning('WhatsApp gestionnaire/restaurant non envoyé: ' . $e->getMessage());
+                        }
+                    }
+                }
+
+                if ($emails->isNotEmpty()) {
+                    foreach ($emails as $email) {
+                        try {
+                            Mail::raw(
+                                "Paiement direct reçu\n\n" .
+                                "Employé: {$userName}\n" .
+                                "Restaurant: {$restaurantName}\n" .
+                                "Montant: {$formattedAmount}\n" .
+                                "Référence: {$reference}",
+                                function ($message) use ($email) {
+                                    $message->to($email)->subject('Paiement direct reçu - AppTicket');
+                                }
+                            );
+                        } catch (\Exception $e) {
+                            Log::warning('Email gestionnaire/restaurant non envoyé: ' . $e->getMessage());
+                        }
+                    }
+                }
+            } catch (\Exception $e) {
+                Log::warning('Notification restaurant/gestionnaires non envoyée (non bloquant): ' . $e->getMessage());
             }
 
             return response()->json([
