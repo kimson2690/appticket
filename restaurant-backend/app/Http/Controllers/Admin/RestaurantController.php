@@ -40,6 +40,9 @@ class RestaurantController extends Controller
                         'status' => $restaurant->status,
                         'is_partner' => $restaurant->is_partner ?? true,
                         'commission_rate' => $restaurant->commission_rate ?? 15,
+                        'primary_color' => $restaurant->primary_color ?? '#f97316',
+                        'secondary_color' => $restaurant->secondary_color ?? '#ea580c',
+                        'logo_url' => $restaurant->logo_url,
                         'created_at' => $restaurant->created_at->format('Y-m-d'),
                         'updated_at' => $restaurant->updated_at->format('Y-m-d'),
                     ];
@@ -81,6 +84,9 @@ class RestaurantController extends Controller
                 'status' => ['required', Rule::in(['active', 'inactive', 'suspended'])],
                 'is_partner' => 'boolean',
                 'commission_rate' => 'nullable|numeric|min:0|max:100',
+                'primary_color' => 'nullable|string|max:7',
+                'secondary_color' => 'nullable|string|max:7',
+                'logo_url' => 'nullable|string|max:500',
             ]);
 
             // Ajouter des valeurs par défaut
@@ -113,6 +119,9 @@ class RestaurantController extends Controller
                     'status' => $restaurant->status,
                     'is_partner' => $restaurant->is_partner,
                     'commission_rate' => $restaurant->commission_rate,
+                    'primary_color' => $restaurant->primary_color ?? '#f97316',
+                    'secondary_color' => $restaurant->secondary_color ?? '#ea580c',
+                    'logo_url' => $restaurant->logo_url,
                     'created_at' => $restaurant->created_at->format('Y-m-d'),
                     'updated_at' => $restaurant->updated_at->format('Y-m-d'),
                 ],
@@ -163,6 +172,9 @@ class RestaurantController extends Controller
                     'status' => $restaurant->status,
                     'is_partner' => $restaurant->is_partner,
                     'commission_rate' => $restaurant->commission_rate,
+                    'primary_color' => $restaurant->primary_color ?? '#f97316',
+                    'secondary_color' => $restaurant->secondary_color ?? '#ea580c',
+                    'logo_url' => $restaurant->logo_url,
                     'created_at' => $restaurant->created_at->format('Y-m-d'),
                     'updated_at' => $restaurant->updated_at->format('Y-m-d'),
                 ]
@@ -206,6 +218,9 @@ class RestaurantController extends Controller
                 'status' => ['required', Rule::in(['active', 'inactive', 'suspended'])],
                 'is_partner' => 'boolean',
                 'commission_rate' => 'nullable|numeric|min:0|max:100',
+                'primary_color' => 'nullable|string|max:7',
+                'secondary_color' => 'nullable|string|max:7',
+                'logo_url' => 'nullable|string|max:500',
             ]);
 
             $restaurant->update($validated);
@@ -232,6 +247,9 @@ class RestaurantController extends Controller
                     'status' => $restaurant->status,
                     'is_partner' => $restaurant->is_partner,
                     'commission_rate' => $restaurant->commission_rate,
+                    'primary_color' => $restaurant->primary_color ?? '#f97316',
+                    'secondary_color' => $restaurant->secondary_color ?? '#ea580c',
+                    'logo_url' => $restaurant->logo_url,
                     'created_at' => $restaurant->created_at->format('Y-m-d'),
                     'updated_at' => $restaurant->updated_at->format('Y-m-d'),
                 ],

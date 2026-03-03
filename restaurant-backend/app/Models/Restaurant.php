@@ -29,7 +29,10 @@ class Restaurant extends Model
         'is_partner',
         'commission_rate',
         'manager_id',
-        'company_id'
+        'company_id',
+        'primary_color',
+        'secondary_color',
+        'logo_url'
     ];
 
     public function manager(): BelongsTo

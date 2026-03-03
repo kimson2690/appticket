@@ -19,7 +19,8 @@ import {
   FileText,
   Hash,
   ShoppingCart,
-  CreditCard
+  CreditCard,
+  Palette
 } from 'lucide-react';
 import { apiService, type Company } from '../services/api';
 
@@ -41,7 +42,10 @@ const CompanyManagement: React.FC = () => {
     website: '',
     description: '',
     status: 'active' as 'active' | 'inactive' | 'suspended',
-    ordering_enabled: true
+    ordering_enabled: true,
+    primary_color: '#f97316',
+    secondary_color: '#ea580c',
+    logo_url: ''
   });
 
   useEffect(() => {
@@ -144,7 +148,10 @@ const CompanyManagement: React.FC = () => {
       website: '',
       description: '',
       status: 'active',
-      ordering_enabled: true
+      ordering_enabled: true,
+      primary_color: '#f97316',
+      secondary_color: '#ea580c',
+      logo_url: ''
     });
     setShowModal(true);
   };
@@ -162,7 +169,10 @@ const CompanyManagement: React.FC = () => {
       website: company.website || '',
       description: company.description || '',
       status: company.status,
-      ordering_enabled: company.ordering_enabled !== false
+      ordering_enabled: company.ordering_enabled !== false,
+      primary_color: company.primary_color || '#f97316',
+      secondary_color: company.secondary_color || '#ea580c',
+      logo_url: company.logo_url || ''
     });
     setShowModal(true);
   };
@@ -580,6 +590,79 @@ const CompanyManagement: React.FC = () => {
                     rows={3}
                     className="w-full px-4 py-3 bg-gray-50 border-2 border-gray-100 rounded-xl text-sm text-gray-900 placeholder:text-gray-400 outline-none transition-all focus:border-orange-300 focus:bg-white focus:ring-4 focus:ring-orange-500/10 hover:border-gray-200 resize-none"
                     placeholder="Description de l'entreprise..." />
+                </div>
+
+                {/* Section Branding */}
+                <div className="md:col-span-2 border-t-2 border-gray-100 pt-5 mt-2">
+                  <div className="flex items-center gap-2 mb-4">
+                    <Palette className="w-4 h-4" style={{ color: formData.primary_color }} />
+                    <span className="text-sm font-bold text-gray-800">Charte graphique de l'entreprise</span>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <div>
+                      <label className="flex items-center gap-1.5 text-xs font-semibold text-gray-600 uppercase tracking-wider mb-2">
+                        Couleur primaire
+                      </label>
+                      <div className="flex items-center gap-3">
+                        <input type="color" value={formData.primary_color}
+                          onChange={(e) => setFormData({ ...formData, primary_color: e.target.value })}
+                          className="w-12 h-12 rounded-xl border-2 border-gray-100 cursor-pointer p-0.5"
+                        />
+                        <input type="text" value={formData.primary_color}
+                          onChange={(e) => setFormData({ ...formData, primary_color: e.target.value })}
+                          className="flex-1 px-4 py-3 bg-gray-50 border-2 border-gray-100 rounded-xl text-sm text-gray-900 font-mono outline-none transition-all focus:border-gray-300 focus:bg-white hover:border-gray-200"
+                          placeholder="#f97316" maxLength={7} />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="flex items-center gap-1.5 text-xs font-semibold text-gray-600 uppercase tracking-wider mb-2">
+                        Couleur secondaire
+                      </label>
+                      <div className="flex items-center gap-3">
+                        <input type="color" value={formData.secondary_color}
+                          onChange={(e) => setFormData({ ...formData, secondary_color: e.target.value })}
+                          className="w-12 h-12 rounded-xl border-2 border-gray-100 cursor-pointer p-0.5"
+                        />
+                        <input type="text" value={formData.secondary_color}
+                          onChange={(e) => setFormData({ ...formData, secondary_color: e.target.value })}
+                          className="flex-1 px-4 py-3 bg-gray-50 border-2 border-gray-100 rounded-xl text-sm text-gray-900 font-mono outline-none transition-all focus:border-gray-300 focus:bg-white hover:border-gray-200"
+                          placeholder="#ea580c" maxLength={7} />
+                      </div>
+                    </div>
+                    <div className="md:col-span-2">
+                      <label className="flex items-center gap-1.5 text-xs font-semibold text-gray-600 uppercase tracking-wider mb-2">
+                        URL du logo
+                      </label>
+                      <input type="url" value={formData.logo_url}
+                        onChange={(e) => setFormData({ ...formData, logo_url: e.target.value })}
+                        className="w-full px-4 py-3 bg-gray-50 border-2 border-gray-100 rounded-xl text-sm text-gray-900 placeholder:text-gray-400 outline-none transition-all focus:border-gray-300 focus:bg-white hover:border-gray-200"
+                        placeholder="https://example.com/logo.png" />
+                    </div>
+                  </div>
+                  {/* Aperçu */}
+                  <div className="mt-4 p-4 bg-gray-50 rounded-xl border-2 border-gray-100">
+                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Aperçu</p>
+                    <div className="flex items-center gap-4">
+                      <div className="w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold text-sm"
+                        style={{ background: `linear-gradient(135deg, ${formData.primary_color}, ${formData.secondary_color})` }}>
+                        {formData.name ? formData.name.substring(0, 2).toUpperCase() : 'AB'}
+                      </div>
+                      {formData.logo_url && (
+                        <img src={formData.logo_url} alt="Logo" className="w-10 h-10 rounded-xl object-contain border border-gray-200" 
+                          onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                      )}
+                      <div className="flex gap-2">
+                        <button type="button" className="px-4 py-2 rounded-lg text-white text-xs font-semibold"
+                          style={{ background: `linear-gradient(to right, ${formData.primary_color}, ${formData.secondary_color})` }}>
+                          Bouton primaire
+                        </button>
+                        <button type="button" className="px-4 py-2 rounded-lg text-xs font-semibold border-2"
+                          style={{ borderColor: formData.primary_color, color: formData.primary_color }}>
+                          Bouton secondaire
+                        </button>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
 

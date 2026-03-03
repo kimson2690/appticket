@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Mail, Lock, Eye, EyeOff, ShoppingBag, Users, TrendingUp, Sparkles, Zap, Shield, AlertTriangle, Building2, XCircle } from 'lucide-react';
 import { apiService } from './services/api';
+import { applyBranding, saveBrandingToStorage } from './utils/themeManager';
 
 interface ModernLoginProps {
   onShowRegister?: () => void;
@@ -50,6 +51,11 @@ const ModernLogin: React.FC<ModernLoginProps> = ({ onShowRegister }) => {
       localStorage.setItem('authToken', response.token);
       localStorage.setItem('mustChangePassword', response.user.must_change_password ? 'true' : 'false');
       localStorage.setItem('orderingEnabled', response.user.ordering_enabled !== false ? 'true' : 'false');
+      
+      // Sauvegarder et appliquer le branding personnalisé
+      const branding = (response as any).branding || null;
+      saveBrandingToStorage(branding);
+      applyBranding(branding);
       
       if (rememberMe) {
         localStorage.setItem('rememberMe', 'true');

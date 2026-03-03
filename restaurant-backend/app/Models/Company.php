@@ -24,7 +24,10 @@ class Company extends Model
         'manager_id',
         'ticket_value',
         'ticket_validity_days',
-        'ordering_enabled'
+        'ordering_enabled',
+        'primary_color',
+        'secondary_color',
+        'logo_url'
     ];
 
     protected $casts = [
