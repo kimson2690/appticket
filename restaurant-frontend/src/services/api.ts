@@ -39,6 +39,7 @@ interface Company {
   logo?: string;
   status: 'active' | 'inactive' | 'suspended';
   ordering_enabled?: boolean;
+  direct_payment_enabled?: boolean;
   employee_count: number;
   ticket_balance: number;
   created_at: string;

@@ -71,6 +71,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
     role: localStorage.getItem('userRole') || 'Utilisateur',
     id: localStorage.getItem('userId') || '1',
     orderingEnabled: localStorage.getItem('orderingEnabled') !== 'false',
+    directPaymentEnabled: localStorage.getItem('directPaymentEnabled') === 'true',
   };
 
   // Fonction pour obtenir les initiales de l'utilisateur
@@ -117,7 +118,11 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
     { id: 'my-tickets', label: 'Mes Tickets', icon: Wallet, roles: ['Utilisateur'] },
     ...(currentUser.orderingEnabled
       ? [{ id: 'order-food', label: 'Commander', icon: Utensils, roles: ['Utilisateur'] }]
-      : [{ id: 'direct-payment', label: 'Paiement Tickets', icon: CreditCard, roles: ['Utilisateur'] }]
+      : []
+    ),
+    ...(currentUser.directPaymentEnabled || !currentUser.orderingEnabled
+      ? [{ id: 'direct-payment', label: 'Paiement Tickets', icon: CreditCard, roles: ['Utilisateur'] }]
+      : []
     ),
     { id: 'my-history', label: 'Historique', icon: BarChart3, roles: ['Utilisateur'] },
   ];

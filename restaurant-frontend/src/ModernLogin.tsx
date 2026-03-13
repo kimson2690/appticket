@@ -50,6 +50,7 @@ const ModernLogin: React.FC<ModernLoginProps> = ({ onShowRegister }) => {
       localStorage.setItem('authToken', response.token);
       localStorage.setItem('mustChangePassword', response.user.must_change_password ? 'true' : 'false');
       localStorage.setItem('orderingEnabled', response.user.ordering_enabled !== false ? 'true' : 'false');
+      localStorage.setItem('directPaymentEnabled', response.user.direct_payment_enabled === true ? 'true' : 'false');
       
       if (rememberMe) {
         localStorage.setItem('rememberMe', 'true');

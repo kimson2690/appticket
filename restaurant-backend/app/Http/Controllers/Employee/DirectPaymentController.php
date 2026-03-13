@@ -41,10 +41,15 @@ class DirectPaymentController extends Controller
                 return response()->json(['success' => false, 'message' => 'Employé non trouvé'], 404);
             }
 
-            // Vérifier que l'entreprise a le mode paiement direct (ordering_enabled = false)
+            // Vérifier que l'entreprise a le mode paiement direct activé
             $company = Company::find($employee->company_id);
             if (!$company) {
                 return response()->json(['success' => false, 'message' => 'Entreprise non trouvée'], 404);
+            }
+
+            // Autoriser si direct_payment_enabled OU si ordering_enabled est désactivé (rétro-compatibilité)
+            if ($company->ordering_enabled && !$company->direct_payment_enabled) {
+                return response()->json(['success' => false, 'message' => 'Le paiement direct n\'est pas activé pour votre entreprise'], 403);
             }
 
             $restaurant = Restaurant::find($validated['restaurant_id']);
@@ -362,6 +367,7 @@ class DirectPaymentController extends Controller
                 'success' => true,
                 'data' => [
                     'ordering_enabled' => $company ? (bool) $company->ordering_enabled : true,
+                    'direct_payment_enabled' => $company ? (bool) $company->direct_payment_enabled : false,
                 ]
             ]);
         } catch (\Exception $e) {

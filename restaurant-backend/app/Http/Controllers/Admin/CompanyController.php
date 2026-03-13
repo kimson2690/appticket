@@ -53,6 +53,7 @@ class CompanyController extends Controller
                         'description' => $company->description,
                         'status' => $company->status,
                         'ordering_enabled' => (bool) $company->ordering_enabled,
+                        'direct_payment_enabled' => (bool) $company->direct_payment_enabled,
                         'employee_count' => $totalEmployees,
                         'ticket_balance' => (int) $ticketBalance,
                         'created_at' => $company->created_at->format('Y-m-d'),
@@ -91,6 +92,8 @@ class CompanyController extends Controller
                 'website' => 'nullable|url|max:255',
                 'description' => 'nullable|string|max:1000',
                 'status' => ['required', Rule::in(['active', 'inactive', 'suspended'])],
+                'ordering_enabled' => 'nullable|boolean',
+                'direct_payment_enabled' => 'nullable|boolean',
             ]);
 
             // Ajouter des valeurs par défaut pour les champs obligatoires
@@ -113,6 +116,8 @@ class CompanyController extends Controller
                     'website' => $company->website,
                     'description' => $company->description,
                     'status' => $company->status,
+                    'ordering_enabled' => (bool) $company->ordering_enabled,
+                    'direct_payment_enabled' => (bool) $company->direct_payment_enabled,
                     'employee_count' => 0,
                     'ticket_balance' => 0,
                     'created_at' => $company->created_at->format('Y-m-d'),
@@ -178,6 +183,7 @@ class CompanyController extends Controller
                     'description' => $company->description,
                     'status' => $company->status,
                     'ordering_enabled' => (bool) $company->ordering_enabled,
+                    'direct_payment_enabled' => (bool) $company->direct_payment_enabled,
                     'employee_count' => $totalEmployees,
                     'ticket_balance' => (int) $ticketBalance,
                     'created_at' => $company->created_at->format('Y-m-d'),
@@ -218,6 +224,7 @@ class CompanyController extends Controller
                 'description' => 'nullable|string|max:1000',
                 'status' => ['required', Rule::in(['active', 'inactive', 'suspended'])],
                 'ordering_enabled' => 'nullable|boolean',
+                'direct_payment_enabled' => 'nullable|boolean',
             ]);
 
             $company->update($validated);
@@ -250,6 +257,8 @@ class CompanyController extends Controller
                     'website' => $company->website,
                     'description' => $company->description,
                     'status' => $company->status,
+                    'ordering_enabled' => (bool) $company->ordering_enabled,
+                    'direct_payment_enabled' => (bool) $company->direct_payment_enabled,
                     'employee_count' => $totalEmployees,
                     'ticket_balance' => (int) \App\Models\TicketBatch::where('company_id', $company->id)
                         ->where('status', 'active')

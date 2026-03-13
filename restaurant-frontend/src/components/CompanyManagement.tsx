@@ -41,7 +41,8 @@ const CompanyManagement: React.FC = () => {
     website: '',
     description: '',
     status: 'active' as 'active' | 'inactive' | 'suspended',
-    ordering_enabled: true
+    ordering_enabled: true,
+    direct_payment_enabled: false
   });
 
   useEffect(() => {
@@ -144,7 +145,8 @@ const CompanyManagement: React.FC = () => {
       website: '',
       description: '',
       status: 'active',
-      ordering_enabled: true
+      ordering_enabled: true,
+      direct_payment_enabled: false
     });
     setShowModal(true);
   };
@@ -162,7 +164,8 @@ const CompanyManagement: React.FC = () => {
       website: company.website || '',
       description: company.description || '',
       status: company.status,
-      ordering_enabled: company.ordering_enabled !== false
+      ordering_enabled: company.ordering_enabled !== false,
+      direct_payment_enabled: company.direct_payment_enabled === true
     });
     setShowModal(true);
   };
@@ -543,30 +546,43 @@ const CompanyManagement: React.FC = () => {
                 </div>
                 <div className="md:col-span-2">
                   <label className="flex items-center gap-1.5 text-xs font-semibold text-gray-600 uppercase tracking-wider mb-2">
-                    {formData.ordering_enabled ? <ShoppingCart className="w-3.5 h-3.5 text-orange-500" /> : <CreditCard className="w-3.5 h-3.5 text-orange-500" />}
-                    Mode de commande
+                    <ShoppingCart className="w-3.5 h-3.5 text-orange-500" />
+                    Modes de paiement
                   </label>
-                  <div className="flex items-center gap-3 p-3 bg-gray-50 border-2 border-gray-100 rounded-xl">
-                    <button
-                      type="button"
-                      onClick={() => setFormData({ ...formData, ordering_enabled: !formData.ordering_enabled })}
-                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                        formData.ordering_enabled ? 'bg-orange-500' : 'bg-gray-300'
-                      }`}
-                    >
-                      <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform shadow-sm ${
-                        formData.ordering_enabled ? 'translate-x-6' : 'translate-x-1'
-                      }`} />
-                    </button>
-                    <div>
-                      <p className="text-sm font-semibold text-gray-900">
-                        {formData.ordering_enabled ? 'Commandes via l\'application' : 'Paiement direct uniquement'}
-                      </p>
-                      <p className="text-xs text-gray-400 mt-0.5">
-                        {formData.ordering_enabled
-                          ? 'Les employés peuvent commander des plats dans l\'application'
-                          : 'Les employés ne peuvent que payer directement un restaurant avec leurs tickets'}
-                      </p>
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-3 p-3 bg-gray-50 border-2 border-gray-100 rounded-xl">
+                      <button
+                        type="button"
+                        onClick={() => setFormData({ ...formData, ordering_enabled: !formData.ordering_enabled })}
+                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors flex-shrink-0 ${
+                          formData.ordering_enabled ? 'bg-orange-500' : 'bg-gray-300'
+                        }`}
+                      >
+                        <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform shadow-sm ${
+                          formData.ordering_enabled ? 'translate-x-6' : 'translate-x-1'
+                        }`} />
+                      </button>
+                      <div>
+                        <p className="text-sm font-semibold text-gray-900">Commandes via l'application</p>
+                        <p className="text-xs text-gray-400 mt-0.5">Les employés peuvent commander des plats dans l'application</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3 p-3 bg-gray-50 border-2 border-gray-100 rounded-xl">
+                      <button
+                        type="button"
+                        onClick={() => setFormData({ ...formData, direct_payment_enabled: !formData.direct_payment_enabled })}
+                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors flex-shrink-0 ${
+                          formData.direct_payment_enabled ? 'bg-orange-500' : 'bg-gray-300'
+                        }`}
+                      >
+                        <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform shadow-sm ${
+                          formData.direct_payment_enabled ? 'translate-x-6' : 'translate-x-1'
+                        }`} />
+                      </button>
+                      <div>
+                        <p className="text-sm font-semibold text-gray-900">Paiement direct</p>
+                        <p className="text-xs text-gray-400 mt-0.5">Les employés peuvent payer directement un restaurant avec leurs tickets</p>
+                      </div>
                     </div>
                   </div>
                 </div>

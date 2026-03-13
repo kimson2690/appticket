@@ -24,13 +24,15 @@ class Company extends Model
         'manager_id',
         'ticket_value',
         'ticket_validity_days',
-        'ordering_enabled'
+        'ordering_enabled',
+        'direct_payment_enabled'
     ];
 
     protected $casts = [
         'ticket_value' => 'decimal:2',
         'ticket_validity_days' => 'integer',
         'ordering_enabled' => 'boolean',
+        'direct_payment_enabled' => 'boolean',
     ];
 
     public function manager(): BelongsTo

@@ -294,6 +294,7 @@ class AuthController extends Controller
                         'status' => $employee->status,
                         'must_change_password' => (bool) $employee->must_change_password,
                         'ordering_enabled' => $company ? (bool) $company->ordering_enabled : true,
+                        'direct_payment_enabled' => $company ? (bool) $company->direct_payment_enabled : false,
                     ],
                     'token' => $token
                 ]);
