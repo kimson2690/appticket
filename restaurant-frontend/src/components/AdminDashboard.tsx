@@ -162,7 +162,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
         {/* Logo */}
         <div className="flex-shrink-0 flex items-center justify-between h-16 px-6 border-b border-gray-200">
           <div className="flex items-center space-x-3">
-            <div className="w-8 h-8 bg-gradient-to-br from-orange-500 to-orange-600 rounded-lg flex items-center justify-center">
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: `linear-gradient(to bottom right, var(--color-primary), var(--color-secondary))` }}>
               <span className="text-white font-bold text-sm">AT</span>
             </div>
             <span className="text-xl font-bold text-gray-900">AppTicket</span>
@@ -191,9 +191,10 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
                 }}
                 className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-left transition-all duration-200 ${
                   isActive
-                    ? 'bg-gradient-to-r from-orange-500 to-orange-600 text-white shadow-lg shadow-orange-500/25'
+                    ? 'text-white shadow-lg'
                     : 'text-gray-700 hover:bg-gray-100'
                 }`}
+                style={isActive ? { background: `linear-gradient(to right, var(--color-primary), var(--color-secondary))`, boxShadow: `0 10px 15px -3px rgba(var(--color-primary-rgb), 0.25)` } : {}}
               >
                 <Icon className={`w-5 h-5 ${isActive ? 'text-white' : 'text-gray-500'}`} />
                 <span className="font-medium">{item.label}</span>
@@ -205,7 +206,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
         {/* User Profile */}
         <div className="flex-shrink-0 p-4 border-t border-gray-200 bg-white">
           <div className="flex items-center space-x-3 p-3 rounded-xl hover:bg-gray-50 transition-colors">
-            <div className="w-10 h-10 bg-gradient-to-br from-orange-500 to-orange-600 rounded-full flex items-center justify-center">
+            <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ background: `linear-gradient(to bottom right, var(--color-primary), var(--color-secondary))` }}>
               <span className="text-white font-medium text-sm">{getUserInitials(currentUser.name)}</span>
             </div>
             <div className="flex-1 min-w-0">
@@ -243,10 +244,11 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
                   type="text"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  onFocus={() => setSearchFocused(true)}
-                  onBlur={() => setTimeout(() => setSearchFocused(false), 200)}
+                  onFocus={(e) => { setSearchFocused(true); e.currentTarget.style.boxShadow = `0 0 0 2px var(--color-primary)`; }}
+                  onBlur={(e) => { e.currentTarget.style.boxShadow = 'none'; setTimeout(() => setSearchFocused(false), 200); }}
                   placeholder="Rechercher une page..."
-                  className="pl-10 pr-4 py-2 w-80 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                  className="pl-10 pr-4 py-2 w-80 border border-gray-300 rounded-lg focus:border-transparent"
+                  style={{ outline: 'none' }}
                 />
                 {searchFocused && searchTerm.trim().length > 0 && (
                   <div className="absolute top-full left-0 mt-2 w-80 bg-white rounded-xl shadow-lg border border-gray-200 py-2 z-50 max-h-72 overflow-y-auto">
@@ -269,12 +271,13 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
                               setSearchFocused(false);
                             }}
                             className={`w-full flex items-center gap-3 px-4 py-2.5 text-left transition-colors ${
-                              isActive ? 'bg-orange-50 text-orange-600' : 'hover:bg-gray-50 text-gray-700'
+                              isActive ? '' : 'hover:bg-gray-50 text-gray-700'
                             }`}
+                            style={isActive ? { backgroundColor: 'var(--color-primary-lighter)', color: 'var(--color-primary)' } : {}}
                           >
-                            <Icon className={`w-4 h-4 flex-shrink-0 ${isActive ? 'text-orange-500' : 'text-gray-400'}`} />
+                            <Icon className={`w-4 h-4 flex-shrink-0 ${isActive ? '' : 'text-gray-400'}`} style={isActive ? { color: 'var(--color-primary)' } : {}} />
                             <span className="text-sm font-medium">{item.label}</span>
-                            {isActive && <span className="ml-auto text-[10px] font-bold text-orange-400 uppercase">Actif</span>}
+                            {isActive && <span className="ml-auto text-[10px] font-bold uppercase" style={{ color: 'var(--color-primary)' }}>Actif</span>}
                           </button>
                         );
                       })
@@ -298,7 +301,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
                   onClick={() => setUserMenuOpen(!userMenuOpen)}
                   className="flex items-center space-x-2 p-2 rounded-lg hover:bg-gray-100 transition-colors"
                 >
-                  <div className="w-8 h-8 bg-gradient-to-br from-orange-500 to-orange-600 rounded-full flex items-center justify-center">
+                  <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: `linear-gradient(to bottom right, var(--color-primary), var(--color-secondary))` }}>
                     <span className="text-white font-medium text-xs">{getUserInitials(currentUser.name)}</span>
                   </div>
                 </button>

@@ -4,6 +4,17 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --color-primary: #f97316;
+  --color-primary-light: #fed7aa;
+  --color-primary-lighter: #fff7ed;
+  --color-primary-dark: #d4620f;
+  --color-secondary: #ea580c;
+  --color-secondary-dark: #c74a0a;
+  --color-primary-rgb: 249, 115, 22;
+  --color-secondary-rgb: 234, 88, 12;
+}
+
 @layer base {
   body {
     font-family: 'Inter', system-ui, sans-serif;
@@ -12,17 +23,141 @@
 
 @layer components {
   .btn-primary {
-    @apply bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-medium py-3 px-6 rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200 focus:outline-none focus:ring-4 focus:ring-orange-200;
+    background: linear-gradient(to right, var(--color-primary), var(--color-secondary));
+    @apply text-white font-medium py-3 px-6 rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200 focus:outline-none;
+    box-shadow: 0 10px 15px -3px rgba(var(--color-primary-rgb), 0.25);
+  }
+  .btn-primary:hover {
+    background: linear-gradient(to right, var(--color-primary-dark), var(--color-secondary-dark));
+  }
+  .btn-primary:focus {
+    box-shadow: 0 0 0 4px rgba(var(--color-primary-rgb), 0.2);
   }
   
   .input-field {
-    @apply w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-4 focus:ring-orange-100 focus:border-orange-400 transition-all duration-200 bg-white/90 backdrop-blur-sm;
+    @apply w-full px-4 py-3 border border-gray-200 rounded-xl transition-all duration-200 bg-white/90 backdrop-blur-sm;
+  }
+  .input-field:focus {
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 4px rgba(var(--color-primary-rgb), 0.1);
+    outline: none;
   }
   
   .card {
     @apply bg-white/90 backdrop-blur-md rounded-2xl shadow-xl border border-white/20;
   }
 }
+
+/* ===== GLOBAL BRANDING OVERRIDES =====
+   Remap toutes les classes Tailwind orange-* vers les CSS variables de branding.
+   Cela permet d'appliquer la charte graphique partout sans modifier chaque composant.
+*/
+
+/* --- Backgrounds --- */
+.bg-orange-500 { background-color: var(--color-primary) !important; }
+.bg-orange-600 { background-color: var(--color-secondary) !important; }
+.bg-orange-400 { background-color: var(--color-primary) !important; opacity: 0.85; }
+.bg-orange-700 { background-color: var(--color-secondary-dark) !important; }
+.bg-orange-300 { background-color: var(--color-primary-light) !important; }
+.bg-orange-200 { background-color: var(--color-primary-light) !important; }
+.bg-orange-100 { background-color: rgba(var(--color-primary-rgb), 0.15) !important; }
+.bg-orange-50 { background-color: rgba(var(--color-primary-rgb), 0.08) !important; }
+
+/* --- Text colors --- */
+.text-orange-500 { color: var(--color-primary) !important; }
+.text-orange-600 { color: var(--color-secondary) !important; }
+.text-orange-400 { color: var(--color-primary) !important; opacity: 0.85; }
+.text-orange-700 { color: var(--color-secondary-dark) !important; }
+.text-orange-300 { color: var(--color-primary-light) !important; }
+.text-orange-200 { color: var(--color-primary-light) !important; }
+.text-orange-100 { color: rgba(var(--color-primary-rgb), 0.3) !important; }
+.text-orange-50 { color: rgba(var(--color-primary-rgb), 0.15) !important; }
+
+/* --- Border colors --- */
+.border-orange-500 { border-color: var(--color-primary) !important; }
+.border-orange-600 { border-color: var(--color-secondary) !important; }
+.border-orange-400 { border-color: var(--color-primary) !important; }
+.border-orange-300 { border-color: rgba(var(--color-primary-rgb), 0.4) !important; }
+.border-orange-200 { border-color: rgba(var(--color-primary-rgb), 0.25) !important; }
+.border-orange-100 { border-color: rgba(var(--color-primary-rgb), 0.15) !important; }
+
+/* --- Ring colors --- */
+.ring-orange-500 { --tw-ring-color: var(--color-primary) !important; }
+.ring-orange-400 { --tw-ring-color: var(--color-primary) !important; }
+.ring-orange-300 { --tw-ring-color: rgba(var(--color-primary-rgb), 0.4) !important; }
+.ring-orange-200 { --tw-ring-color: rgba(var(--color-primary-rgb), 0.25) !important; }
+.ring-orange-100 { --tw-ring-color: rgba(var(--color-primary-rgb), 0.15) !important; }
+
+/* --- Focus states --- */
+.focus\:ring-orange-500:focus { --tw-ring-color: var(--color-primary) !important; }
+.focus\:ring-orange-400:focus { --tw-ring-color: var(--color-primary) !important; }
+.focus\:ring-orange-300:focus { --tw-ring-color: rgba(var(--color-primary-rgb), 0.4) !important; }
+.focus\:ring-orange-200:focus { --tw-ring-color: rgba(var(--color-primary-rgb), 0.25) !important; }
+.focus\:ring-orange-100:focus { --tw-ring-color: rgba(var(--color-primary-rgb), 0.15) !important; }
+.focus\:border-orange-500:focus { border-color: var(--color-primary) !important; }
+.focus\:border-orange-400:focus { border-color: var(--color-primary) !important; }
+.focus\:border-orange-300:focus { border-color: rgba(var(--color-primary-rgb), 0.4) !important; }
+.focus\:bg-orange-500:focus { background-color: var(--color-primary) !important; }
+.focus\:bg-orange-600:focus { background-color: var(--color-secondary) !important; }
+
+/* --- Hover states --- */
+.hover\:bg-orange-500:hover { background-color: var(--color-primary) !important; }
+.hover\:bg-orange-600:hover { background-color: var(--color-secondary) !important; }
+.hover\:bg-orange-700:hover { background-color: var(--color-secondary-dark) !important; }
+.hover\:bg-orange-50:hover { background-color: rgba(var(--color-primary-rgb), 0.08) !important; }
+.hover\:bg-orange-100:hover { background-color: rgba(var(--color-primary-rgb), 0.15) !important; }
+.hover\:text-orange-500:hover { color: var(--color-primary) !important; }
+.hover\:text-orange-600:hover { color: var(--color-secondary) !important; }
+.hover\:text-orange-700:hover { color: var(--color-secondary-dark) !important; }
+.hover\:border-orange-500:hover { border-color: var(--color-primary) !important; }
+.hover\:border-orange-400:hover { border-color: var(--color-primary) !important; }
+
+/* --- Gradients --- */
+.from-orange-500 { --tw-gradient-from: var(--color-primary) !important; --tw-gradient-to: rgba(var(--color-primary-rgb), 0) !important; --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to) !important; }
+.from-orange-600 { --tw-gradient-from: var(--color-secondary) !important; --tw-gradient-to: rgba(var(--color-secondary-rgb), 0) !important; --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to) !important; }
+.from-orange-400 { --tw-gradient-from: var(--color-primary) !important; }
+.to-orange-500 { --tw-gradient-to: var(--color-primary) !important; }
+.to-orange-600 { --tw-gradient-to: var(--color-secondary) !important; }
+.to-orange-700 { --tw-gradient-to: var(--color-secondary-dark) !important; }
+.via-orange-500 { --tw-gradient-via: var(--color-primary) !important; }
+.via-orange-600 { --tw-gradient-via: var(--color-secondary) !important; }
+
+/* Hover gradients */
+.hover\:from-orange-500:hover { --tw-gradient-from: var(--color-primary) !important; }
+.hover\:from-orange-600:hover { --tw-gradient-from: var(--color-secondary) !important; }
+.hover\:to-orange-600:hover { --tw-gradient-to: var(--color-secondary) !important; }
+.hover\:to-orange-700:hover { --tw-gradient-to: var(--color-secondary-dark) !important; }
+
+/* --- Shadows --- */
+.shadow-orange-100 { --tw-shadow-color: rgba(var(--color-primary-rgb), 0.15) !important; }
+.shadow-orange-200 { --tw-shadow-color: rgba(var(--color-primary-rgb), 0.25) !important; }
+.shadow-orange-300 { --tw-shadow-color: rgba(var(--color-primary-rgb), 0.35) !important; }
+.shadow-orange-500\/25 { --tw-shadow-color: rgba(var(--color-primary-rgb), 0.25) !important; }
+.shadow-orange-500\/20 { --tw-shadow-color: rgba(var(--color-primary-rgb), 0.20) !important; }
+.hover\:shadow-orange-200:hover { --tw-shadow-color: rgba(var(--color-primary-rgb), 0.25) !important; }
+.hover\:shadow-orange-300:hover { --tw-shadow-color: rgba(var(--color-primary-rgb), 0.35) !important; }
+
+/* --- Divide colors --- */
+.divide-orange-100 > :not([hidden]) ~ :not([hidden]) { border-color: rgba(var(--color-primary-rgb), 0.15) !important; }
+.divide-orange-200 > :not([hidden]) ~ :not([hidden]) { border-color: rgba(var(--color-primary-rgb), 0.25) !important; }
+
+/* --- Opacity variants with slash notation --- */
+.bg-orange-500\/10 { background-color: rgba(var(--color-primary-rgb), 0.10) !important; }
+.bg-orange-500\/20 { background-color: rgba(var(--color-primary-rgb), 0.20) !important; }
+.bg-orange-500\/30 { background-color: rgba(var(--color-primary-rgb), 0.30) !important; }
+.bg-orange-600\/10 { background-color: rgba(var(--color-secondary-rgb), 0.10) !important; }
+.bg-orange-600\/20 { background-color: rgba(var(--color-secondary-rgb), 0.20) !important; }
+.text-orange-500\/80 { color: rgba(var(--color-primary-rgb), 0.80) !important; }
+.ring-orange-500\/10 { --tw-ring-color: rgba(var(--color-primary-rgb), 0.10) !important; }
+.focus\:ring-orange-500\/10:focus { --tw-ring-color: rgba(var(--color-primary-rgb), 0.10) !important; }
+.focus\:ring-orange-500\/20:focus { --tw-ring-color: rgba(var(--color-primary-rgb), 0.20) !important; }
+
+/* --- Accent / Caret --- */
+.accent-orange-500 { accent-color: var(--color-primary) !important; }
+.caret-orange-500 { caret-color: var(--color-primary) !important; }
+
+/* --- Placeholder --- */
+.placeholder\:text-orange-300::placeholder { color: rgba(var(--color-primary-rgb), 0.4) !important; }
 
 @layer utilities {
   /* Animations flottantes inspirées d'Osmo */

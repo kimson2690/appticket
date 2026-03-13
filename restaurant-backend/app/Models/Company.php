@@ -25,7 +25,10 @@ class Company extends Model
         'ticket_value',
         'ticket_validity_days',
         'ordering_enabled',
-        'direct_payment_enabled'
+        'direct_payment_enabled',
+        'primary_color',
+        'secondary_color',
+        'logo_url'
     ];
 
     protected $casts = [

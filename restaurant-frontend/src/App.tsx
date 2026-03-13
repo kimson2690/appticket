@@ -4,6 +4,7 @@ import AuthPages from './AuthPages'
 import AdminDashboard from './components/AdminDashboard'
 import ForcePasswordChange from './components/ForcePasswordChange'
 import { NotificationProvider } from './contexts/NotificationContext'
+import { clearBranding } from './utils/themeManager'
 
 function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -50,6 +51,9 @@ function App() {
     localStorage.removeItem('authToken');
     localStorage.removeItem('rememberMe');
     localStorage.removeItem('mustChangePassword');
+    
+    // Réinitialiser les couleurs par défaut (orange)
+    clearBranding();
     
     setIsLoggedIn(false);
     setUserRole(null);

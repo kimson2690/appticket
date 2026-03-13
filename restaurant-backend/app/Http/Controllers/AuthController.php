@@ -198,6 +198,26 @@ class AuthController extends Controller
                 // Générer un token
                 $token = 'token_' . $user->id . '_' . time();
 
+                // Branding de l'entreprise
+                $companyBranding = null;
+                if ($user->company) {
+                    $companyBranding = [
+                        'primary_color' => $user->company->primary_color ?? '#f97316',
+                        'secondary_color' => $user->company->secondary_color ?? '#ea580c',
+                        'logo_url' => $user->company->logo_url,
+                    ];
+                }
+
+                // Branding du restaurant
+                $restaurantBranding = null;
+                if ($user->restaurant) {
+                    $restaurantBranding = [
+                        'primary_color' => $user->restaurant->primary_color ?? '#f97316',
+                        'secondary_color' => $user->restaurant->secondary_color ?? '#ea580c',
+                        'logo_url' => $user->restaurant->logo_url,
+                    ];
+                }
+
                 return response()->json([
                     'success' => true,
                     'user' => [
@@ -213,6 +233,9 @@ class AuthController extends Controller
                         'restaurant_name' => $user->restaurant->name ?? null,
                         'status' => $user->status
                     ],
+                    'branding' => $companyBranding ?? $restaurantBranding,
+                    'company_branding' => $companyBranding,
+                    'restaurant_branding' => $restaurantBranding,
                     'token' => $token
                 ]);
             }
@@ -278,6 +301,16 @@ class AuthController extends Controller
                 // Générer un token
                 $token = 'token_' . $employee->id . '_' . time();
 
+                // Branding de l'entreprise de l'employé
+                $employeeCompanyBranding = null;
+                if ($company) {
+                    $employeeCompanyBranding = [
+                        'primary_color' => $company->primary_color ?? '#f97316',
+                        'secondary_color' => $company->secondary_color ?? '#ea580c',
+                        'logo_url' => $company->logo_url,
+                    ];
+                }
+
                 return response()->json([
                     'success' => true,
                     'user' => [
@@ -296,6 +329,9 @@ class AuthController extends Controller
                         'ordering_enabled' => $company ? (bool) $company->ordering_enabled : true,
                         'direct_payment_enabled' => $company ? (bool) $company->direct_payment_enabled : false,
                     ],
+                    'branding' => $employeeCompanyBranding,
+                    'company_branding' => $employeeCompanyBranding,
+                    'restaurant_branding' => null,
                     'token' => $token
                 ]);
             }

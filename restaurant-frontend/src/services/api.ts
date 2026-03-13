@@ -40,6 +40,9 @@ interface Company {
   status: 'active' | 'inactive' | 'suspended';
   ordering_enabled?: boolean;
   direct_payment_enabled?: boolean;
+  primary_color?: string;
+  secondary_color?: string;
+  logo_url?: string | null;
   employee_count: number;
   ticket_balance: number;
   created_at: string;
@@ -70,6 +73,9 @@ interface Restaurant {
   is_active?: boolean;
   is_partner?: boolean;
   commission_rate?: number;
+  primary_color?: string;
+  secondary_color?: string;
+  logo_url?: string | null;
   created_at?: string;
   updated_at?: string;
 }
@@ -244,6 +250,11 @@ class ApiService {
   // Restaurants API
   async getRestaurants(): Promise<Restaurant[]> {
     const response = await this.request<Restaurant[]>('/admin/restaurants');
+    return response.data;
+  }
+
+  async getRestaurant(id: string): Promise<Restaurant> {
+    const response = await this.request<Restaurant>(`/admin/restaurants/${id}`);
     return response.data;
   }
 
