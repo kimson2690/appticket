@@ -82,7 +82,7 @@ const AccountingReport: React.FC = () => {
       }
 
       const response = await fetch(
-        `http://localhost:8001/api/company/reports/accounting?month=${selectedMonth}&year=${selectedYear}`,
+        `${import.meta.env.VITE_API_URL || 'http://localhost:8001/api'}/company/reports/accounting?month=${selectedMonth}&year=${selectedYear}`,
         { headers }
       );
 
@@ -123,7 +123,7 @@ const AccountingReport: React.FC = () => {
       }
 
       const response = await fetch(
-        'http://localhost:8001/api/company/reports/accounting/export',
+        `${import.meta.env.VITE_API_URL || 'http://localhost:8001/api'}/company/reports/accounting/export`,
         {
           method: 'POST',
           headers,

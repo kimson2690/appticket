@@ -71,7 +71,7 @@ const MyHistory: React.FC = () => {
   const [reviewedOrders, setReviewedOrders] = useState<Record<string, any>>({});
   const ITEMS_PER_PAGE = 10;
 
-  const baseUrl = 'http://localhost:8001/api';
+  const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8001/api';
 
   useEffect(() => {
     loadData();

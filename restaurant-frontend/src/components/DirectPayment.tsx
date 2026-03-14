@@ -37,7 +37,7 @@ const DirectPayment: React.FC = () => {
   const [history, setHistory] = useState<PaymentRecord[]>([]);
   const [showConfirm, setShowConfirm] = useState(false);
 
-  const baseUrl = 'http://localhost:8001/api';
+  const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8001/api';
 
   useEffect(() => {
     loadData();

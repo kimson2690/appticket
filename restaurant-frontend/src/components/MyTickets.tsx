@@ -34,7 +34,7 @@ const MyTickets: React.FC = () => {
   const [batches, setBatches] = useState<BatchDetail[]>([]);
   const [modalType, setModalType] = useState<'expired' | 'valid' | null>(null);
 
-  const baseUrl = 'http://localhost:8001/api';
+  const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8001/api';
 
   useEffect(() => { loadBalance(); }, []);
 

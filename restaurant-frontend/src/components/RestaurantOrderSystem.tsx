@@ -26,7 +26,7 @@ const RestaurantOrderSystem: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeRestaurantTab, setActiveRestaurantTab] = useState<string | 'all'>('all');
 
-  const baseUrl = 'http://localhost:8001/api';
+  const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8001/api';
 
   useEffect(() => {
     loadData();

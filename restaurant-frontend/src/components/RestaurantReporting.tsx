@@ -103,7 +103,7 @@ const RestaurantReporting: React.FC = () => {
       if (params.company_id) queryParams.append('company_id', params.company_id);
 
       if (activeView === 'companies') {
-        const url = `http://localhost:8001/api/restaurant/reports/company-orders${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+        const url = `${import.meta.env.VITE_API_URL || 'http://localhost:8001/api'}/restaurant/reports/company-orders${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
         const response = await fetch(url, {
           headers: {
             'Content-Type': 'application/json',
@@ -124,7 +124,7 @@ const RestaurantReporting: React.FC = () => {
           setSummary(result.data.summary || null);
         }
       } else {
-        const url = `http://localhost:8001/api/restaurant/reports/employee-orders${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+        const url = `${import.meta.env.VITE_API_URL || 'http://localhost:8001/api'}/restaurant/reports/employee-orders${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
         const response = await fetch(url, {
           headers: {
             'Content-Type': 'application/json',

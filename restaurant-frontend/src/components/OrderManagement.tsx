@@ -81,7 +81,7 @@ const OrderManagement: React.FC = () => {
   const loadOrders = async () => {
     try {
       setLoading(true);
-      const baseUrl = 'http://localhost:8001/api';
+      const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8001/api';
       
       const userId = localStorage.getItem('userId');
       const userName = localStorage.getItem('userName');
@@ -132,7 +132,7 @@ const OrderManagement: React.FC = () => {
 
   const handleValidateOrder = async (orderId: string) => {
     try {
-      const baseUrl = 'http://localhost:8001/api';
+      const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8001/api';
       const userId = localStorage.getItem('userId');
       const userName = localStorage.getItem('userName');
       const restaurantId = localStorage.getItem('restaurantId');
@@ -164,7 +164,7 @@ const OrderManagement: React.FC = () => {
     if (!orderToReject) return;
 
     try {
-      const baseUrl = 'http://localhost:8001/api';
+      const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8001/api';
       const userId = localStorage.getItem('userId');
       const userName = localStorage.getItem('userName');
       const restaurantId = localStorage.getItem('restaurantId');
