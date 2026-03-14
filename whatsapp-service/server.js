@@ -43,7 +43,9 @@ const client = new Client({
     restartOnAuthFail: true,
     puppeteer: {
         headless: true,
-        executablePath: '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
+        executablePath: process.env.CHROMIUM_PATH || (process.platform === 'darwin' 
+            ? '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome' 
+            : '/usr/bin/chromium-browser'),
         args: [
             '--no-sandbox',
             '--disable-setuid-sandbox',
